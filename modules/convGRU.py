@@ -29,9 +29,8 @@ class ConvGRUCell(nn.Module):
         self.hidden_dim = hidden_dim
         self.bias = bias
         self.dtype = dtype
-        self.conv_gates = nn.Sequential(
-            nn.Conv2d(input_dim + hidden_dim, 2, kernel_size=1, padding=0, stride=1, bias=True)
-        )
+        self.conv_gates = nn.Conv2d(input_dim + hidden_dim, 2, kernel_size=1, padding=0, stride=1, bias=True)
+
 
         self.conv_can = nn.Sequential(
             DFConv2d(
