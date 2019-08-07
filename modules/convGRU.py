@@ -32,17 +32,6 @@ class ConvGRUCell(nn.Module):
         self.conv_gates = nn.Sequential(
             DFConv2d(
                 input_dim + hidden_dim,
-                2 * self.hidden_dim,
-                with_modulated_dcn=True,
-                kernel_size=kernel_size[0],
-                stride=1,
-                groups=1,
-                dilation=1,
-                deformable_groups=1,
-                bias=False
-            ), BatchNorm2d(2 * self.hidden_dim), nn.LeakyReLU(inplace=False),
-            DFConv2d(
-                2 * self.hidden_dim,
                 2,
                 with_modulated_dcn=True,
                 kernel_size=kernel_size[0],
@@ -50,22 +39,10 @@ class ConvGRUCell(nn.Module):
                 groups=1,
                 dilation=1,
                 deformable_groups=1,
-                bias=self.bias
+                bias=True
             )
         )
 
-        # self.conv_gates = nn.Sequential(nn.Conv2d(in_channels=input_dim + hidden_dim,
-        #                                           out_channels=2*self.hidden_dim,
-        #                                           kernel_size=kernel_size,
-        #                                           padding=self.padding,
-        #                                           bias=False),
-        #                                 BatchNorm2d(2 * self.hidden_dim), nn.LeakyReLU(inplace=False),
-        #                                 nn.Conv2d(in_channels=2*self.hidden_dim,
-        #                                           out_channels=2 * self.hidden_dim, # for update_gate,reset_gate respectively
-        #                                           kernel_size=kernel_size,
-        #                                           padding=self.padding,
-        #                                           bias=self.bias)
-        #                                 )
         self.conv_can = nn.Sequential(
             DFConv2d(
                 input_dim + hidden_dim,
@@ -90,19 +67,6 @@ class ConvGRUCell(nn.Module):
                 bias=self.bias
             )
         )
-
-        # self.conv_can = nn.Sequential(nn.Conv2d(in_channels=input_dim + hidden_dim,
-        #                                           out_channels=2*self.hidden_dim,
-        #                                           kernel_size=kernel_size,
-        #                                           padding=self.padding,
-        #                                           bias=False),
-        #                                 BatchNorm2d(2 * self.hidden_dim), nn.LeakyReLU(inplace=False),
-        #                                 nn.Conv2d(in_channels=2*self.hidden_dim,
-        #                                           out_channels=self.hidden_dim, # for update_gate,reset_gate respectively
-        #                                           kernel_size=kernel_size,
-        #                                           padding=self.padding,
-        #                                           bias=self.bias)
-        #                                 )
 
     def init_hidden(self, batch_size):
         return (Variable(torch.zeros(batch_size, self.hidden_dim, self.height, self.width)).type(self.dtype))
