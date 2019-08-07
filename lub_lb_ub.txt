@@ -1,0 +1,22 @@
+res101 3 hierarchy: part + half + full
+
+per class iou part: [95.30786072 85.78143877 70.17335847 61.21913581 60.03378318 50.92781422 51.22548131]
+per class iou hb: [95.38361525 84.36904815 59.12651486]
+per class iou fb: [95.43863926 84.32687836]
+
+Complete using 101.95091605186462 seconds
+Best pixAcc: 0.941672954807626 | Best mIoU: 67.81
+
+lower body + upper body
+
+per class iou: [95.09563397 83.07507882 55.80920794]
+Complete using 93.36650919914246 seconds
+Best pixAcc: 0.9538840484902467 | Best mIoU: 77.99
+
+upper body
+
+
+lower body
+per class iou: [97.79468642 51.27494068]
+Complete using 82.50983262062073 seconds
+Best pixAcc: 0.9784470482723073 | Best mIoU: 74.53
