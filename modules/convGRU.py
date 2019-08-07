@@ -67,10 +67,10 @@ class ConvGRUCell(nn.Module):
                 bias=self.bias
             )
         )
-        init.orthogonal(self.conv_gates.weight)
-        init.orthogonal(self.conv_can.weight)
-        init.constant(self.conv_gates.bias, 0.)
-        init.constant(self.conv_can.bias, 0.)
+        nn.init.orthogonal(self.conv_gates.weight)
+        nn.init.orthogonal(self.conv_can.weight)
+        nn.init.constant(self.conv_gates.bias, 0.)
+        nn.init.constant(self.conv_can.bias, 0.)
 
     def init_hidden(self, batch_size):
         return (Variable(torch.zeros(batch_size, self.hidden_dim, self.height, self.width)).type(self.dtype))
