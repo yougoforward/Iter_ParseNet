@@ -69,10 +69,8 @@ class conv_Update(nn.Module):
         return self.relu(self.gamma*x+out)
 
 class Part_Dependency(nn.Module):
-    def __init__(self, in_dim=256, hidden_dim=10, cls_p=7, cls_h=3, cls_f=2):
+    def __init__(self, hidden_dim=10):
         super(Part_Dependency, self).__init__()
-        self.cls_p = cls_p
-
         self.dconv = nn.Sequential(
             DFConv2d(
                 2 * hidden_dim,
@@ -98,11 +96,15 @@ class Part_Dependency(nn.Module):
             ), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
 
-    def forward(self, pA, pB, A_att, B_att):
-        A_diffuse = self.dconv(torch.cat([pB, pA], dim=1))
-        A_diffuse_att = (1 - A_att) * A_diffuse
-        A2B = A_diffuse_att * B_att
-        return A2B
+        self.A_att = nn.Sequential(
+            nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
+            nn.Sigmoid())
+
+    def forward(self, pA, pB):
+        A_diffuse = self.dconv(torch.cat([pA, pB], dim=1))
+        A_att = self.A_att(pA)
+        A_diffuse_att = (2 - A_att) * A_diffuse
+        return A_diffuse_att
 
 
 class DecoderModule(nn.Module):
@@ -197,13 +199,6 @@ class Half_Graph(nn.Module):
         self.lower_parts_len = len(lower_part_list)
         self.hidden = hidden_dim
 
-        # self.part_dp_h = Part_Dependency(in_dim, hidden_dim)
-        # self.part_dp_l = Part_Dependency(in_dim, hidden_dim)
-        # self.att = nn.Sequential(
-        #     nn.Conv2d((cls_h - 1) * hidden_dim, cls_h - 1, kernel_size=1, padding=0, stride=1, bias=True,
-        #               groups=cls_h - 1),
-        #     nn.Sigmoid())
-
         self.decomp_u = Decomposition(in_dim, hidden_dim)
         self.decomp_l = Decomposition(in_dim, hidden_dim)
 
@@ -211,14 +206,11 @@ class Half_Graph(nn.Module):
         self.update_l = conv_Update(hidden_dim, 1+self.lower_parts_len)
 
     def forward(self, xf, xh_list, xp_list):
-        # dp_att_list=torch.split(self.att(torch.cat(xh_list, dim=1)), 1, dim=1)
-
         # upper half
         upper_parts = []
         for part in self.upper_part_list:
             upper_parts.append(xp_list[part - 1])
 
-        # xlh = self.part_dp_h(h_fea, xh_list[1], xh_list[0], dp_att_list[1], dp_att_list[0])
         att_fhu = self.decomp_u(xf, xh_list[0])
         message_u = [att_fhu*xf]+upper_parts
         xh_u = self.update_u(xh_list[0], message_u)
@@ -228,14 +220,12 @@ class Half_Graph(nn.Module):
         for part in self.lower_part_list:
             lower_parts.append(xp_list[part - 1])
 
-        # xuh = self.part_dp_l(h_fea, xh_list[0], xh_list[1], dp_att_list[0], dp_att_list[1])
         att_fhl = self.decomp_l(xf, xh_list[0])
         message_l = [att_fhl*xf]+lower_parts
         xh_l = self.update_l(xh_list[1], message_l)
 
         att_fh_list = [att_fhu, att_fhl]
         xh_list_new = [xh_u, xh_l]
-        # att_list = [att_u, att_l]
         return xh_list_new, att_fh_list
 
 
@@ -406,7 +396,7 @@ class GNN_infer(nn.Module):
 
         # xphf_infer =torch.cat([node, node_new1, node_new], dim=1)
         xphf_infer = node_new
-        p_seg_final, h_seg_final, f_seg_final = self.final_cls(xphf_infer, xp, xh, xf, xl)
+        p_seg_final, h_seg_final, f_seg_final = self.final_cls(xphf_infer, xp, xh, xf)
 
         return p_seg_final, h_seg_final, f_seg_final, p_seg, h_seg, f_seg, (att_decomp+att_decomp1)/2.0
 
@@ -419,7 +409,7 @@ class Final_classifer(nn.Module):
         self.ch_in = in_dim
 
         # classifier
-        self.conv0 = nn.Sequential(DFConv2d(
+        self.p_cls = nn.Sequential(DFConv2d(
                 in_dim*3+(cls_p + cls_h + cls_f - 2) * hidden_dim,
                 in_dim,
                 with_modulated_dcn=True,
@@ -440,31 +430,15 @@ class Final_classifer(nn.Module):
                 dilation=1,
                 deformable_groups=1,
                 bias=False
-            ), BatchNorm2d(in_dim), nn.ReLU(inplace=False)
-        )
-
-        self.conv2 = nn.Sequential(nn.Conv2d(in_dim, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(48), nn.ReLU(inplace=False))
-
-        self.conv3 = nn.Sequential(nn.Conv2d(in_dim + 48, in_dim, kernel_size=1, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(in_dim), nn.ReLU(inplace=False)
-                                   )
-        self.relu = nn.ReLU(inplace=False)
-        self.p_cls = nn.Conv2d(in_dim, cls_p, kernel_size=1, padding=0, dilation=1, bias=True)
-
+            ), BatchNorm2d(in_dim), nn.ReLU(inplace=False),
+            nn.Conv2d(in_dim, cls_p, kernel_size=1, padding=0, stride=1, bias=True))
         # self.p_cls = nn.Sequential(nn.Conv2d(in_dim * 3 + (cls_p + cls_h + cls_f - 2) * hidden_dim, cls_p, kernel_size=1, padding=0, stride=1, bias=True))
         self.h_cls = nn.Sequential(nn.Conv2d(in_dim*3+(cls_p + cls_h + cls_f - 2) * hidden_dim, cls_h, kernel_size=1, padding=0, stride=1, bias=True))
         self.f_cls = nn.Sequential(nn.Conv2d(in_dim*3+(cls_p + cls_h + cls_f - 2) * hidden_dim, cls_f, kernel_size=1, padding=0, stride=1, bias=True))
 
-    def forward(self, xphf, xp, xh, xf, xl):
+    def forward(self, xphf, xp, xh, xf):
         # classifier
-        _, _, th, tw = xl.size()
-        xt = F.interpolate(self.conv0(torch.cat([xphf, xp, xh, xf], dim=1)), size=(th, tw), mode='bilinear', align_corners=True)
-        xl = self.conv2(xl)
-        x = torch.cat([xt, xl], dim=1)
-        x_fea = self.conv3(x)+xt
-
-        xp_seg = self.p_cls(x_fea)
+        xp_seg = self.p_cls(torch.cat([xphf, xp, xh, xf], dim=1))
         xh_seg = self.h_cls(torch.cat([xphf, xp, xh, xf], dim=1))
         xf_seg = self.f_cls(torch.cat([xphf, xp, xh, xf], dim=1))
 
