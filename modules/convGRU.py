@@ -30,17 +30,7 @@ class ConvGRUCell(nn.Module):
         self.bias = bias
         self.dtype = dtype
         self.conv_gates = nn.Sequential(
-            DFConv2d(
-                input_dim + hidden_dim,
-                2,
-                with_modulated_dcn=True,
-                kernel_size=kernel_size[0],
-                stride=1,
-                groups=1,
-                dilation=1,
-                deformable_groups=1,
-                bias=True
-            )
+            nn.Conv2d(input_dim + hidden_dim, 2, kernel_size=1, padding=0, stride=1, bias=True)
         )
 
         self.conv_can = nn.Sequential(
@@ -68,9 +58,7 @@ class ConvGRUCell(nn.Module):
             )
         )
         nn.init.orthogonal(self.conv_gates.weight)
-        nn.init.orthogonal(self.conv_can.weight)
         nn.init.constant(self.conv_gates.bias, 0.)
-        nn.init.constant(self.conv_can.bias, 0.)
 
     def init_hidden(self, batch_size):
         return (Variable(torch.zeros(batch_size, self.hidden_dim, self.height, self.width)).type(self.dtype))
