@@ -254,52 +254,52 @@ class Half_Graph(nn.Module):
         xh_list_new = [xh_u, xh_l]
         return xh_list_new, att_fh_list
 
-    class Part_Graph(nn.Module):
-        def __init__(self, adj_matrix, upper_part_list=[1, 2, 3, 4], lower_part_list=[5, 6], in_dim=256, hidden_dim=10,
-                     cls_p=7, cls_h=3, cls_f=2):
-            super(Part_Graph, self).__init__()
-            self.cls_p = cls_p
-            self.upper_part_list = upper_part_list
-            self.lower_part_list = lower_part_list
-            self.edge_index = torch.nonzero(adj_matrix)
-            self.edge_index_num = self.edge_index.shape[0]
-            self.xpp_list_list = [[] for i in range(self.cls_p - 1)]
-            for i in range(self.edge_index_num):
-                self.xpp_list_list[self.edge_index[i, 1]].append(self.edge_index[i, 0])
-    
-            self.part_dp_list = nn.ModuleList([conv_Update(hidden_dim, len(self.xpp_list_list[i])) for i in range(cls_p - 1)])
-            self.att = nn.ModuleList(nn.Sequential(
-                nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
-                nn.Sigmoid()) for i in range(cls_p - 1))
-            self.decomp_fp_list = nn.ModuleList([Decomposition(in_dim, hidden_dim) for i in range(cls_p - 1)])
-            self.decomp_hp_list = nn.ModuleList([Decomposition(in_dim, hidden_dim) for i in range(cls_p - 1)])
-    
-            self.update_conv_list = nn.ModuleList(
-                [conv_Update(hidden_dim, 3) for i in range(cls_p - 1)])
-    
-        def forward(self, xf, xh_list, xp_list):
-    
-            # dp_att_list = []
-            att_fp_list = []
-            att_hp_list = []
-            xp_list_new = []
-            for i in range(self.cls_p-1):
-                # dp_att = self.att[i](xp_list[i])
-                # dp_att_list.append(dp_att)
-                part_dp = self.part_dp_list[i](xp_list[i], [xp_list[j] for j in self.xpp_list_list[i]])
-                if i+1 in self.upper_part_list:
-                    att_fp = self.decomp_fp_list[i](xf, xp_list[i])
-                    att_hp = self.decomp_hp_list[i](xh_list[0], xp_list[i])
-                    att_fp_list.append(att_fp)
-                    att_hp_list.append(att_hp)
-                    xp_list_new.append(self.update_conv_list[i](xp_list[i], [att_fp*xf, att_hp*xh_list[0], part_dp]))
-                elif i+1 in self.lower_part_list:
-                    att_fp = self.decomp_fp_list[i](xf, xp_list[i])
-                    att_hp = self.decomp_hp_list[i](xh_list[1], xp_list[i])
-                    att_fp_list.append(att_fp)
-                    att_hp_list.append(att_hp)
-                    xp_list_new.append(self.update_conv_list[i](xp_list[i], [att_fp*xf, att_hp*xh_list[1], part_dp]))
-            return xp_list_new, att_fp_list, att_hp_list
+class Part_Graph(nn.Module):
+    def __init__(self, adj_matrix, upper_part_list=[1, 2, 3, 4], lower_part_list=[5, 6], in_dim=256, hidden_dim=10,
+                    cls_p=7, cls_h=3, cls_f=2):
+        super(Part_Graph, self).__init__()
+        self.cls_p = cls_p
+        self.upper_part_list = upper_part_list
+        self.lower_part_list = lower_part_list
+        self.edge_index = torch.nonzero(adj_matrix)
+        self.edge_index_num = self.edge_index.shape[0]
+        self.xpp_list_list = [[] for i in range(self.cls_p - 1)]
+        for i in range(self.edge_index_num):
+            self.xpp_list_list[self.edge_index[i, 1]].append(self.edge_index[i, 0])
+
+        self.part_dp_list = nn.ModuleList([conv_Update(hidden_dim, len(self.xpp_list_list[i])) for i in range(cls_p - 1)])
+        self.att = nn.ModuleList(nn.Sequential(
+            nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
+            nn.Sigmoid()) for i in range(cls_p - 1))
+        self.decomp_fp_list = nn.ModuleList([Decomposition(in_dim, hidden_dim) for i in range(cls_p - 1)])
+        self.decomp_hp_list = nn.ModuleList([Decomposition(in_dim, hidden_dim) for i in range(cls_p - 1)])
+
+        self.update_conv_list = nn.ModuleList(
+            [conv_Update(hidden_dim, 3) for i in range(cls_p - 1)])
+
+    def forward(self, xf, xh_list, xp_list):
+
+        # dp_att_list = []
+        att_fp_list = []
+        att_hp_list = []
+        xp_list_new = []
+        for i in range(self.cls_p-1):
+            # dp_att = self.att[i](xp_list[i])
+            # dp_att_list.append(dp_att)
+            part_dp = self.part_dp_list[i](xp_list[i], [xp_list[j] for j in self.xpp_list_list[i]])
+            if i+1 in self.upper_part_list:
+                att_fp = self.decomp_fp_list[i](xf, xp_list[i])
+                att_hp = self.decomp_hp_list[i](xh_list[0], xp_list[i])
+                att_fp_list.append(att_fp)
+                att_hp_list.append(att_hp)
+                xp_list_new.append(self.update_conv_list[i](xp_list[i], [att_fp*xf, att_hp*xh_list[0], part_dp]))
+            elif i+1 in self.lower_part_list:
+                att_fp = self.decomp_fp_list[i](xf, xp_list[i])
+                att_hp = self.decomp_hp_list[i](xh_list[1], xp_list[i])
+                att_fp_list.append(att_fp)
+                att_hp_list.append(att_hp)
+                xp_list_new.append(self.update_conv_list[i](xp_list[i], [att_fp*xf, att_hp*xh_list[1], part_dp]))
+        return xp_list_new, att_fp_list, att_hp_list
 
 # class Part_Graph(nn.Module):
 #     def __init__(self, adj_matrix, upper_part_list=[1, 2, 3, 4], lower_part_list=[5, 6], in_dim=256, hidden_dim=10,
