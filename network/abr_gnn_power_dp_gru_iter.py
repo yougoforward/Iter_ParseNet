@@ -521,7 +521,7 @@ class Final_classifer(nn.Module):
 
         return xp_seg, xh_seg, xf_seg
 
-        class Decoder(nn.Module):
+class Decoder(nn.Module):
     def __init__(self, num_classes=7, hbody_cls=3, fbody_cls=2):
         super(Decoder, self).__init__()
         self.layer5 = MagicModule(2048, 512, 1)
