@@ -476,7 +476,7 @@ class GNN_infer(nn.Module):
         p_seg = torch.cat([node_seg_list[0]] + node_seg_list[4:], dim=1)
 
         xphf_infer =torch.cat([self.readout(node), self.readout(node_new1), self.readout(node_new)], dim=1)
-        p_seg_final, h_seg_final, f_seg_final= self.final_cls(xphf_infer, xp, xh, xf)
+        p_seg_final, h_seg_final, f_seg_final= self.final_cls(xphf_infer, xp, xh, xf, xl)
 
         return p_seg_final, h_seg_final, f_seg_final, p_seg, h_seg, f_seg, att_decomp
 
