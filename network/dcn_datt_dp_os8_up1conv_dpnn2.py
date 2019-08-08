@@ -264,7 +264,6 @@ class Part_Graph(nn.Module):
             else:
                 xpp_list.append(sum(xpp_list_list[i]))
 
-
         att_fp_list = []
         att_hp_list = []
         xp_list_new = []
@@ -272,15 +271,13 @@ class Part_Graph(nn.Module):
             if i+1 in self.upper_part_list:
                 att_fp = self.decomp_fp_list[i](xf, xp_list[i])
                 att_hp = self.decomp_hp_list[i](xh_list[0], xp_list[i])
-                att_fp_list.append(att_fp)
-                att_hp_list.append(att_hp)
                 xp_list_new.append(self.update_conv_list[i](xp_list[i], [att_fp*xf, att_hp*xh_list[0], xpp_list[i]]))
             elif i+1 in self.lower_part_list:
                 att_fp = self.decomp_fp_list[i](xf, xp_list[i])
                 att_hp = self.decomp_hp_list[i](xh_list[1], xp_list[i])
-                att_fp_list.append(att_fp)
-                att_hp_list.append(att_hp)
                 xp_list_new.append(self.update_conv_list[i](xp_list[i], [att_fp*xf, att_hp*xh_list[1], xpp_list[i]]))
+            att_fp_list.append(att_fp)
+            att_hp_list.append(att_hp)
         return xp_list_new, att_fp_list, att_hp_list
 
 
