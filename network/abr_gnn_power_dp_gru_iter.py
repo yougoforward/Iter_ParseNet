@@ -476,7 +476,7 @@ class GNN_infer(nn.Module):
         p_seg = torch.cat([node_seg_list[0]] + node_seg_list[4:], dim=1)
 
         xphf_infer =torch.cat([self.readout(node), self.readout(node_new1), self.readout(node_new)], dim=1)
-        p_seg_final = self.final_cls(xphf_infer, xp, xh, xf)
+        p_seg_final, h_seg_final, f_seg_final= self.final_cls(xphf_infer, xp, xh, xf)
 
         return p_seg_final, h_seg_final, f_seg_final, p_seg, h_seg, f_seg, att_decomp
 
@@ -519,9 +519,9 @@ class Final_classifer(nn.Module):
         xh_seg = self.h_cls(torch.cat([xphf, xh], dim=1))
         xf_seg = self.f_cls(torch.cat([xphf, xf], dim=1))
 
-        # return xp_seg, xh_seg, xf_seg
-        return xp_seg
-class Decoder(nn.Module):
+        return xp_seg, xh_seg, xf_seg
+
+        class Decoder(nn.Module):
     def __init__(self, num_classes=7, hbody_cls=3, fbody_cls=2):
         super(Decoder, self).__init__()
         self.layer5 = MagicModule(2048, 512, 1)
