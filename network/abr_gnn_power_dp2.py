@@ -248,7 +248,7 @@ class Part_Graph(nn.Module):
         self.decomp_hp_list = nn.ModuleList([Decomposition(in_dim, hidden_dim) for i in range(cls_p - 1)])
 
         self.update_conv_list = nn.ModuleList(
-            [conv_Update(hidden_dim, 2) for i in range(cls_p - 1)])
+            [conv_Update(hidden_dim, 3) for i in range(cls_p - 1)])
 
     def forward(self, xf, xh_list, xp_list):
         xpp_list_list = [[] for i in range(self.cls_p - 1)]
