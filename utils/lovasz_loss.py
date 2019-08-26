@@ -981,46 +981,9 @@ class abr_gnn_ABRLovaszLoss3(nn.Module):
         loss_fb = loss_fb + lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
                                                 only_present=self.only_present)
 
-        labels_p = targets[0]
-        one_label_p = labels_p.clone().long()
-        one_label_p[one_label_p == 255] = 0
-        one_hot_lab_p = F.one_hot(one_label_p, num_classes=self.num_classes)
-        one_hot_pb_list = list(torch.split(one_hot_lab_p, 1, dim=-1))
-        for i in range(0, self.num_classes):
-            one_hot_pb_list[i] = one_hot_pb_list[i].squeeze(-1)
-            # one_hot_pb_list[i][targets[0]==255]=255
-
-        labels_h = targets[1]
-        one_label_h = labels_h.clone().long()
-        one_label_h[one_label_h == 255] = 0
-        one_hot_lab_h = F.one_hot(one_label_h, num_classes=self.cls_h)
-        one_hot_hb_list = list(torch.split(one_hot_lab_h, 1, dim=-1))
-        for i in range(0, self.cls_h):
-            one_hot_hb_list[i] = one_hot_hb_list[i].squeeze(-1)
-            # one_hot_hb_list[i][targets[1]==255]=255
-
-        labels_f = targets[2]
-        one_label_f = labels_f.clone().long()
-        one_label_f[one_label_f == 255] = 0
-        one_hot_lab_f = F.one_hot(one_label_f, num_classes=self.cls_f)
-        one_hot_fb_list = list(torch.split(one_hot_lab_f, 1, dim=-1))
-        for i in range(0, self.cls_f):
-            one_hot_fb_list[i] = one_hot_fb_list[i].squeeze(-1)
-            # one_hot_fb_list[i][targets[2]==255]=255
-        # #
-        ignore = (targets[0]!=255).float().unsqueeze(1)
-        #
-        att_onehot = torch.stack(one_hot_hb_list[1:]+one_hot_pb_list[1:], dim=1).float()
-        att_bceloss = torch.mean(self.bceloss(F.interpolate(preds[6], size=(h, w), mode='bilinear', align_corners=True), att_onehot)*ignore)
-
-        # node_onehot = torch.stack(one_hot_fb_list+one_hot_hb_list[1:]+one_hot_pb_list[1:], dim=1).float()
-        # node_bceloss = torch.mean(self.bceloss(F.interpolate(self.sigmoid(preds[6]), size=(h, w), mode='bilinear', align_corners=True), node_onehot)*ignore)
-        # att_bceloss = att_bceloss+ node_bceloss
-
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
-        # return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.1 * att_bceloss
         return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn
 
 class abr_gnn_ABRLovaszLoss2(nn.Module):
