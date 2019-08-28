@@ -540,6 +540,7 @@ class Final_classifer(nn.Module):
         xf_seg = self.f_cls(torch.cat([xphf, xp, xh, xf], dim=1))
 
         return xp_seg, xh_seg, xf_seg
+
 class Decoder(nn.Module):
     def __init__(self, num_classes=7, hbody_cls=3, fbody_cls=2):
         super(Decoder, self).__init__()

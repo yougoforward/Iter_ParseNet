@@ -104,7 +104,7 @@ class Part_update(nn.Module):
         super(Part_update, self).__init__()
         self.dconv1 = nn.Sequential(
             DFConv2d(
-                hidden_dim,
+                (1+paths_len)*hidden_dim,
                 2 * hidden_dim,
                 with_modulated_dcn=True,
                 kernel_size=3,
@@ -133,7 +133,7 @@ class Part_update(nn.Module):
         )
 
     def forward(self, xp, dp_list):
-        xdp = torch.max(torch.stack([xp]+dp_list, dim=1), dim=1, keepdim=False)[0]
+        xdp = torch.cat([xp]+dp_list, dim=1)
         dp = self.dconv1(xdp)
         dp_att = self.att(dp)
         new_xp = self.dconv2(dp)*dp_att
