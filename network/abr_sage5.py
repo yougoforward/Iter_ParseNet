@@ -346,7 +346,7 @@ class Part_Graph(nn.Module):
                 decomp_hp, att_hp = self.decomp_hp_list[i](xh_list[1], xp_list[i])
 
             decomp_fp, att_fp = self.decomp_fp_list[i](xf, xp_list[i])
-            dp, dp_att = self.part_dp_update[i](xp_list[i], self.xpp_list_list[i])
+            dp, dp_att = self.part_dp_update[i](xp_list[i], xpp_list_list[i])
             xp_list_new.append(torch.mean(torch.stack([xp_list[i], decomp_fp, decomp_hp, dp], dim=1), dim=1, keepdim=False))
             att_fp_list.append(att_fp)
             att_hp_list.append(att_hp)
