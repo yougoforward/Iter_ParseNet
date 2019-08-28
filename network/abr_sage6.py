@@ -240,6 +240,8 @@ class Half_Graph(nn.Module):
         self.comp_u = Composition(hidden_dim, self.upper_parts_len)
         self.comp_l = Composition(hidden_dim, self.lower_parts_len)
 
+        self.dp_u = Part_Dependency(hidden_dim)
+        self.dp_l = Part_Dependency(hidden_dim)
 
     def forward(self, xf, xh_list, xp_list):
         # upper half
@@ -249,7 +251,8 @@ class Half_Graph(nn.Module):
 
         decomp_u, att_fhu = self.decomp_u(xf, xh_list[0])
         comp_u = self.comp_u(xh_list[0], upper_parts)
-        xh_u = torch.mean(torch.stack([xh_list[0], decomp_u, comp_u], dim=1), dim=1, keepdim=False)
+        dp_u = self.dp_u(xh_list[1], xh_list[0])
+        xh_u = torch.mean(torch.stack([xh_list[0], decomp_u, comp_u, dp_u], dim=1), dim=1, keepdim=False)
 
 
         # lower half
@@ -258,7 +261,8 @@ class Half_Graph(nn.Module):
             lower_parts.append(xp_list[part - 1])
         decomp_l, att_fhl = self.decomp_l(xf, xh_list[1])
         comp_l = self.comp_l(xh_list[1], upper_parts)
-        xh_l = torch.mean(torch.stack([xh_list[1], decomp_l, comp_l], dim=1), dim=1, keepdim=False)
+        dp_l = self.dp_l(xh_list[0], xh_list[1])
+        xh_l = torch.mean(torch.stack([xh_list[1], decomp_l, comp_l, dp_l], dim=1), dim=1, keepdim=False)
 
         att_fh_list = [att_fhu, att_fhl]
         xh_list_new = [xh_u, xh_l]
@@ -277,10 +281,29 @@ class Part_Graph(nn.Module):
         for i in range(self.edge_index_num):
             self.xpp_list_list[self.edge_index[i, 1]].append(self.edge_index[i, 0])
 
+        # self.part_dp_update = nn.ModuleList([conv_Update(hidden_dim, len(self.xpp_list_list[i])) for i in range(cls_p - 1)])
+        self.part_dp_list = nn.ModuleList([Part_Dependency(hidden_dim) for i in range(self.edge_index_num)])
+
         self.decomp_fp_list = nn.ModuleList([Decomposition(in_dim, hidden_dim) for i in range(cls_p - 1)])
         self.decomp_hp_list = nn.ModuleList([Decomposition(in_dim, hidden_dim) for i in range(cls_p - 1)])
 
+        # self.update_conv_list = nn.ModuleList(
+        #     [conv_Update(hidden_dim, 3) for i in range(cls_p - 1)])
+
     def forward(self, xf, xh_list, xp_list):
+        xpp_list_list = [[] for i in range(self.cls_p - 1)]
+        xpp_list = []
+        for i in range(self.edge_index_num):
+            xpp_list_list[self.edge_index[i, 1]].append(
+                self.part_dp_list[i](xp_list[self.edge_index[i, 0]], xp_list[self.edge_index[i, 1]]))
+        for i in range(self.cls_p - 1):
+            # xpp_list.append(self.part_dp_update[i](xp_list[i], xpp_list_list[i]))
+            if len(xpp_list_list[i]) == 1:
+                xpp_list.append(xpp_list_list[i][0])
+            else:
+                # xpp_list.append(sum(xpp_list_list[i])/len(xpp_list_list[i]))
+                # xpp_list.append(torch.max(torch.stack(xpp_list_list[i], dim=1), dim=1, keepdim=False)[0])
+                xpp_list.append(torch.mean(torch.stack(xpp_list_list[i], dim=1), dim=1, keepdim=False))
 
         att_fp_list = []
         att_hp_list = []
@@ -289,11 +312,11 @@ class Part_Graph(nn.Module):
             if i+1 in self.upper_part_list:
                 decomp_fp, att_fp = self.decomp_fp_list[i](xf, xp_list[i])
                 decomp_hp, att_hp = self.decomp_hp_list[i](xh_list[0], xp_list[i])
-                xp_list_new.append(torch.mean(torch.stack([xp_list[i], decomp_fp, decomp_hp], dim=1), dim=1, keepdim=False))
+                xp_list_new.append(torch.mean(torch.stack([xp_list[i], decomp_fp, decomp_hp, xpp_list[i]], dim=1), dim=1, keepdim=False))
             elif i+1 in self.lower_part_list:
                 decomp_fp, att_fp = self.decomp_fp_list[i](xf, xp_list[i])
                 decomp_hp, att_hp = self.decomp_hp_list[i](xh_list[1], xp_list[i])
-                xp_list_new.append(torch.mean(torch.stack([xp_list[i], decomp_fp, decomp_hp], dim=1), dim=1, keepdim=False))
+                xp_list_new.append(torch.mean(torch.stack([xp_list[i], decomp_fp, decomp_hp, xpp_list[i]], dim=1), dim=1, keepdim=False))
             att_fp_list.append(att_fp)
             att_hp_list.append(att_hp)
         return xp_list_new, att_fp_list, att_hp_list
