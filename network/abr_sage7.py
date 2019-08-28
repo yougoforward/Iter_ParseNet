@@ -333,8 +333,7 @@ class Part_Graph(nn.Module):
     def forward(self, xf, xh_list, xp_list):
         xpp_list_list = [[] for i in range(self.cls_p - 1)]
         for i in range(self.edge_index_num):
-            xpp_list_list[self.edge_index[i, 1]].append(
-                self.part_dp_list[i](xp_list[self.edge_index[i, 0]], xp_list[self.edge_index[i, 1]]))
+            xpp_list_list[self.edge_index[i, 1]].append(xp_list[self.edge_index[i, 0]])
 
         att_fp_list = []
         att_hp_list = []
@@ -347,7 +346,7 @@ class Part_Graph(nn.Module):
                 decomp_hp, att_hp = self.decomp_hp_list[i](xh_list[1], xp_list[i])
 
             decomp_fp, att_fp = self.decomp_fp_list[i](xf, xp_list[i])
-            dp, dp_att = self.part_dp_update[i](xp_list[i], self.part_dp_list[i])
+            dp, dp_att = self.part_dp_update[i](xp_list[i], self.xpp_list_list[i])
             xp_list_new.append(torch.mean(torch.stack([xp_list[i], decomp_fp, decomp_hp, dp], dim=1), dim=1, keepdim=False))
             att_fp_list.append(att_fp)
             att_hp_list.append(att_hp)
