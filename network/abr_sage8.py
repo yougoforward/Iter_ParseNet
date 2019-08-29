@@ -282,7 +282,6 @@ class Half_Graph(nn.Module):
 
         self.dp_u = Part_update(hidden_dim, paths_len=1)
         self.dp_l = Part_update(hidden_dim, paths_len=1)
-        self.relu = nn.ReLU()
 
     def forward(self, xf, xh_list, xp_list):
         # upper half
@@ -293,7 +292,7 @@ class Half_Graph(nn.Module):
         decomp_u, att_fhu = self.decomp_u(xf, xh_list[0])
         comp_u = self.comp_u(xh_list[0], upper_parts)
         dp_u, dp_u_att = self.dp_u(xh_list[1], [xh_list[0]])
-        xh_u = torch.max(torch.stack([self.relu(xh_list[0]+dp_u), decomp_u, comp_u], dim=1), dim=1, keepdim=False)[0]
+        xh_u = torch.max(torch.stack([xh_list[0], decomp_u, comp_u, dp_u], dim=1), dim=1, keepdim=False)[0]
 
 
         # lower half
@@ -303,7 +302,7 @@ class Half_Graph(nn.Module):
         decomp_l, att_fhl = self.decomp_l(xf, xh_list[1])
         comp_l = self.comp_l(xh_list[1], upper_parts)
         dp_l, dp_l_att = self.dp_l(xh_list[0], [xh_list[1]])
-        xh_l = torch.max(torch.stack([self.relu(xh_list[1]+dp_l), decomp_l, comp_l], dim=1), dim=1, keepdim=False)[0]
+        xh_l = torch.max(torch.stack([xh_list[1], decomp_l, comp_l, dp_l], dim=1), dim=1, keepdim=False)[0]
 
         att_fh_list = [att_fhu, att_fhl]
         xh_list_new = [xh_u, xh_l]
@@ -348,7 +347,7 @@ class Part_Graph(nn.Module):
 
             decomp_fp, att_fp = self.decomp_fp_list[i](xf, xp_list[i])
             dp, dp_att = self.part_dp_update[i](xp_list[i], xpp_list_list[i])
-            xp_list_new.append(torch.max(torch.stack([self.relu(xp_list[i]+dp), decomp_fp, decomp_hp], dim=1), dim=1, keepdim=False)[0])
+            xp_list_new.append(torch.max(torch.stack([xp_list[i], decomp_fp, decomp_hp, dp], dim=1), dim=1, keepdim=False)[0])
             att_fp_list.append(att_fp)
             att_hp_list.append(att_hp)
             dp_att_list.append(dp_att)
