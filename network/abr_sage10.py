@@ -82,15 +82,15 @@ class Part_update(nn.Module):
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
         self.feat2 = nn.Sequential(
-            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False, dilation=2),
+            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=2, stride=1, bias=False, dilation=2),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
         self.feat3 = nn.Sequential(
-            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False, dilation=4),
+            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=4, stride=1, bias=False, dilation=4),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
         self.feat4 = nn.Sequential(
-            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False, dilation=8),
+            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=8, stride=1, bias=False, dilation=8),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
 
