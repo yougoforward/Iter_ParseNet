@@ -95,7 +95,7 @@ class Part_update(nn.Module):
         )
 
         self.project = nn.Sequential(
-            nn.Conv2d(4*hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False, dilation=1),
+            nn.Conv2d(4*hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False, dilation=1),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
 
