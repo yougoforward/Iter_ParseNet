@@ -115,7 +115,7 @@ class Part_update(nn.Module):
                 bias=False
             ), BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False))
         self.att = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
+            nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
             nn.Sigmoid()
         )
         self.dconv2 = nn.Sequential(
@@ -135,7 +135,7 @@ class Part_update(nn.Module):
     def forward(self, xp, dp_list):
         xdp = torch.cat([xp]+dp_list, dim=1)
         dp = self.dconv1(xdp)
-        dp_att = self.att(dp)
+        dp_att = self.att(xp)
         new_xp = self.dconv2(dp)*dp_att
         return new_xp, dp_att
 
