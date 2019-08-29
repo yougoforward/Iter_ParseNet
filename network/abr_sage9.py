@@ -271,7 +271,7 @@ class Half_Graph(nn.Module):
         comp_u = self.comp_u(xh_list[0], upper_parts)
         dp_u, dp_u_att = self.dp_u(xh_list[1], [xh_list[0]])
 
-        xh_u = self.conv_Update(xh_list[0], [decomp_u, comp_u, dp_u])
+        xh_u = self.conv_Update_u(xh_list[0], [decomp_u, comp_u, dp_u])
         # xh_u = torch.mean(torch.stack([xh_list[0], decomp_u, comp_u, dp_u], dim=1), dim=1, keepdim=False)
 
 
@@ -282,7 +282,7 @@ class Half_Graph(nn.Module):
         decomp_l, att_fhl = self.decomp_l(xf, xh_list[1])
         comp_l = self.comp_l(xh_list[1], upper_parts)
         dp_l, dp_l_att = self.dp_l(xh_list[0], [xh_list[1]])
-        xh_l = self.conv_Update(xh_list[1], [decomp_l, comp_l, dp_l])
+        xh_l = self.conv_Update_l(xh_list[1], [decomp_l, comp_l, dp_l])
         # xh_l = torch.mean(torch.stack([xh_list[1], decomp_l, comp_l, dp_l], dim=1), dim=1, keepdim=False)
 
         att_fh_list = [att_fhu, att_fhl]
