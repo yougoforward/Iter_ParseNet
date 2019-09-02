@@ -270,7 +270,7 @@ class Decoder(nn.Module):
 
         self.adj_matrix=torch.tensor([[0,1,0,0,0,0],[1,0,1,0,1,0],[0,1,0,1,0,0],[0,0,1,0,0,0],[0,1,0,0,0,1],[0,0,0,0,1,0]], requires_grad=False)
         self.gnn_infer=GNN_infer(adj_matrix=self.adj_matrix, upper_half_node=[1,2,3,4], lower_half_node=[5,6], in_dim=256, hidden_dim=40, cls_p=7, cls_h=3, cls_f=2)
-        self.fuse_seg = fuse_DecoderModule(num_classes=7, cls_h=3, cls_f=2)
+        self.fuse_seg = fuse_DecoderModule(hidden_dim=40, num_classes=7, cls_h=3, cls_f=2)
         self.layer_dsn = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
                                        BatchNorm2d(512), nn.ReLU(inplace=False),
                                        nn.Conv2d(512, num_classes, kernel_size=1, stride=1, padding=0, bias=True))
