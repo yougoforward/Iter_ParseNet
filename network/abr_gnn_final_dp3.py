@@ -100,10 +100,11 @@ class Part_Graph(nn.Module):
                 xpp_list.append(torch.max(torch.stack(xpp_list_list[i], dim=1), dim=1, keepdim=False)[0])
 
         message_list = xpp_list
-
-        xp_list = [
-            self.update_conv_list[j](torch.cat([xp_list[j], message_list[j]], dim=1))
-            for j in range(self.cls_p - 1)]
+        #
+        # xp_list = [
+        #     self.update_conv_list[j](torch.cat([xp_list[j], message_list[j]], dim=1))
+        #     for j in range(self.cls_p - 1)]
+        xp_list = xpp_list
         return xp_list, message_list
 
 
