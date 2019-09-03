@@ -357,8 +357,7 @@ class Part_Graph(nn.Module):
     def forward(self, xf, xh_list, xp_list):
         xpp_list_list = [[] for i in range(self.cls_p - 1)]
         for i in range(self.edge_index_num):
-            xpp_list_list[self.edge_index[i, 1]].append(
-                self.part_dp_list[i](xp_list[self.edge_index[i, 0]], xp_list[self.edge_index[i, 1]]))
+            xpp_list_list[self.edge_index[i, 1]].append(xp_list[self.edge_index[i, 0]])
 
         att_fp_list = []
         att_hp_list = []
