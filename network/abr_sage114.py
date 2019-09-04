@@ -36,8 +36,8 @@ class Composition(nn.Module):
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
     def forward(self, xh, xp_list):
-        xph = torch.max(torch.stack(xp_list, dim=1), dim=1, keepdim=False)[0]
-        xph = self.conv_ch(torch.cat([xh, xph], dim=1))
+        # xph = torch.max(torch.stack(xp_list, dim=1), dim=1, keepdim=False)[0]
+        xph = self.conv_ch(torch.cat([xh]+xp_list, dim=1))
         return xph
 
 # class Decomposition(nn.Module):
