@@ -36,8 +36,8 @@ class Composition(nn.Module):
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
     def forward(self, xh, xp_list):
-        xp = torch.max(torch.stack(xp_list, dim=1), dim=1, keepdim=False)[0]
-        xph = self.conv_ch(torch.cat([xh, xp], dim=1))
+        xph = torch.max(torch.stack(xp_list, dim=1), dim=1, keepdim=False)[0]
+        xph = self.conv_ch(torch.cat([xh, xph], dim=1))
         return xph
 
 class Decomposition(nn.Module):
@@ -257,7 +257,7 @@ class Half_Graph(nn.Module):
         for part in self.lower_part_list:
             lower_parts.append(xp_list[part - 1])
         decomp_l, att_fhl = self.decomp_l(xf, xh_list[1])
-        comp_l = self.comp_l(xh_list[1], upper_parts)
+        comp_l = self.comp_l(xh_list[1], lower_parts)
         xh_l = torch.mean(torch.stack([xh_list[1], decomp_l, comp_l], dim=1), dim=1, keepdim=False)
 
         att_fh_list = [att_fhu, att_fhl]
