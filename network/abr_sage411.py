@@ -470,7 +470,7 @@ class Final_classifer(nn.Module):
 
         # classifier
         self.conv0 = nn.Sequential(DFConv2d(
-                in_dim+(cls_p + cls_h + cls_f - 2) * hidden_dim,
+                in_dim+(cls_p + cls_h + cls_f - 3) * hidden_dim,
                 in_dim,
                 with_modulated_dcn=True,
                 kernel_size=3,
@@ -505,8 +505,8 @@ class Final_classifer(nn.Module):
         self.p_cls = nn.Conv2d(in_dim, cls_p, kernel_size=1, padding=0, dilation=1, bias=True)
 
         # self.p_cls = nn.Sequential(nn.Conv2d(in_dim * 3 + (cls_p + cls_h + cls_f - 2) * hidden_dim, cls_p, kernel_size=1, padding=0, stride=1, bias=True))
-        self.h_cls = nn.Sequential(nn.Conv2d(in_dim+(cls_p + cls_h + cls_f - 2) * hidden_dim, cls_h, kernel_size=1, padding=0, stride=1, bias=True))
-        self.f_cls = nn.Sequential(nn.Conv2d(in_dim+(cls_p + cls_h + cls_f - 2) * hidden_dim, cls_f, kernel_size=1, padding=0, stride=1, bias=True))
+        self.h_cls = nn.Sequential(nn.Conv2d(in_dim+(cls_p + cls_h + cls_f - 3) * hidden_dim, cls_h, kernel_size=1, padding=0, stride=1, bias=True))
+        self.f_cls = nn.Sequential(nn.Conv2d(in_dim+(cls_p + cls_h + cls_f - 3) * hidden_dim, cls_f, kernel_size=1, padding=0, stride=1, bias=True))
 
     def forward(self, xphf, xp, xh, xf, xl):
         # classifier
