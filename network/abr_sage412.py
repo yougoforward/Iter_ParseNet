@@ -349,9 +349,10 @@ class GNN_infer(nn.Module):
         self.f_conv = nn.Sequential(
             nn.Conv2d(in_dim, hidden_dim * (cls_f - 1), kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim * (cls_f - 1)), nn.ReLU(inplace=False))
-        self.bg_cls = nn.Sequential(
-            nn.Conv2d(3 * in_dim, 1, kernel_size=1, padding=0, stride=1,
-                      bias=True))
+        self.bg_conv = nn.Sequential(
+            nn.Conv2d(3 * in_dim, hidden_dim, kernel_size=1, padding=0, stride=1,
+                      bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
         # self.bg_conv_new = nn.Sequential(
         #     nn.Conv2d((cls_p + cls_h + cls_f - 2) * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1,
         #               bias=False),
@@ -363,8 +364,8 @@ class GNN_infer(nn.Module):
 
         # node supervision
         # multi-label classifier
-        self.node_cls = nn.Conv2d(hidden_dim*(cls_p+cls_h+cls_f-3), (cls_p+cls_h+cls_f-3), kernel_size=1, padding=0, stride=1, bias=True, groups=(cls_p+cls_h+cls_f-3))
-        self.node_cls_new = nn.Conv2d(hidden_dim*(cls_p+cls_h+cls_f-3), (cls_p+cls_h+cls_f-3), kernel_size=1, padding=0, stride=1, bias=True, groups=(cls_p+cls_h+cls_f-3))
+        self.node_cls = nn.Conv2d(hidden_dim*(cls_p+cls_h+cls_f-2), (cls_p+cls_h+cls_f-2), kernel_size=1, padding=0, stride=1, bias=True, groups=(cls_p+cls_h+cls_f-2))
+        self.node_cls_new = nn.Conv2d(hidden_dim*(cls_p+cls_h+cls_f-2), (cls_p+cls_h+cls_f-2), kernel_size=1, padding=0, stride=1, bias=True, groups=(cls_p+cls_h+cls_f-2))
         # self.node_cls_new2 = nn.Conv2d(self.hidden*(cls_p+cls_h+cls_f-2), (cls_p+cls_h+cls_f-2), kernel_size=1, padding=0, stride=1, bias=True, groups=(cls_p+cls_h+cls_f-2))
 
         self.final_cls = Final_classifer(in_dim, hidden_dim, cls_p, cls_h, cls_f)
@@ -380,7 +381,7 @@ class GNN_infer(nn.Module):
         f_node = self.f_conv(xf)
         p_node_list = list(torch.split(self.p_conv(xp), self.hidden_dim, dim=1))
         h_node_list = list(torch.split(self.h_conv(xh), self.hidden_dim, dim=1))
-        bg_cls = self.bg_cls(torch.cat([xp, xh, xf], dim=1))
+        bg_node = self.bg_conv(torch.cat([xp, xh, xf], dim=1))
 
 
 
@@ -389,18 +390,18 @@ class GNN_infer(nn.Module):
         # bg_node_new = self.bg_conv_new(torch.cat(p_fea_list_new + h_fea_list_new + [f_fea_new, bg_node], dim=1))
 
         # node supervision
-        node = torch.cat([f_node] + h_node_list + p_node_list, dim=1)
+        node = torch.cat([bg_node, f_node] + h_node_list + p_node_list, dim=1)
         node_seg = self.node_cls(node)
-        node_new = torch.cat([f_fea_new] + h_fea_list_new + p_fea_list_new, dim=1)
+        node_new = torch.cat([bg_node, f_fea_new] + h_fea_list_new + p_fea_list_new, dim=1)
         node_seg_final = self.node_cls_new(node_new)
         # node_seg_new2 = self.node_cls_new2(torch.cat([bg_node_new2, f_fea_new2] + h_fea_list_new2 + p_fea_list_new2, dim=1))
 
         node_seg = sum([node_seg, node_seg_final]) / 2.0
 
         node_seg_list = list(torch.split(node_seg, 1, dim=1))
-        f_seg = torch.cat([bg_cls, node_seg_list[0]], dim=1)
-        h_seg = torch.cat([bg_cls] + node_seg_list[1:3], dim=1)
-        p_seg = torch.cat([bg_cls] + node_seg_list[3:], dim=1)
+        f_seg = torch.cat(node_seg_list[0:2], dim=1)
+        h_seg = torch.cat([node_seg_list[0]] + node_seg_list[2:4], dim=1)
+        p_seg = torch.cat([node_seg_list[0]] + node_seg_list[4:], dim=1)
 
         # xphf_infer =torch.cat([node, node_new], dim=1)
         xphf_infer = node_new
@@ -479,7 +480,7 @@ class Final_classifer(nn.Module):
 
         # classifier
         self.conv0 = nn.Sequential(DFConv2d(
-                in_dim+(cls_p + cls_h + cls_f - 3) * hidden_dim,
+                in_dim+(cls_p + cls_h + cls_f - 2) * hidden_dim,
                 in_dim,
                 with_modulated_dcn=True,
                 kernel_size=3,
@@ -514,8 +515,8 @@ class Final_classifer(nn.Module):
         self.p_cls = nn.Conv2d(in_dim, cls_p, kernel_size=1, padding=0, dilation=1, bias=True)
 
         # self.p_cls = nn.Sequential(nn.Conv2d(in_dim * 3 + (cls_p + cls_h + cls_f - 2) * hidden_dim, cls_p, kernel_size=1, padding=0, stride=1, bias=True))
-        self.h_cls = nn.Sequential(nn.Conv2d(in_dim+(cls_p + cls_h + cls_f - 3) * hidden_dim, cls_h, kernel_size=1, padding=0, stride=1, bias=True))
-        self.f_cls = nn.Sequential(nn.Conv2d(in_dim+(cls_p + cls_h + cls_f - 3) * hidden_dim, cls_f, kernel_size=1, padding=0, stride=1, bias=True))
+        self.h_cls = nn.Sequential(nn.Conv2d(in_dim+(cls_p + cls_h + cls_f - 2) * hidden_dim, cls_h, kernel_size=1, padding=0, stride=1, bias=True))
+        self.f_cls = nn.Sequential(nn.Conv2d(in_dim+(cls_p + cls_h + cls_f - 2) * hidden_dim, cls_f, kernel_size=1, padding=0, stride=1, bias=True))
 
     def forward(self, xphf, xp, xh, xf, xl):
         # classifier
