@@ -315,13 +315,13 @@ class GNN(nn.Module):
         self.part_infer = Part_Graph(adj_matrix, self.upper_half_node, self.lower_half_node, in_dim, hidden_dim, cls_p,
                                      cls_h, cls_f)
 
-    def forward(self, xp_list, xh_list, xf):
+    def forward(self, xp_list, xh_list, xf, p_fea, h_fea, f_fea):
         # for full body node
         xf_new = self.full_infer(xf, xh_list, xp_list)
         # for half body node
-        xh_list_new, att_fh_list = self.half_infer(xf, xh_list, xp_list)
+        xh_list_new, att_fh_list = self.half_infer(xf, xh_list, xp_list, h_fea)
         # for part node
-        xp_list_new, att_fp_list, att_hp_list = self.part_infer(xf, xh_list, xp_list)
+        xp_list_new, att_fp_list, att_hp_list = self.part_infer(xf, xh_list, xp_list, p_fea)
 
         att = torch.cat([torch.cat(att_fh_list, dim=1), (torch.cat(att_fp_list, dim=1)+torch.cat(att_hp_list, dim=1))/2.0], dim=1)
         # att = (torch.cat(hp_att_list+fh_att_list, dim=1)+torch.cat(p_att_list+h_att_list, dim=1))/2.0
@@ -386,7 +386,7 @@ class GNN_infer(nn.Module):
 
 
         # gnn infer
-        p_fea_list_new, h_fea_list_new, f_fea_new, att_decomp = self.gnn(p_node_list, h_node_list, f_node)
+        p_fea_list_new, h_fea_list_new, f_fea_new, att_decomp = self.gnn(p_node_list, h_node_list, f_node, xp, xh, xf)
         # bg_node_new = self.bg_conv_new(torch.cat(p_fea_list_new + h_fea_list_new + [f_fea_new, bg_node], dim=1))
 
         # node supervision
