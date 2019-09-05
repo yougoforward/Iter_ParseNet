@@ -202,7 +202,7 @@ class Half_Graph(nn.Module):
     def __init__(self, upper_part_list=[1, 2, 3, 4], lower_part_list=[5, 6], in_dim=256, hidden_dim=10, cls_p=7,
                  cls_h=3, cls_f=2):
         super(Half_Graph, self).__init__()
-
+        self.cls_h = cls_h
         self.upper_part_list = upper_part_list
         self.lower_part_list = lower_part_list
         self.upper_parts_len = len(upper_part_list)
