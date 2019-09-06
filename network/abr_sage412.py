@@ -98,10 +98,11 @@ class Part_Dependency(nn.Module):
         self.A_att = nn.Sequential(
             nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
             nn.Sigmoid())
+        self.relu = nn.ReLU()
 
     def forward(self, xp, p_fea, xp_att_list):
         Att = torch.max(torch.stack(xp_att_list, dim=1), dim=1)[0]
-        dp = self.conv(torch.cat([xp, Att*p_fea], dim=1))
+        dp = self.relu(self.conv(torch.cat([xp, Att*p_fea], dim=1))+xp)
         return dp
 
 
@@ -238,7 +239,7 @@ class Half_Graph(nn.Module):
 
         att_fh_list = [att_fhu, att_fhl]
         xh_list_new = [xh_u, xh_l]
-        return xh_list_new, att_fh_list
+        return xh_list_new, att_fh_list, dp_att_list
 
 class Part_Graph(nn.Module):
     def __init__(self, adj_matrix, upper_part_list=[1, 2, 3, 4], lower_part_list=[5, 6], in_dim=256, hidden_dim=10,
@@ -285,7 +286,7 @@ class Part_Graph(nn.Module):
 
             att_fp_list.append(att_fp)
             att_hp_list.append(att_hp)
-        return xp_list_new, att_fp_list, att_hp_list
+        return xp_list_new, att_fp_list, att_hp_list, dp_att_list
 
 
 class GNN(nn.Module):
@@ -312,11 +313,11 @@ class GNN(nn.Module):
         # for full body node
         xf_new = self.full_infer(xf, xh_list, xp_list)
         # for half body node
-        xh_list_new, att_fh_list = self.half_infer(xf, xh_list, xp_list, h_fea)
+        xh_list_new, att_fh_list, dh_att_list = self.half_infer(xf, xh_list, xp_list, h_fea)
         # for part node
-        xp_list_new, att_fp_list, att_hp_list = self.part_infer(xf, xh_list, xp_list, p_fea)
+        xp_list_new, att_fp_list, att_hp_list, dp_att_list = self.part_infer(xf, xh_list, xp_list, p_fea)
 
-        att = torch.cat([torch.cat(att_fh_list, dim=1), (torch.cat(att_fp_list, dim=1)+torch.cat(att_hp_list, dim=1))/2.0], dim=1)
+        att = torch.cat([(torch.cat(att_fh_list, dim=1)+torch.cat(dh_att_list, dim=1))/2.0, (torch.cat(att_fp_list, dim=1)+torch.cat(att_hp_list, dim=1)+torch.cat(dp_att_list, dim=1))/3.0], dim=1)
         # att = (torch.cat(hp_att_list+fh_att_list, dim=1)+torch.cat(p_att_list+h_att_list, dim=1))/2.0
 
         return xp_list_new, xh_list_new, xf_new, att

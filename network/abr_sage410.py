@@ -13,19 +13,6 @@ BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
 
 from modules.dcn import DFConv2d
 
-# class Composition(nn.Module):
-#     def __init__(self, hidden_dim, parts_len):
-#         super(Composition, self).__init__()
-#         self.conv_ch = nn.Sequential(
-#             nn.Conv2d((parts_len+1) * hidden_dim, 2*hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-#             BatchNorm2d(2*hidden_dim), nn.LeakyReLU(inplace=False),
-#             nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-#             BatchNorm2d(hidden_dim), nn.LeakyReLU(inplace=False)
-#         )
-#     def forward(self, xh, xp_list):
-#         xph = self.conv_ch(torch.cat([xh]+xp_list, dim=1))
-#         return xph
-
 class Composition(nn.Module):
     def __init__(self, hidden_dim, parts_len):
         super(Composition, self).__init__()
@@ -228,7 +215,7 @@ class Half_Graph(nn.Module):
     def __init__(self, upper_part_list=[1, 2, 3, 4], lower_part_list=[5, 6], in_dim=256, hidden_dim=10, cls_p=7,
                  cls_h=3, cls_f=2):
         super(Half_Graph, self).__init__()
-
+        self.cls_h = cls_h
         self.upper_part_list = upper_part_list
         self.lower_part_list = lower_part_list
         self.upper_parts_len = len(upper_part_list)
