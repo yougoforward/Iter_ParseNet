@@ -17,21 +17,13 @@ class Composition(nn.Module):
     def __init__(self, hidden_dim, parts_len):
         super(Composition, self).__init__()
         self.conv_ch = nn.Sequential(
-            nn.Conv2d((parts_len+1) * hidden_dim, 2*hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False))
-        self.comp_att = nn.Sequential(
-            nn.Conv2d(2*hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
-            nn.Sigmoid()
-        )
-        self.conv_ch2 = nn.Sequential(
+            nn.Conv2d(parts_len*hidden_dim, 2*hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False),
             nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
     def forward(self, xh, xp_list):
-        # xph = torch.max(torch.stack(xp_list, dim=1), dim=1, keepdim=False)[0]
-        xph1 = self.conv_ch(torch.cat([xh]+xp_list, dim=1))
-        att = self.comp_att(xph1)
-        xph = self.conv_ch2(xph1*(1+att))
+        xph = self.conv_ch(torch.cat(xp_list, dim=1))
         return xph
 
 class Decomposition(nn.Module):
