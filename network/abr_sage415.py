@@ -66,7 +66,7 @@ class Composition(nn.Module):
         return xph
 
 class Decomposition(nn.Module):
-    def __init__(self, in_dim=256, hidden_dim=10):
+    def __init__(self, hidden_dim=10):
         super(Decomposition, self).__init__()
         self.conv_fh = nn.Sequential(
             nn.Conv2d(2 * hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
@@ -221,8 +221,8 @@ class Half_Graph(nn.Module):
         self.lower_parts_len = len(lower_part_list)
         self.hidden = hidden_dim
 
-        self.decomp_u = Decomposition(in_dim, hidden_dim)
-        self.decomp_l = Decomposition(in_dim, hidden_dim)
+        self.decomp_u = Decomposition(hidden_dim)
+        self.decomp_l = Decomposition(hidden_dim)
         self.comp_u = Composition(hidden_dim, self.upper_parts_len)
         self.comp_l = Composition(hidden_dim, self.lower_parts_len)
 
@@ -263,8 +263,8 @@ class Part_Graph(nn.Module):
         for i in range(self.edge_index_num):
             self.xpp_list_list[self.edge_index[i, 1]].append(self.edge_index[i, 0])
 
-        self.decomp_fp_list = nn.ModuleList([Decomposition(in_dim, hidden_dim) for i in range(cls_p - 1)])
-        self.decomp_hp_list = nn.ModuleList([Decomposition(in_dim, hidden_dim) for i in range(cls_p - 1)])
+        self.decomp_fp_list = nn.ModuleList([Decomposition(hidden_dim) for i in range(cls_p - 1)])
+        self.decomp_hp_list = nn.ModuleList([Decomposition(hidden_dim) for i in range(cls_p - 1)])
         self.part_dp_update = nn.ModuleList([Part_Dependency(hidden_dim, len(self.xpp_list_list[i])) for i in range(cls_p - 1)])
 
     def forward(self, xf, xh_list, xp_list):
@@ -279,7 +279,6 @@ class Part_Graph(nn.Module):
             decomp_fp, att_fp = self.decomp_fp_list[i](xf, xp_list[i])
             if i+1 in self.upper_part_list:
                 decomp_hp, att_hp = self.decomp_hp_list[i](xh_list[0], xp_list[i])
-                xp_list_new.append(torch.mean(torch.stack([xp_list[i], decomp_fp, decomp_hp], dim=1), dim=1, keepdim=False))
             elif i+1 in self.lower_part_list:
                 decomp_hp, att_hp = self.decomp_hp_list[i](xh_list[1], xp_list[i])
             xp_new = torch.mean(torch.stack([xp_list[i], decomp_fp, decomp_hp], dim=1), dim=1,

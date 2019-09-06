@@ -269,7 +269,6 @@ class Part_Graph(nn.Module):
 
         self.decomp_fp_list = nn.ModuleList([Decomposition(hidden_dim) for i in range(cls_p - 1)])
         self.decomp_hp_list = nn.ModuleList([Decomposition(hidden_dim) for i in range(cls_p - 1)])
-
         self.part_dp_update = nn.ModuleList([Part_Dependency(hidden_dim, len(self.xpp_list_list[i])) for i in range(cls_p - 1)])
         # self.update_list = nn.ModuleList([conv_Update(hidden_dim, 3) for i in range(cls_p - 1)])
 
