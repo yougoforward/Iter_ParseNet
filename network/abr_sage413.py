@@ -26,7 +26,7 @@ def ASPPConv(in_channels, out_channels, atrous_rate, norm_layer):
             bias=False
         ),
         norm_layer(out_channels),
-        nn.ReLU(True))
+        nn.ReLU(False))
     return block
 class ASPP_Module(nn.Module):
     def __init__(self, in_channels, out_channels, atrous_rates, norm_layer):
@@ -40,7 +40,7 @@ class ASPP_Module(nn.Module):
         self.project = nn.Sequential(
             nn.Conv2d(4 * out_channels, out_channels, 1, bias=False),
             norm_layer(out_channels),
-            nn.ReLU(True),
+            nn.ReLU(False),
             nn.Dropout2d(0.5, False))
 
     def forward(self, x):
