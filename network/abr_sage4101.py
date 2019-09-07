@@ -13,19 +13,6 @@ BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
 
 from modules.dcn import DFConv2d
 
-# class Composition(nn.Module):
-#     def __init__(self, hidden_dim, parts_len):
-#         super(Composition, self).__init__()
-#         self.conv_ch = nn.Sequential(
-#             nn.Conv2d((parts_len+1) * hidden_dim, 2*hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-#             BatchNorm2d(2*hidden_dim), nn.LeakyReLU(inplace=False),
-#             nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-#             BatchNorm2d(hidden_dim), nn.LeakyReLU(inplace=False)
-#         )
-#     def forward(self, xh, xp_list):
-#         xph = self.conv_ch(torch.cat([xh]+xp_list, dim=1))
-#         return xph
-
 class Composition(nn.Module):
     def __init__(self, hidden_dim, parts_len):
         super(Composition, self).__init__()
@@ -70,8 +57,9 @@ class conv_Update(nn.Module):
             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
+        self.relu=nn.ReLU()
     def forward(self, xp, message_list):
-        out = self.conv_update(torch.cat([xp]+message_list, dim=1))
+        out = self.relu(self.conv_update(torch.cat([xp]+message_list, dim=1))+xp)
         return out
 
 
@@ -204,7 +192,7 @@ class Half_Graph(nn.Module):
     def __init__(self, upper_part_list=[1, 2, 3, 4], lower_part_list=[5, 6], in_dim=256, hidden_dim=10, cls_p=7,
                  cls_h=3, cls_f=2):
         super(Half_Graph, self).__init__()
-
+        self.cls_h = cls_h
         self.upper_part_list = upper_part_list
         self.lower_part_list = lower_part_list
         self.upper_parts_len = len(upper_part_list)
@@ -269,10 +257,11 @@ class Part_Graph(nn.Module):
         att_hp_list = []
         xp_list_new = []
         for i in range(self.cls_p-1):
-            if len(xpp_list_list[i]) == 1:
-                dp = xpp_list_list[i][0]
-            else:
-                dp = torch.mean(torch.stack(xpp_list_list[i], dim=1), dim=1, keepdim=False)
+            dp = torch.mean(torch.stack([xp_list[i]]+xpp_list_list[i], dim=1), dim=1, keepdim=False)
+            # if len(xpp_list_list[i]) == 1:
+            #     dp = xpp_list_list[i][0]
+            # else:
+            #     dp = torch.mean(torch.stack(xpp_list_list[i], dim=1), dim=1, keepdim=False)
             decomp_fp, att_fp = self.decomp_fp_list[i](xf, xp_list[i])
             if i+1 in self.upper_part_list:
                 decomp_hp, att_hp = self.decomp_hp_list[i](xh_list[0], xp_list[i])
