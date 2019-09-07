@@ -1084,7 +1084,7 @@ class abr_gnn_ABRLovaszLoss5(nn.Module):
     """Lovasz loss for Alpha process"""
 
     def __init__(self, ignore_index=None, only_present=True, cls_p=7, cls_h=3, cls_f=2):
-        super(abr_gnn_ABRLovaszLoss2, self).__init__()
+        super(abr_gnn_ABRLovaszLoss5, self).__init__()
         self.ignore_index = ignore_index
         self.only_present = only_present
 
