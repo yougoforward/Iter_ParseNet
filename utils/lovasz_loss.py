@@ -986,6 +986,7 @@ class abr_gnn_ABRLovaszLoss3(nn.Module):
         loss_dsn = self.criterion(pred_dsn, targets[0])
         return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn
 
+
 class abr_gnn_ABRLovaszLoss2(nn.Module):
     """Lovasz loss for Alpha process"""
 
@@ -1069,6 +1070,114 @@ class abr_gnn_ABRLovaszLoss2(nn.Module):
         #
         att_onehot = torch.stack(one_hot_hb_list[1:]+one_hot_pb_list[1:], dim=1).float()
         att_bceloss = torch.mean(self.bceloss(F.interpolate(preds[6], size=(h, w), mode='bilinear', align_corners=True), att_onehot)*ignore)
+
+        # node_onehot = torch.stack(one_hot_fb_list+one_hot_hb_list[1:]+one_hot_pb_list[1:], dim=1).float()
+        # node_bceloss = torch.mean(self.bceloss(F.interpolate(self.sigmoid(preds[6]), size=(h, w), mode='bilinear', align_corners=True), node_onehot)*ignore)
+        # att_bceloss = att_bceloss+ node_bceloss
+
+        # dsn loss
+        pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
+        loss_dsn = self.criterion(pred_dsn, targets[0])
+        return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.1 * att_bceloss
+        # return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn
+class abr_gnn_ABRLovaszLoss5(nn.Module):
+    """Lovasz loss for Alpha process"""
+
+    def __init__(self, ignore_index=None, only_present=True, cls_p=7, cls_h=3, cls_f=2):
+        super(abr_gnn_ABRLovaszLoss2, self).__init__()
+        self.ignore_index = ignore_index
+        self.only_present = only_present
+
+        self.num_classes = cls_p
+        self.cls_h = cls_h
+        self.cls_f = cls_f
+
+        self.weight = torch.FloatTensor([0.80777327, 1.00125961, 0.90997236, 1.10867908, 1.17541499,
+                                         0.86041422, 1.01116758, 0.89290045, 1.12410812, 0.91105395,
+                                         1.07604013, 1.12470610, 1.09895196, 0.90172057, 0.93529453,
+                                         0.93054733, 1.04919178, 1.04937547, 1.06267568, 1.06365688])
+        self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=None)
+        self.bceloss = torch.nn.BCELoss(reduction='none')
+        self.sigmoid = torch.nn.Sigmoid()
+
+    def forward(self, preds, targets):
+        h, w = targets[0].size(1), targets[0].size(2)
+        # seg loss
+        pred = F.interpolate(input=preds[0], size=(h, w), mode='bilinear', align_corners=True)
+        pred = F.softmax(input=pred, dim=1)
+        loss = lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present)
+        # half body
+        pred_hb = F.interpolate(input=preds[1], size=(h, w), mode='bilinear', align_corners=True)
+        pred_hb = F.softmax(input=pred_hb, dim=1)
+        loss_hb = lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
+                                      only_present=self.only_present)
+        # full body
+        pred_fb = F.interpolate(input=preds[2], size=(h, w), mode='bilinear', align_corners=True)
+        pred_fb = F.softmax(input=pred_fb, dim=1)
+        loss_fb = lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
+                                      only_present=self.only_present)
+        # seg loss
+        pred = F.interpolate(input=preds[3], size=(h, w), mode='bilinear', align_corners=True)
+        pred = F.softmax(input=pred, dim=1)
+        loss = loss + lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index),
+                                          only_present=self.only_present)
+        # half body
+        pred_hb = F.interpolate(input=preds[4], size=(h, w), mode='bilinear', align_corners=True)
+        pred_hb = F.softmax(input=pred_hb, dim=1)
+        loss_hb = loss_hb + lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
+                                                only_present=self.only_present)
+        # full body
+        pred_fb = F.interpolate(input=preds[5], size=(h, w), mode='bilinear', align_corners=True)
+        pred_fb = F.softmax(input=pred_fb, dim=1)
+        loss_fb = loss_fb + lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
+                                                only_present=self.only_present)
+        # seg loss
+        pred = F.interpolate(input=preds[6], size=(h, w), mode='bilinear', align_corners=True)
+        pred = F.softmax(input=pred, dim=1)
+        loss = loss + lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index),
+                                          only_present=self.only_present)
+        # half body
+        pred_hb = F.interpolate(input=preds[7], size=(h, w), mode='bilinear', align_corners=True)
+        pred_hb = F.softmax(input=pred_hb, dim=1)
+        loss_hb = loss_hb + lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
+                                                only_present=self.only_present)
+        # full body
+        pred_fb = F.interpolate(input=preds[8], size=(h, w), mode='bilinear', align_corners=True)
+        pred_fb = F.softmax(input=pred_fb, dim=1)
+        loss_fb = loss_fb + lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
+                                                only_present=self.only_present)
+
+        labels_p = targets[0]
+        one_label_p = labels_p.clone().long()
+        one_label_p[one_label_p == 255] = 0
+        one_hot_lab_p = F.one_hot(one_label_p, num_classes=self.num_classes)
+        one_hot_pb_list = list(torch.split(one_hot_lab_p, 1, dim=-1))
+        for i in range(0, self.num_classes):
+            one_hot_pb_list[i] = one_hot_pb_list[i].squeeze(-1)
+            # one_hot_pb_list[i][targets[0]==255]=255
+
+        labels_h = targets[1]
+        one_label_h = labels_h.clone().long()
+        one_label_h[one_label_h == 255] = 0
+        one_hot_lab_h = F.one_hot(one_label_h, num_classes=self.cls_h)
+        one_hot_hb_list = list(torch.split(one_hot_lab_h, 1, dim=-1))
+        for i in range(0, self.cls_h):
+            one_hot_hb_list[i] = one_hot_hb_list[i].squeeze(-1)
+            # one_hot_hb_list[i][targets[1]==255]=255
+
+        labels_f = targets[2]
+        one_label_f = labels_f.clone().long()
+        one_label_f[one_label_f == 255] = 0
+        one_hot_lab_f = F.one_hot(one_label_f, num_classes=self.cls_f)
+        one_hot_fb_list = list(torch.split(one_hot_lab_f, 1, dim=-1))
+        for i in range(0, self.cls_f):
+            one_hot_fb_list[i] = one_hot_fb_list[i].squeeze(-1)
+            # one_hot_fb_list[i][targets[2]==255]=255
+        # #
+        ignore = (targets[0]!=255).float().unsqueeze(1)
+        #
+        att_onehot = torch.stack(one_hot_hb_list[1:]+one_hot_pb_list[1:], dim=1).float()
+        att_bceloss = torch.mean(self.bceloss(F.interpolate(preds[-2], size=(h, w), mode='bilinear', align_corners=True), att_onehot)*ignore)
 
         # node_onehot = torch.stack(one_hot_fb_list+one_hot_hb_list[1:]+one_hot_pb_list[1:], dim=1).float()
         # node_bceloss = torch.mean(self.bceloss(F.interpolate(self.sigmoid(preds[6]), size=(h, w), mode='bilinear', align_corners=True), node_onehot)*ignore)

@@ -265,12 +265,14 @@ class Part_Graph(nn.Module):
         xp_list_new = []
         dp_att_list = []
         for i in range(self.cls_p-1):
-            decomp_fp, att_fp = self.decomp_fp_list[i](xf, xp_list[i])
+            xp_new, dp_att = self.part_dp_update[i](xp_list[i], xpp_list_list[i])
+
+            decomp_fp, att_fp = self.decomp_fp_list[i](xf, xp_new)
             if i+1 in self.upper_part_list:
-                decomp_hp, att_hp = self.decomp_hp_list[i](xh_list[0], xp_list[i])
+                decomp_hp, att_hp = self.decomp_hp_list[i](xh_list[0], xp_new)
             elif i+1 in self.lower_part_list:
-                decomp_hp, att_hp = self.decomp_hp_list[i](xh_list[1], xp_list[i])
-            xp_new = torch.mean(torch.stack([xp_list[i], decomp_fp, decomp_hp], dim=1), dim=1,
+                decomp_hp, att_hp = self.decomp_hp_list[i](xh_list[1], xp_new)
+            xp_new = torch.mean(torch.stack([xp_new, decomp_fp, decomp_hp], dim=1), dim=1,
                                 keepdim=False)
             xp_new, dp_att = self.part_dp_update[i](xp_new, xpp_list_list[i])
             xp_list_new.append(xp_new)
