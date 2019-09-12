@@ -328,7 +328,7 @@ class GNN(nn.Module):
         # for half body node
         xh_list_new, att_fh_list = self.half_infer(xf, xh_list, xp_list)
         # for part node
-        xp_list_new, att_fp_list, att_hp_list, dp_att_list = self.part_infer(xf, xh_list, xp_list)
+        xp_list_new, att_fp_list, att_hp_list = self.part_infer(xf, xh_list, xp_list)
 
         att = torch.cat([torch.cat(att_fh_list, dim=1), (torch.cat(att_fp_list, dim=1)+torch.cat(att_hp_list, dim=1))/2.0], dim=1)
         # att = (torch.cat(hp_att_list+fh_att_list, dim=1)+torch.cat(p_att_list+h_att_list, dim=1))/2.0
