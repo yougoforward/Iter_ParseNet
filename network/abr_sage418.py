@@ -60,9 +60,9 @@ class Composition(nn.Module):
     def __init__(self, hidden_dim, parts_len):
         super(Composition, self).__init__()
         self.conv_ch = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, 2*hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False),
+            nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
 
@@ -264,8 +264,7 @@ class Part_Graph(nn.Module):
 
         self.decomp_fp_list = nn.ModuleList([Decomposition(hidden_dim) for i in range(cls_p - 1)])
         self.decomp_hp_list = nn.ModuleList([Decomposition(hidden_dim) for i in range(cls_p - 1)])
-        self.part_dp_update = nn.ModuleList(
-            [Part_Dependency(hidden_dim, len(self.xpp_list_list[i])) for i in range(cls_p - 1)])
+        self.part_dp_update = nn.ModuleList([Part_Dependency(hidden_dim, len(self.xpp_list_list[i])) for i in range(cls_p - 1)])
 
     def forward(self, xf, xh_list, xp_list):
         xpp_list_list = [[] for i in range(self.cls_p - 1)]
@@ -276,13 +275,13 @@ class Part_Graph(nn.Module):
         att_hp_list = []
         xp_list_new = []
         dp_att_list = []
-        for i in range(self.cls_p - 1):
+        for i in range(self.cls_p-1):
             xp_new, dp_att = self.part_dp_update[i](xp_list[i], xpp_list_list[i])
 
             decomp_fp, att_fp = self.decomp_fp_list[i](xf, xp_new)
-            if i + 1 in self.upper_part_list:
+            if i+1 in self.upper_part_list:
                 decomp_hp, att_hp = self.decomp_hp_list[i](xh_list[0], xp_new)
-            elif i + 1 in self.lower_part_list:
+            elif i+1 in self.lower_part_list:
                 decomp_hp, att_hp = self.decomp_hp_list[i](xh_list[1], xp_new)
             xp_new = torch.mean(torch.stack([xp_new, decomp_fp, decomp_hp], dim=1), dim=1,
                                 keepdim=False)
@@ -322,9 +321,7 @@ class GNN(nn.Module):
         # for part node
         xp_list_new, att_fp_list, att_hp_list, dp_att_list = self.part_infer(xf, xh_list, xp_list)
 
-        att = torch.cat([torch.cat(att_fh_list, dim=1), (
-                    torch.cat(att_fp_list, dim=1) + torch.cat(att_hp_list, dim=1) + torch.cat(dp_att_list,
-                                                                                              dim=1)) / 3.0], dim=1)
+        att = torch.cat([torch.cat(att_fh_list, dim=1), (torch.cat(att_fp_list, dim=1)+torch.cat(att_hp_list, dim=1)+torch.cat(dp_att_list, dim=1))/3.0], dim=1)
         # att = (torch.cat(hp_att_list+fh_att_list, dim=1)+torch.cat(p_att_list+h_att_list, dim=1))/2.0
 
         return xp_list_new, xh_list_new, xf_new, att
@@ -365,10 +362,8 @@ class GNN_infer(nn.Module):
 
         # node supervision
         # multi-label classifier
-        self.node_cls = nn.Conv2d(hidden_dim * (cls_p + cls_h + cls_f - 2), (cls_p + cls_h + cls_f - 2), kernel_size=1,
-                                  padding=0, stride=1, bias=True, groups=(cls_p + cls_h + cls_f - 2))
-        self.node_cls_new = nn.Conv2d(hidden_dim * (cls_p + cls_h + cls_f - 2), (cls_p + cls_h + cls_f - 2),
-                                      kernel_size=1, padding=0, stride=1, bias=True, groups=(cls_p + cls_h + cls_f - 2))
+        self.node_cls = nn.Conv2d(hidden_dim*(cls_p+cls_h+cls_f-2), (cls_p+cls_h+cls_f-2), kernel_size=1, padding=0, stride=1, bias=True, groups=(cls_p+cls_h+cls_f-2))
+        self.node_cls_new = nn.Conv2d(hidden_dim*(cls_p+cls_h+cls_f-2), (cls_p+cls_h+cls_f-2), kernel_size=1, padding=0, stride=1, bias=True, groups=(cls_p+cls_h+cls_f-2))
         # self.node_cls_new2 = nn.Conv2d(self.hidden*(cls_p+cls_h+cls_f-2), (cls_p+cls_h+cls_f-2), kernel_size=1, padding=0, stride=1, bias=True, groups=(cls_p+cls_h+cls_f-2))
 
         self.cls = nn.Conv2d(hidden_dim * (cls_p + cls_h + cls_f - 2), (cls_p + cls_h + cls_f - 2), kernel_size=1, padding=0, stride=1, bias=True)
