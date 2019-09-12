@@ -280,18 +280,17 @@ class Part_Graph(nn.Module):
     def forward(self, xf, xh_list, xp_list):
         xpp_list_list = [[] for i in range(self.cls_p - 1)]
         for i in range(self.edge_index_num):
-            xpp_list_list[self.edge_index[i, 1]].append(
-                self.part_dp_list[i](xp_list[self.edge_index[i, 0]], xp_list[self.edge_index[i, 1]]))
+            dp, dp_att = self.part_dp_list[i](xp_list[self.edge_index[i, 0]], xp_list[self.edge_index[i, 1]])
+            xpp_list_list[self.edge_index[i, 1]].append(dp)
 
         att_fp_list = []
         att_hp_list = []
-        dp_att_list = []
         xp_list_new = []
         for i in range(self.cls_p-1):
             if len(xpp_list_list[i]) == 1:
-                dp, dp_att = xpp_list_list[i][0]
+                dp = xpp_list_list[i][0]
             else:
-                dp, dp_att = torch.max(torch.stack(xpp_list_list[i], dim=1), dim=1, keepdim=False)[0]
+                dp = torch.max(torch.stack(xpp_list_list[i], dim=1), dim=1, keepdim=False)[0]
             decomp_fp, att_fp = self.decomp_fp_list[i](xf, xp_list[i])
             if i+1 in self.upper_part_list:
                 decomp_hp, att_hp = self.decomp_hp_list[i](xh_list[0], xp_list[i])
@@ -300,8 +299,7 @@ class Part_Graph(nn.Module):
             xp_list_new.append(torch.mean(torch.stack([decomp_fp, decomp_hp, xp_list[i], dp], dim=1), dim=1, keepdim=False))
             att_fp_list.append(att_fp)
             att_hp_list.append(att_hp)
-            dp_att_list.append(dp_att)
-        return xp_list_new, att_fp_list, att_hp_list, dp_att_list
+        return xp_list_new, att_fp_list, att_hp_list
 
 
 class GNN(nn.Module):
@@ -332,7 +330,7 @@ class GNN(nn.Module):
         # for part node
         xp_list_new, att_fp_list, att_hp_list, dp_att_list = self.part_infer(xf, xh_list, xp_list)
 
-        att = torch.cat([torch.cat(att_fh_list, dim=1), (torch.cat(att_fp_list, dim=1)+torch.cat(att_hp_list, dim=1)+torch.cat(dp_att_list, dim=1))/3.0], dim=1)
+        att = torch.cat([torch.cat(att_fh_list, dim=1), (torch.cat(att_fp_list, dim=1)+torch.cat(att_hp_list, dim=1))/2.0], dim=1)
         # att = (torch.cat(hp_att_list+fh_att_list, dim=1)+torch.cat(p_att_list+h_att_list, dim=1))/2.0
 
         return xp_list_new, xh_list_new, xf_new, att
