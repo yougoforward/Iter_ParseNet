@@ -30,31 +30,8 @@ class ConvGRUCell(nn.Module):
         self.bias = bias
         self.dtype = dtype
         self.conv_gates = nn.Conv2d(input_dim + hidden_dim, 2, kernel_size=1, padding=0, stride=1, bias=True)
-
-
         self.conv_can = nn.Sequential(
-            DFConv2d(
-                input_dim + hidden_dim,
-                2 * self.hidden_dim,
-                with_modulated_dcn=True,
-                kernel_size=kernel_size[0],
-                stride=1,
-                groups=1,
-                dilation=1,
-                deformable_groups=1,
-                bias=False
-            ), BatchNorm2d(2 * self.hidden_dim), nn.LeakyReLU(inplace=False),
-            DFConv2d(
-                2 * self.hidden_dim,
-                self.hidden_dim,
-                with_modulated_dcn=True,
-                kernel_size=kernel_size[0],
-                stride=1,
-                groups=1,
-                dilation=1,
-                deformable_groups=1,
-                bias=self.bias
-            )
+            nn.Conv2d(input_dim + hidden_dim, hidden_dim, kernel_size=kernel_size, padding=0, stride=1, bias=self.bias),
         )
         nn.init.orthogonal_(self.conv_gates.weight)
         nn.init.constant_(self.conv_gates.bias, 0.)
