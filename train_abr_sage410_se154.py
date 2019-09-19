@@ -18,7 +18,7 @@ from network.abr_sage410_se154 import get_model
 # from network.abrnet import get_model
 from progress.bar import Bar
 from utils.aaf_lovasz_loss import abr_gnn_ABRLovaszLoss2 as ABRLovaszLoss
-from utils.aaf_lovasz_loss import AAF_Loss
+# from utils.aaf_lovasz_loss import AAF_Loss
 from utils.metric import *
 from utils.parallel import DataParallelModel, DataParallelCriterion
 from utils.visualize import inv_preprocess, decode_predictions
@@ -175,12 +175,12 @@ def train(model, train_loader, epoch, criterion, criterion_aaf, optimizer, write
         # compute output loss
         preds = model(images)
         loss = criterion(preds, [labels, hlabel, flabel]) # batch mean
-        loss_aaf = criterion_aaf(preds, [labels, hlabel, flabel])
+        # loss_aaf = criterion_aaf(preds, [labels, hlabel, flabel])
         # # Apply exponential decay to the AAF loss.
-        current_step = epoch * iters_per_epoch + i_iter
-        max_step = args.epochs * iters_per_epoch
-        dec = 1e3**(-current_step / max_step)
-        train_loss += loss.item()+loss_aaf*dec
+        # current_step = epoch * iters_per_epoch + i_iter
+        # max_step = args.epochs * iters_per_epoch
+        # dec = 1e3**(-current_step / max_step)
+        train_loss += loss.item()
 
         # compute gradient and do SGD step
         loss.backward()

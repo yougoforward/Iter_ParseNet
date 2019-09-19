@@ -90,7 +90,7 @@ class AAF_Loss(nn.Module):
         aaf_loss += torch.mean(neloss_2) * self.kld_lambda_2
         aaf_loss += torch.mean(neloss_3) * self.kld_lambda_2
 
-        return aaf_loss
+        return aaf_loss*dec
 
 
 class abr_gnn_ABRLovaszLoss2(nn.Module):
@@ -109,6 +109,7 @@ class abr_gnn_ABRLovaszLoss2(nn.Module):
         self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=self.weight)
         self.bceloss = torch.nn.BCELoss(reduction='none')
         self.sigmoid = torch.nn.Sigmoid()
+        self.aaf_loss = AAF_Loss(num_classes=cls_p)
 
     def forward(self, preds, targets):
         h, w = targets[0].size(1), targets[0].size(2)
@@ -181,7 +182,7 @@ class abr_gnn_ABRLovaszLoss2(nn.Module):
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
-        return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.1 * att_bceloss
+        return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.1 * att_bceloss+ self.aaf_loss(preds, targets)
         # return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn
 
 def lovasz_softmax(probas, labels, classes='present', per_image=False, ignore=None):
