@@ -113,9 +113,7 @@ def main(args):
 
     # define criterion & optimizer
     criterion = ABRLovaszLoss(ignore_index=args.ignore_label, only_present=True, cls_p= args.num_classes, cls_h= args.hbody_cls, cls_f= args.fbody_cls)
-    criterion_aaf =AAF_Loss(ignore_index=args.ignore_label, only_present=True)
     criterion = DataParallelCriterion(criterion).cuda()
-    criterion_aaf = DataParallelCriterion(criterion_aaf).cuda()
 
     optimizer = optim.SGD(
         [{'params': filter(lambda p: p.requires_grad, seg_model.parameters()), 'lr': args.learning_rate}],
@@ -129,7 +127,7 @@ def main(args):
     for epoch in range(0, args.epochs):
         print('\n{} | {}'.format(epoch, args.epochs - 1))
         # training
-        _ = train(model, train_loader, epoch, criterion, criterion_aaf, optimizer, writer)
+        _ = train(model, train_loader, epoch, criterion, optimizer, writer)
 
         # validation
         if epoch %10 ==0 or epoch > args.epochs*0.8:
@@ -148,7 +146,7 @@ def main(args):
     print('Best pixAcc: {} | Best mIoU: {}'.format(best_val_pixAcc, best_val_mIoU))
 
 
-def train(model, train_loader, epoch, criterion, criterion_aaf, optimizer, writer):
+def train(model, train_loader, epoch, criterion, optimizer, writer):
     # set training mode
     model.train()
     train_loss = 0.0
@@ -175,7 +173,6 @@ def train(model, train_loader, epoch, criterion, criterion_aaf, optimizer, write
         # compute output loss
         preds = model(images)
         loss = criterion(preds, [labels, hlabel, flabel]) # batch mean
-        # loss_aaf = criterion_aaf(preds, [labels, hlabel, flabel])
         # # Apply exponential decay to the AAF loss.
         # current_step = epoch * iters_per_epoch + i_iter
         # max_step = args.epochs * iters_per_epoch
