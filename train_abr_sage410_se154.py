@@ -92,7 +92,7 @@ def main(args):
     if args.init:
         for i in saved_state_dict:
             i_parts = i.split('.')
-            if not i_parts[0] == 'fc':
+            if not i_parts[0] == 'fc' and not i_parts[0] == 'last_linear':
                 new_params['encoder.' + '.'.join(i_parts[:])] = saved_state_dict[i]
         seg_model.load_state_dict(new_params)
         print('loading params w/o fc')
