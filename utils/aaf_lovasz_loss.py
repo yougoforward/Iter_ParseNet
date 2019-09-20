@@ -38,7 +38,7 @@ class gnn_ABRLovaszLoss(nn.Module):
         # seg loss
         pred = F.interpolate(input=preds[3], size=(h, w), mode='bilinear', align_corners=True)
         pred = F.softmax(input=pred, dim=1)
-        loss+ = lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present)
+        loss = loss + lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present)
 
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
