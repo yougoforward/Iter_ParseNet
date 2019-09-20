@@ -67,9 +67,9 @@ class node_att(nn.Module):
         super(node_att, self).__init__()
 
     def forward(self, xf):
-        xff = torch.mul(xf,xf)
+        xff = xf*xf
         xff_sum = torch.sum(xff, dim=1, keepdim=True)
-        parent_att = xff_sum/torch.max(xff_sum)[0]
+        parent_att = xff_sum/torch.max(xff_sum)
         return parent_att
 
 class deformable_dense_Context(nn.Module):
@@ -456,7 +456,9 @@ class Final_classifer(nn.Module):
         self.conv2 = nn.Sequential(nn.Conv2d(in_dim, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(48), nn.ReLU(inplace=False))
 
-        self.conv3 = nn.Sequential(nn.Conv2d(cls_p + 48, 48, kernel_size=1, padding=0, dilation=1, bias=False),
+        self.conv3 = nn.Sequential(nn.Conv2d(cls_p + 48, 48, kernel_size=3, padding=0, dilation=1, bias=False),
+                                   BatchNorm2d(48), nn.ReLU(inplace=False),
+                                   nn.Conv2d(48, 48, kernel_size=3, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(48), nn.ReLU(inplace=False),
                                    nn.Conv2d(48, cls_p, kernel_size=1, padding=0, dilation=1, bias=True),
                                    )
