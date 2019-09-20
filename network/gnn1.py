@@ -72,6 +72,54 @@ class node_att(nn.Module):
         parent_att = xff_sum/torch.max(xff_sum)
         return parent_att
 
+# class deformable_dense_Context(nn.Module):
+#     def __init__(self, hidden_dim=10):
+#         super(deformable_dense_Context, self).__init__()
+#         self.dcn_dilated1 = nn.Sequential(
+#                 DFConv2d(
+#                     hidden_dim,
+#                     hidden_dim,
+#                     with_modulated_dcn=True,
+#                     kernel_size=3,
+#                     stride=1,
+#                     groups=1,
+#                     dilation=2,
+#                     deformable_groups=1,
+#                     bias=False
+#                 ), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
+#         self.dcn_dilated2 = nn.Sequential(
+#             DFConv2d(
+#                 hidden_dim,
+#                 hidden_dim,
+#                 with_modulated_dcn=True,
+#                 kernel_size=3,
+#                 stride=1,
+#                 groups=1,
+#                 dilation=4,
+#                 deformable_groups=1,
+#                 bias=False
+#             ), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
+#         self.dcn_dilated3 = nn.Sequential(
+#             DFConv2d(
+#                 hidden_dim,
+#                 hidden_dim,
+#                 with_modulated_dcn=True,
+#                 kernel_size=3,
+#                 stride=1,
+#                 groups=1,
+#                 dilation=8,
+#                 deformable_groups=1,
+#                 bias=False
+#             ), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
+#
+#     def forward(self, hu):
+#         d_hu1 = self.dcn_dilated1(hu)
+#         d_hu_add1 = d_hu1+hu
+#         d_hu2 = self.dcn_dilated2(d_hu_add1)
+#         d_hu_add2 = d_hu2+d_hu_add1
+#         d_hu3 = self.dcn_dilated3(d_hu_add2)
+#         d_hu_add3 = d_hu3+d_hu_add2
+#         return d_hu_add3
 class deformable_dense_Context(nn.Module):
     def __init__(self, hidden_dim=10):
         super(deformable_dense_Context, self).__init__()
@@ -83,7 +131,7 @@ class deformable_dense_Context(nn.Module):
                     kernel_size=3,
                     stride=1,
                     groups=1,
-                    dilation=2,
+                    dilation=1,
                     deformable_groups=1,
                     bias=False
                 ), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
@@ -95,32 +143,14 @@ class deformable_dense_Context(nn.Module):
                 kernel_size=3,
                 stride=1,
                 groups=1,
-                dilation=4,
+                dilation=1,
                 deformable_groups=1,
                 bias=False
             ), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
-        self.dcn_dilated3 = nn.Sequential(
-            DFConv2d(
-                hidden_dim,
-                hidden_dim,
-                with_modulated_dcn=True,
-                kernel_size=3,
-                stride=1,
-                groups=1,
-                dilation=8,
-                deformable_groups=1,
-                bias=False
-            ), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
-
     def forward(self, hu):
         d_hu1 = self.dcn_dilated1(hu)
-        d_hu_add1 = d_hu1+hu
-        d_hu2 = self.dcn_dilated2(d_hu_add1)
-        d_hu_add2 = d_hu2+d_hu_add1
-        d_hu3 = self.dcn_dilated3(d_hu_add2)
-        d_hu_add2 = d_hu3+d_hu_add2
-        return d_hu_add2
-
+        d_hu2 = self.dcn_dilated2(d_hu1)
+        return d_hu2
 class Contexture(nn.Module):
     def __init__(self, hidden_dim=10, parts=6):
         super(Contexture, self).__init__()
