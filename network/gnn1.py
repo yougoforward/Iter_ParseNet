@@ -155,7 +155,7 @@ class conv_Update(nn.Module):
         super(conv_Update, self).__init__()
         self.hidden_dim = hidden_dim
         dtype = torch.cuda.FloatTensor
-        self.update = ConvGRU(input_dim=2* hidden_dim,
+        self.update = ConvGRU(input_dim=hidden_dim,
                         hidden_dim=hidden_dim,
                         kernel_size=(1,1),
                         num_layers=1,
