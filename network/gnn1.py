@@ -162,7 +162,7 @@ class Contexture(nn.Module):
         self.A_att = node_att()
 
     def forward(self, xp_list):
-        F_dep_list = [self.F_cont[i](xp_list[i])*(1-self.A_att(xp_list[i])) for i in range(self.parts)]
+        F_dep_list = [self.F_cont[i](xp_list[i].contiguous())*(1-self.A_att(xp_list[i])) for i in range(self.parts)]
         return F_dep_list
 
 class Part_Dependency(nn.Module):
