@@ -436,7 +436,7 @@ class GNN_infer(nn.Module):
         # node supervision
         # multi-label classifier
         self.node_cls_final = nn.Conv2d(hidden_dim*(cls_p+cls_h+cls_f-2), (cls_p+cls_h+cls_f-2), kernel_size=1, padding=0, stride=1, bias=True, groups=(cls_p+cls_h+cls_f-2))
-        self.final_cls = Final_classifer(in_dim, hidden_dim, cls_p, cls_h, cls_f)
+        # self.final_cls = Final_classifer(in_dim, hidden_dim, cls_p, cls_h, cls_f)
 
 
     def forward(self, xp, xh, xf, xl):
@@ -468,9 +468,9 @@ class GNN_infer(nn.Module):
         p_seg = torch.cat([node_seg_list[0]] + node_seg_list[4:], dim=1)
 
         # xphf_infer =torch.cat([node, node_new], dim=1)
-        p_seg_final = self.final_cls(p_seg, xl)
+        # p_seg_final = self.final_cls(p_seg, xl)
 
-        return p_seg_final, p_seg, h_seg, f_seg
+        return p_seg, h_seg, f_seg
 
 
 class Final_classifer(nn.Module):
@@ -528,8 +528,8 @@ class Decoder(nn.Module):
         alpha_fb_fea = self.layerf(seg, x[1])
 
         # gnn infer
-        p_seg_final, p_seg, h_seg, f_seg = self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, x[0])
-        return p_seg_final, h_seg, f_seg, p_seg, x_dsn
+        p_seg, h_seg, f_seg = self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, x[0])
+        return p_seg, h_seg, f_seg, x_dsn
 
 
 class OCNet(nn.Module):
