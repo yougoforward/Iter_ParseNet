@@ -23,8 +23,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description='PyTorch Segmentation')
     parser.add_argument('--method', type=str, default='pspnet')
     # Datasets
-    parser.add_argument('--root', default='./data/Person', type=str)
-    parser.add_argument('--val-root', default='./data/Person', type=str)
+    parser.add_argument('--root', default='/home/ubuntu/Data/Person/', type=str)
+    parser.add_argument('--val-root', default='/home/ubuntu/Data/Person/', type=str)
     parser.add_argument('--lst', default='./dataset/Pascal/train_id.txt', type=str)
     parser.add_argument('--val-lst', default='./dataset/Pascal/val_id.txt', type=str)
     parser.add_argument('--crop-size', type=int, default=473)

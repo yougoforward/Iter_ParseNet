@@ -12,7 +12,7 @@ from torch.nn.parallel.scatter_gather import gather
 from torch.utils import data
 
 from dataset.data_person import DataGenerator
-from network.compare.pspnet import get_model
+from network.compare.ssnan import get_model
 from progress.bar import Bar
 from utils.loss import SegmentationMultiLoss
 from utils.metric import *
@@ -21,7 +21,7 @@ from utils.parallel import DataParallelModel, DataParallelCriterion
 
 def parse_args():
     parser = argparse.ArgumentParser(description='PyTorch Segmentation')
-    parser.add_argument('--method', type=str, default='pspnet')
+    parser.add_argument('--method', type=str, default='ssnan')
     # Datasets
     parser.add_argument('--root', default='./data/Person', type=str)
     parser.add_argument('--val-root', default='./data/Person', type=str)
