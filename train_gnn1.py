@@ -165,7 +165,7 @@ def train(model, train_loader, epoch, criterion, optimizer, writer):
         # adjust learning rate
         iters_per_epoch = len(train_loader)
         lr = adjust_learning_rate(optimizer, epoch, i_iter, iters_per_epoch, method=args.lr_mode)
-        print("\n=>epoch  %d, learning_rate = " % (epoch, lr))
+        print("\n=>epoch  %d, learning_rate = %f" % (epoch, lr))
         image, label, hlabel, flabel, _ = batch
         images, labels, hlabel, flabel = image.cuda(), label.long().cuda(), hlabel.cuda(), flabel.cuda()
         torch.set_grad_enabled(True)
