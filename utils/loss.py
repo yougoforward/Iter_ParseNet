@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 
 torch_ver = torch.__version__[:3]
-assert torch_ver == '0.4'
+# assert torch_ver == '0.4'
 
 import utils.aaf.losses as lossx
 
