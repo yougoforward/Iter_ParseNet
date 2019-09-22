@@ -198,6 +198,7 @@ def train(model, train_loader, epoch, criterion, optimizer, writer):
 
     epoch_loss = train_loss / iter_num
     writer.add_scalar('train_epoch_loss', epoch_loss, epoch)
+    tbar.close()
     # bar.finish()
 
     return epoch_loss
