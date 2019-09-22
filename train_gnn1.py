@@ -156,7 +156,7 @@ def train(model, train_loader, epoch, criterion, optimizer, writer):
     # Iterate over data.
     # bar = Bar('Processing | {}'.format('train'), max=len(train_loader))
     # bar.check_tty = False
-    import tqdm
+    from tqdm import tqdm
     tbar = tqdm(train_loader)
     for i_iter, batch in enumerate(tbar):
         sys.stdout.flush()
