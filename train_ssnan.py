@@ -134,7 +134,7 @@ def main(args):
             model_dir = os.path.join(args.snapshot_dir, args.method + '_final.pth')
             torch.save(seg_model.state_dict(), model_dir)
             print('Model saved to %s' % model_dir)
-
+    os.rename(model_dir, os.path.join(args.snapshot_dir, args.method + '_miou'+str(best_val_mIoU)+'.pth'))
     print('Complete using', time.time() - start, 'seconds')
     print('Best pixAcc: {} | Best mIoU: {}'.format(best_val_pixAcc, best_val_mIoU))
 
