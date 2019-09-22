@@ -154,16 +154,18 @@ def train(model, train_loader, epoch, criterion, optimizer, writer):
     iter_num = 0
 
     # Iterate over data.
-    bar = Bar('Processing | {}'.format('train'), max=len(train_loader))
-    bar.check_tty = False
-    for i_iter, batch in enumerate(train_loader):
+    # bar = Bar('Processing | {}'.format('train'), max=len(train_loader))
+    # bar.check_tty = False
+    import tqdm
+    tbar = tqdm(train_loader)
+    for i_iter, batch in enumerate(tbar):
         sys.stdout.flush()
         start_time = time.time()
         iter_num += 1
         # adjust learning rate
         iters_per_epoch = len(train_loader)
         lr = adjust_learning_rate(optimizer, epoch, i_iter, iters_per_epoch, method=args.lr_mode)
-
+        print("\n=>epoch  %d, learning_rate = " % (epoch, lr))
         image, label, hlabel, flabel, _ = batch
         images, labels, hlabel, flabel = image.cuda(), label.long().cuda(), hlabel.cuda(), flabel.cuda()
         torch.set_grad_enabled(True)
@@ -186,14 +188,17 @@ def train(model, train_loader, epoch, criterion, optimizer, writer):
 
         batch_time = time.time() - start_time
         # plot progress
-        bar.suffix = '{} / {} | Time: {batch_time:.4f} | Loss: {loss:.4f}'.format(iter_num, len(train_loader),
+        tbar.set_description('{} / {} | Time: {batch_time:.4f} | Loss: {loss:.4f}'.format(iter_num, len(train_loader),
                                                                                   batch_time=batch_time,
-                                                                                  loss=train_loss / iter_num)
-        bar.next()
+                                                                                  loss=train_loss / iter_num))
+        # bar.suffix = '{} / {} | Time: {batch_time:.4f} | Loss: {loss:.4f}'.format(iter_num, len(train_loader),
+        #                                                                           batch_time=batch_time,
+        #                                                                           loss=train_loss / iter_num)
+        # bar.next()
 
     epoch_loss = train_loss / iter_num
     writer.add_scalar('train_epoch_loss', epoch_loss, epoch)
-    bar.finish()
+    # bar.finish()
 
     return epoch_loss
 
