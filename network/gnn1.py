@@ -185,7 +185,7 @@ class conv_Update(nn.Module):
         super(conv_Update, self).__init__()
         self.hidden_dim = hidden_dim
         dtype = torch.cuda.FloatTensor
-        self.update = ConvGRU(input_dim=256,
+        self.update = ConvGRU(input_dim=256+hidden_dim,
                         hidden_dim=hidden_dim,
                         kernel_size=(1,1),
                         num_layers=1,
@@ -277,7 +277,7 @@ class Full_Graph(nn.Module):
 
     def forward(self, xf, xh_list, xp_list, f_fea):
         comp_h = self.comp_h(xf, xh_list)
-        xf =self.conv_Update(f_fea, xf+comp_h)
+        xf =self.conv_Update(xf, torch.cat([f_fea, comp_h], dim=1))
         return xf
 
 
@@ -308,7 +308,7 @@ class Half_Graph(nn.Module):
 
         comp_u = self.comp_u(xh_list[0], upper_parts)
         message_u = decomp_list[0]+comp_u
-        xh_u = self.update_u(h_fea, xh_list[0]+message_u)
+        xh_u = self.update_u(xh_list[0], torch.cat([h_fea, message_u], dim=1))
 
         # lower half
         lower_parts = []
@@ -317,7 +317,7 @@ class Half_Graph(nn.Module):
 
         comp_l = self.comp_l(xh_list[1], lower_parts)
         message_l = decomp_list[1]+comp_l
-        xh_l = self.update_l(h_fea, xh_list[1]+message_l)
+        xh_l = self.update_l(xh_list[1], torch.cat([h_fea, message_l], dim=1))
 
         xh_list_new = [xh_u, xh_l]
         return xh_list_new
@@ -365,7 +365,7 @@ class Part_Graph(nn.Module):
                 message = decomp_pu_list[self.upper_part_list.index(i+1)]+sum(xpp_list_list[i])
             elif i+1 in self.lower_part_list:
                 message = decomp_pl_list[self.lower_part_list.index(i+1)]+sum(xpp_list_list[i])
-            xp_list_new.append(self.node_update_list[i](p_fea, xp_list[i]+message))
+            xp_list_new.append(self.node_update_list[i](xp_list[i], torch.cat([p_fea, message], dim=1)))
         return xp_list_new
 
 
