@@ -26,7 +26,7 @@ class Composition(nn.Module):
     def forward(self, xh, xp_list):
         xp_att_list = [self.node_att(xp) for xp in xp_list]
         com_att = torch.max(torch.stack(xp_att_list, dim=1), dim=1, keepdim=False)[0]
-        xph_message = sum([self.conv_ch(torch.cat([xh, xp*com_att], dim=1)) for xp in xp_list])
+        xph_message = self.conv_ch(torch.cat([xh, sum(xp_list)*com_att], dim=1))
         return xph_message
 
 class Decomposition(nn.Module):
@@ -72,54 +72,6 @@ class node_att(nn.Module):
         parent_att = xff_sum/torch.max(xff_sum)
         return parent_att
 
-# class deformable_dense_Context(nn.Module):
-#     def __init__(self, hidden_dim=10):
-#         super(deformable_dense_Context, self).__init__()
-#         self.dcn_dilated1 = nn.Sequential(
-#                 DFConv2d(
-#                     hidden_dim,
-#                     hidden_dim,
-#                     with_modulated_dcn=True,
-#                     kernel_size=3,
-#                     stride=1,
-#                     groups=1,
-#                     dilation=2,
-#                     deformable_groups=1,
-#                     bias=False
-#                 ), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
-#         self.dcn_dilated2 = nn.Sequential(
-#             DFConv2d(
-#                 hidden_dim,
-#                 hidden_dim,
-#                 with_modulated_dcn=True,
-#                 kernel_size=3,
-#                 stride=1,
-#                 groups=1,
-#                 dilation=4,
-#                 deformable_groups=1,
-#                 bias=False
-#             ), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
-#         self.dcn_dilated3 = nn.Sequential(
-#             DFConv2d(
-#                 hidden_dim,
-#                 hidden_dim,
-#                 with_modulated_dcn=True,
-#                 kernel_size=3,
-#                 stride=1,
-#                 groups=1,
-#                 dilation=8,
-#                 deformable_groups=1,
-#                 bias=False
-#             ), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
-#
-#     def forward(self, hu):
-#         d_hu1 = self.dcn_dilated1(hu)
-#         d_hu_add1 = d_hu1+hu
-#         d_hu2 = self.dcn_dilated2(d_hu_add1)
-#         d_hu_add2 = d_hu2+d_hu_add1
-#         d_hu3 = self.dcn_dilated3(d_hu_add2)
-#         d_hu_add3 = d_hu3+d_hu_add2
-#         return d_hu_add3
 class deformable_dense_Context(nn.Module):
     def __init__(self, hidden_dim=10):
         super(deformable_dense_Context, self).__init__()
@@ -143,14 +95,62 @@ class deformable_dense_Context(nn.Module):
                 kernel_size=3,
                 stride=1,
                 groups=1,
-                dilation=1,
+                dilation=2,
                 deformable_groups=1,
                 bias=False
             ), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
+        self.dcn_dilated3 = nn.Sequential(
+            DFConv2d(
+                hidden_dim,
+                hidden_dim,
+                with_modulated_dcn=True,
+                kernel_size=3,
+                stride=1,
+                groups=1,
+                dilation=4,
+                deformable_groups=1,
+                bias=False
+            ), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
+
     def forward(self, hu):
         d_hu1 = self.dcn_dilated1(hu)
-        d_hu2 = self.dcn_dilated2(d_hu1)
-        return d_hu2
+        d_hu_add1 = d_hu1+hu
+        d_hu2 = self.dcn_dilated2(d_hu_add1)
+        d_hu_add2 = d_hu2+d_hu_add1
+        d_hu3 = self.dcn_dilated3(d_hu_add2)
+        d_hu_add3 = d_hu3+d_hu_add2
+        return d_hu_add3
+# class deformable_dense_Context(nn.Module):
+#     def __init__(self, hidden_dim=10):
+#         super(deformable_dense_Context, self).__init__()
+#         self.dcn_dilated1 = nn.Sequential(
+#                 DFConv2d(
+#                     hidden_dim,
+#                     hidden_dim,
+#                     with_modulated_dcn=True,
+#                     kernel_size=3,
+#                     stride=1,
+#                     groups=1,
+#                     dilation=1,
+#                     deformable_groups=1,
+#                     bias=False
+#                 ), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
+#         self.dcn_dilated2 = nn.Sequential(
+#             DFConv2d(
+#                 hidden_dim,
+#                 hidden_dim,
+#                 with_modulated_dcn=True,
+#                 kernel_size=3,
+#                 stride=1,
+#                 groups=1,
+#                 dilation=1,
+#                 deformable_groups=1,
+#                 bias=False
+#             ), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
+#     def forward(self, hu):
+#         d_hu1 = self.dcn_dilated1(hu)
+#         d_hu2 = self.dcn_dilated2(d_hu1)
+#         return d_hu2
 class Contexture(nn.Module):
     def __init__(self, hidden_dim=10, parts=6):
         super(Contexture, self).__init__()
@@ -275,9 +275,9 @@ class Full_Graph(nn.Module):
         self.comp_h = Composition(hidden_dim)
         self.conv_Update = conv_Update(hidden_dim)
 
-    def forward(self, xf, xh_list, xp_list):
+    def forward(self, xf, xh_list, xp_list, f_fea):
         comp_h = self.comp_h(xf, xh_list)
-        xf =self.conv_Update(xf,comp_h)
+        xf =self.conv_Update(f_fea, xf+comp_h)
         return xf
 
 
@@ -299,7 +299,7 @@ class Half_Graph(nn.Module):
         self.update_u = conv_Update(hidden_dim)
         self.update_l = conv_Update(hidden_dim)
 
-    def forward(self, xf, xh_list, xp_list):
+    def forward(self, xf, xh_list, xp_list, h_fea):
         decomp_list = self.decomp_fh_list(xf, xh_list)
         # upper half
         upper_parts = []
@@ -308,7 +308,7 @@ class Half_Graph(nn.Module):
 
         comp_u = self.comp_u(xh_list[0], upper_parts)
         message_u = decomp_list[0]+comp_u
-        xh_u = self.update_u(xh_list[0], message_u)
+        xh_u = self.update_u(h_fea, xh_list[0]+message_u)
 
         # lower half
         lower_parts = []
@@ -317,7 +317,7 @@ class Half_Graph(nn.Module):
 
         comp_l = self.comp_l(xh_list[1], lower_parts)
         message_l = decomp_list[1]+comp_l
-        xh_l = self.update_l(xh_list[1], message_l)
+        xh_l = self.update_l(h_fea, xh_list[1]+message_l)
 
         xh_list_new = [xh_u, xh_l]
         return xh_list_new
@@ -341,7 +341,7 @@ class Part_Graph(nn.Module):
         self.part_dp_list = nn.ModuleList([Part_Dependency(hidden_dim) for i in range(self.edge_index_num)])
         self.node_update_list = nn.ModuleList([conv_Update(hidden_dim) for i in range(self.cls_p - 1)])
 
-    def forward(self, xf, xh_list, xp_list):
+    def forward(self, xf, xh_list, xp_list, p_fea):
         # upper half
         upper_parts = []
         for part in self.upper_part_list:
@@ -365,7 +365,7 @@ class Part_Graph(nn.Module):
                 message = decomp_pu_list[self.upper_part_list.index(i+1)]+sum(xpp_list_list[i])
             elif i+1 in self.lower_part_list:
                 message = decomp_pl_list[self.lower_part_list.index(i+1)]+sum(xpp_list_list[i])
-            xp_list_new.append(self.node_update_list[i](xp_list[i], message))
+            xp_list_new.append(self.node_update_list[i](p_fea, xp_list[i]+message))
         return xp_list_new
 
 
@@ -389,13 +389,13 @@ class GNN(nn.Module):
         self.part_infer = Part_Graph(adj_matrix, self.upper_half_node, self.lower_half_node, in_dim, hidden_dim, cls_p,
                                      cls_h, cls_f)
 
-    def forward(self, xp_list, xh_list, xf):
+    def forward(self, xp_list, xh_list, xf, p_fea, h_fea, f_fea):
         # for full body node
-        xf_new = self.full_infer(xf, xh_list, xp_list)
+        xf_new = self.full_infer(xf, xh_list, xp_list, f_fea)
         # for half body node
-        xh_list_new = self.half_infer(xf, xh_list, xp_list)
+        xh_list_new = self.half_infer(xf, xh_list, xp_list, h_fea)
         # for part node
-        xp_list_new = self.part_infer(xf, xh_list, xp_list)
+        xp_list_new = self.part_infer(xf, xh_list, xp_list, p_fea)
 
         return xp_list_new, xh_list_new, xf_new
 
@@ -454,7 +454,7 @@ class GNN_infer(nn.Module):
 
 
         # gnn infer
-        p_fea_list_new, h_fea_list_new, f_fea_new = self.gnn(p_node_list, h_node_list, f_node)
+        p_fea_list_new, h_fea_list_new, f_fea_new = self.gnn(p_node_list, h_node_list, f_node, xp, xh, xf)
         # bg_node_new = self.bg_conv_new(torch.cat(p_fea_list_new + h_fea_list_new + [f_fea_new, bg_node], dim=1))
 
         # node supervision
