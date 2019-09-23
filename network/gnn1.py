@@ -466,11 +466,11 @@ class GNN_infer(nn.Module):
         f_seg = torch.cat(node_seg_list[0:2], dim=1)
         h_seg = torch.cat([node_seg_list[0]] + node_seg_list[2:4], dim=1)
         p_seg = torch.cat([node_seg_list[0]] + node_seg_list[4:], dim=1)
-
+        p_fea = torch.cat([bg_node, torch.cat(p_node_list, dim=1)+torch.cat(p_fea_list_new,dim=1)], dim=1)
         # xphf_infer =torch.cat([node, node_new], dim=1)
-        # p_seg_final = self.final_cls(p_seg, xl)
+        p_seg_final = self.final_cls(p_fea, xl)
 
-        return p_seg, h_seg, f_seg
+        return p_seg_final, p_seg, h_seg, f_seg
 
 
 class Final_classifer(nn.Module):
@@ -485,11 +485,11 @@ class Final_classifer(nn.Module):
         self.conv2 = nn.Sequential(nn.Conv2d(in_dim, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(48), nn.ReLU(inplace=False))
 
-        self.conv3 = nn.Sequential(nn.Conv2d(cls_p + 48, 48, kernel_size=3, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(48), nn.ReLU(inplace=False),
-                                   nn.Conv2d(48, 48, kernel_size=3, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(48), nn.ReLU(inplace=False),
-                                   nn.Conv2d(48, cls_p, kernel_size=1, padding=0, dilation=1, bias=True),
+        self.conv3 = nn.Sequential(nn.Conv2d(cls_p*hidden_dim + 48, 256, kernel_size=3, padding=0, dilation=1, bias=False),
+                                   BatchNorm2d(256), nn.ReLU(inplace=False),
+                                   nn.Conv2d(256, 256, kernel_size=3, padding=0, dilation=1, bias=False),
+                                   BatchNorm2d(256), nn.ReLU(inplace=False),
+                                   nn.Conv2d(256, cls_p, kernel_size=1, padding=0, dilation=1, bias=True),
                                    )
     def forward(self, p_seg, xl):
         # classifier
@@ -528,8 +528,8 @@ class Decoder(nn.Module):
         alpha_fb_fea = self.layerf(seg, x[1])
 
         # gnn infer
-        p_seg, h_seg, f_seg = self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, x[0])
-        return p_seg, h_seg, f_seg, x_dsn
+        p_seg_final, p_seg, h_seg, f_seg = self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, x[0])
+        return p_seg_final, h_seg, f_seg, p_seg, x_dsn
 
 
 class OCNet(nn.Module):
