@@ -96,7 +96,7 @@ class Decoder(nn.Module):
     def forward(self, x):
         x_dsn = self.layer_dsn(x[-2])
         seg = self.layer5(x[-1])
-        x_seg, xt_fea = self.layer6(seg, x[1], x[0])
+        x_seg = self.layer6(seg, x[1], x[0])
         alpha_hb = self.layerh(seg, x[1])
         alpha_fb = self.layerf(seg, x[1])
 
