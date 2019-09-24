@@ -143,6 +143,60 @@ class ResGridNet(nn.Module):
         x5 = self.layer4(x4)
         return [x2, x3, x4, x5]
 
+class ResGridNet_os8(nn.Module):
+    """The dilation rates of the last res-block are multi-grid."""
+
+    def __init__(self, block, layers):
+        self.inplanes = 128
+        super(ResGridNet_os8, self).__init__()
+        # stem
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=2, padding=1, bias=False)
+        self.bn1 = BatchNorm2d(64, affine=True)
+        self.relu1 = nn.ReLU(inplace=False)
+        self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=False)
+        self.bn2 = BatchNorm2d(64, affine=True)
+        self.relu2 = nn.ReLU(inplace=False)
+        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1, bias=False)
+        self.bn3 = BatchNorm2d(128, affine=True)
+        self.relu3 = nn.ReLU(inplace=False)
+
+        self.relu = nn.ReLU(inplace=False)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1, ceil_mode=True)  # change
+        self.layer1 = self._make_layer(block, 64, layers[0])
+        self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
+        # TODO: change the dilation rate
+        self.layer3 = self._make_layer(block, 256, layers[2], stride=2, dilation=1)
+        self.layer4 = self._make_layer(block, 512, layers[3], stride=1, dilation=2, multi_grid=True)
+
+    def _make_layer(self, block, planes, blocks, stride=1, dilation=1, multi_grid=False):
+        downsample = None
+        if stride != 1 or self.inplanes != planes * block.expansion:
+            downsample = nn.Sequential(
+                nn.Conv2d(self.inplanes, planes * block.expansion, kernel_size=1, stride=stride, bias=False),
+                BatchNorm2d(planes * block.expansion, affine=True))
+
+        layers = []
+        layers.append(block(self.inplanes, planes, stride, dilation=dilation, downsample=downsample))
+
+        self.inplanes = planes * block.expansion
+        if multi_grid:
+            for i in range(1, blocks):
+                layers.append(block(self.inplanes, planes, dilation=dilation ** (i+1)))
+        else:
+            for i in range(1, blocks):
+                layers.append(block(self.inplanes, planes, dilation=dilation))
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        x = self.relu1(self.bn1(self.conv1(x)))
+        x = self.relu2(self.bn2(self.conv2(x)))
+        x = self.relu3(self.bn3(self.conv3(x)))
+        x1 = self.maxpool(x)
+        x2 = self.layer1(x1)
+        x3 = self.layer2(x2)
+        x4 = self.layer3(x3)
+        x5 = self.layer4(x4)
+        return [x2, x3, x4, x5]
 
 class ResStemNet(nn.Module):
     def __init__(self, block, layers):
