@@ -8,11 +8,11 @@ from torch.autograd import Variable
 from torch.nn import BCELoss
 import utils.aaf.losses as lossx
 
-class ABRLovaszLoss_backbone(nn.Module):
+class ABRLovaszLoss_backbone_aspp(nn.Module):
     """Lovasz loss for Alpha process"""
 
     def __init__(self, ignore_index=None, only_present=True):
-        super(ABRLovaszLoss_backbone, self).__init__()
+        super(ABRLovaszLoss_backbone_aspp, self).__init__()
         self.ignore_index = ignore_index
         self.only_present = only_present
         self.weight = torch.FloatTensor([0.80777327, 1.00125961, 0.90997236, 1.10867908, 1.17541499,
