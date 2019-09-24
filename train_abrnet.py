@@ -130,7 +130,7 @@ def main(args):
         _ = train(model, train_loader, epoch, criterion, optimizer, writer)
 
         # validation
-        if epoch %5== 0:
+        if epoch %10 ==0 or epoch > args.epochs*0.8:
             val_pixacc, val_miou = validation(model, val_loader, epoch, writer)
             # save model
             if val_pixacc > best_val_pixAcc:
@@ -140,7 +140,7 @@ def main(args):
                 model_dir = os.path.join(args.snapshot_dir, args.method + '_miou.pth')
                 torch.save(seg_model.state_dict(), model_dir)
                 print('Model saved to %s' % model_dir)
-
+    os.rename(model_dir, os.path.join(args.snapshot_dir, args.method + '_miou'+str(best_val_mIoU)+'.pth'))
     print('Complete using', time.time() - start, 'seconds')
     print('Best pixAcc: {} | Best mIoU: {}'.format(best_val_pixAcc, best_val_mIoU))
 
