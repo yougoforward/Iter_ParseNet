@@ -138,6 +138,45 @@ class ChannelAttentionModule(nn.Module):
         out = self.gamma * out + x
         return out
 
+class ASPPModule(nn.Module):
+    """ASPP with OC module: aspp + oc context"""
+
+    def __init__(self, in_dim, out_dim, scale):
+        super(ASPPModule, self).__init__()
+
+        self.gap = nn.Sequential(nn.AdaptiveAvgPool2d(1),
+                                 nn.Conv2d(in_dim, out_dim, 1, bias=False), InPlaceABNSync(out_dim))
+
+        self.dilation_0 = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+                                        InPlaceABNSync(out_dim))
+
+        self.dilation_1 = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=6, dilation=6, bias=False),
+                                        InPlaceABNSync(out_dim))
+
+        self.dilation_2 = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=12, dilation=12, bias=False),
+                                        InPlaceABNSync(out_dim))
+
+        self.dilation_3 = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=18, dilation=18, bias=False),
+                                        InPlaceABNSync(out_dim))
+
+        self.head_conv = nn.Sequential(nn.Conv2d(out_dim * 5, out_dim, kernel_size=1, padding=0, bias=False),
+                                       InPlaceABNSync(out_dim),
+                                       nn.Conv2d(out_dim, out_dim, kernel_size=3, stride=1, padding=1, bias=False),
+                                       InPlaceABNSync(out_dim))
+
+    def forward(self, x):
+        # parallel branch
+        _,_,h,w = x.size()
+        feat0 = F.interpolate(self.gap(x), (h, w), mode="bilinear", align_corners=True)
+        feat1 = self.dilation_0(x)
+        feat2 = self.dilation_1(x)
+        feat3 = self.dilation_2(x)
+        feat4 = self.dilation_3(x)
+        # fusion branch
+        concat = torch.cat([feat0, feat1, feat2, feat3, feat4], 1)
+        output = self.head_conv(concat)
+        return output
+
 
 class ASPAtteModule(nn.Module):
     """ASPP with OC module: aspp + oc context"""

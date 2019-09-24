@@ -7,6 +7,42 @@ from torch.autograd import Variable
 
 from torch.nn import BCELoss
 import utils.aaf.losses as lossx
+
+class ABRLovaszLoss_backbone(nn.Module):
+    """Lovasz loss for Alpha process"""
+
+    def __init__(self, ignore_index=None, only_present=True):
+        super(ABRLovaszLoss_backbone, self).__init__()
+        self.ignore_index = ignore_index
+        self.only_present = only_present
+        self.weight = torch.FloatTensor([0.80777327, 1.00125961, 0.90997236, 1.10867908, 1.17541499,
+                                         0.86041422, 1.01116758, 0.89290045, 1.12410812, 0.91105395,
+                                         1.07604013, 1.12470610, 1.09895196, 0.90172057, 0.93529453,
+                                         0.93054733, 1.04919178, 1.04937547, 1.06267568, 1.06365688])
+        self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=None)
+
+    def forward(self, preds, targets):
+        h, w = targets[0].size(1), targets[0].size(2)
+        # seg loss
+        pred = F.interpolate(input=preds[0], size=(h, w), mode='bilinear', align_corners=True)
+        loss = self.criterion(pred, targets[0])
+        # pred = F.softmax(input=pred, dim=1)
+        # loss = lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present)
+        # # half body
+        # pred_hb = F.interpolate(input=preds[1], size=(h, w), mode='bilinear', align_corners=True)
+        # pred_hb = F.softmax(input=pred_hb, dim=1)
+        # loss_hb = lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
+        #                               only_present=self.only_present)
+        # # full body
+        # pred_fb = F.interpolate(input=preds[2], size=(h, w), mode='bilinear', align_corners=True)
+        # pred_fb = F.softmax(input=pred_fb, dim=1)
+        # loss_fb = lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
+        #                               only_present=self.only_present)
+        # dsn loss
+        pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
+        loss_dsn = self.criterion(pred_dsn, targets[0])
+        return loss + 0.4 * loss_dsn
+
 class ABRLovaszLoss_backbone(nn.Module):
     """Lovasz loss for Alpha process"""
 
