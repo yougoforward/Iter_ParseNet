@@ -219,15 +219,15 @@ class AAF_Loss(nn.Module):
                                                          self.kld_margin,
                                                          w_edge[..., 2],
                                                          w_not_edge[..., 2])
-        dec = self.dec
-        aaf_loss = torch.mean(eloss_1) * self.kld_lambda_1
-        aaf_loss += torch.mean(eloss_2) * self.kld_lambda_1
-        aaf_loss += torch.mean(eloss_3) * self.kld_lambda_1
-        aaf_loss += torch.mean(neloss_1) * self.kld_lambda_2
-        aaf_loss += torch.mean(neloss_2) * self.kld_lambda_2
-        aaf_loss += torch.mean(neloss_3) * self.kld_lambda_2
+        dec = targets[-1]
+        aaf_loss = torch.mean(eloss_1) * self.kld_lambda_1*dec
+        aaf_loss += torch.mean(eloss_2) * self.kld_lambda_1*dec
+        aaf_loss += torch.mean(eloss_3) * self.kld_lambda_1*dec
+        aaf_loss += torch.mean(neloss_1) * self.kld_lambda_2*dec
+        aaf_loss += torch.mean(neloss_2) * self.kld_lambda_2*dec
+        aaf_loss += torch.mean(neloss_3) * self.kld_lambda_2*dec
 
-        return aaf_loss*dec
+        return aaf_loss
 
 
 class abr_gnn_ABRLovaszLoss2(nn.Module):
