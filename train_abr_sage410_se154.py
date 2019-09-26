@@ -175,7 +175,7 @@ def train(model, train_loader, epoch, criterion, optimizer, writer):
         # # Apply exponential decay to the AAF loss.
         current_step = epoch * iters_per_epoch + i_iter
         max_step = args.epochs * iters_per_epoch
-        dec = 0.1*1e2**(-current_step / max_step)
+        dec = 0.01*1e2**(-current_step / max_step)
         loss = criterion(preds, [labels, hlabel, flabel,dec]) # batch mean
         train_loss += loss.item()
 
