@@ -67,9 +67,9 @@ class node_att(nn.Module):
         super(node_att, self).__init__()
 
     def forward(self, xf):
-        xff = torch.mul(xf,xf)
+        xff = xf*xf
         xff_sum = torch.sum(xff, dim=1, keepdim=True)
-        parent_att = xff_sum/torch.max(xff_sum)[0]
+        parent_att = xff_sum/torch.max(xff_sum)
         return parent_att
 
 class deformable_dense_Context(nn.Module):
@@ -118,9 +118,39 @@ class deformable_dense_Context(nn.Module):
         d_hu2 = self.dcn_dilated2(d_hu_add1)
         d_hu_add2 = d_hu2+d_hu_add1
         d_hu3 = self.dcn_dilated3(d_hu_add2)
-        d_hu_add2 = d_hu3+d_hu_add2
-        return d_hu_add2
-
+        d_hu_add3 = d_hu3+d_hu_add2
+        return d_hu_add3
+# class deformable_dense_Context(nn.Module):
+#     def __init__(self, hidden_dim=10):
+#         super(deformable_dense_Context, self).__init__()
+#         self.dcn_dilated1 = nn.Sequential(
+#                 DFConv2d(
+#                     hidden_dim,
+#                     hidden_dim,
+#                     with_modulated_dcn=True,
+#                     kernel_size=3,
+#                     stride=1,
+#                     groups=1,
+#                     dilation=1,
+#                     deformable_groups=1,
+#                     bias=False
+#                 ), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
+#         self.dcn_dilated2 = nn.Sequential(
+#             DFConv2d(
+#                 hidden_dim,
+#                 hidden_dim,
+#                 with_modulated_dcn=True,
+#                 kernel_size=3,
+#                 stride=1,
+#                 groups=1,
+#                 dilation=1,
+#                 deformable_groups=1,
+#                 bias=False
+#             ), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
+#     def forward(self, hu):
+#         d_hu1 = self.dcn_dilated1(hu)
+#         d_hu2 = self.dcn_dilated2(d_hu1)
+#         return d_hu2
 class Contexture(nn.Module):
     def __init__(self, hidden_dim=10, parts=6):
         super(Contexture, self).__init__()
@@ -132,7 +162,7 @@ class Contexture(nn.Module):
         self.A_att = node_att()
 
     def forward(self, xp_list):
-        F_dep_list = [self.F_cont[i](xp_list[i])*(1-self.A_att(xp_list[i])) for i in range(self.parts)]
+        F_dep_list = [self.F_cont[i](xp_list[i].contiguous())*(1-self.A_att(xp_list[i])) for i in range(self.parts)]
         return F_dep_list
 
 class Part_Dependency(nn.Module):
@@ -306,7 +336,7 @@ class Part_Graph(nn.Module):
             self.xpp_list_list[self.edge_index[i, 1]].append(self.edge_index[i, 0])
 
         self.decomp_hpu_list = Decomposition(hidden_dim, parts=len(upper_part_list))
-        self.decomp_hpl_list = Decomposition(hidden_dim, parts=len(upper_part_list))
+        self.decomp_hpl_list = Decomposition(hidden_dim, parts=len(lower_part_list))
         self.F_dep_list = Contexture(hidden_dim=hidden_dim, parts=self.cls_p - 1)
         self.part_dp_list = nn.ModuleList([Part_Dependency(hidden_dim) for i in range(self.edge_index_num)])
         self.node_update_list = nn.ModuleList([conv_Update(hidden_dim) for i in range(self.cls_p - 1)])
@@ -326,16 +356,17 @@ class Part_Graph(nn.Module):
         F_dep_list = self.F_dep_list(xp_list)
         xpp_list_list = [[] for i in range(self.cls_p - 1)]
         for i in range(self.edge_index_num):
-            xpp_list_list[self.edge_index[i, 1]].append(self.part_dp_list(F_dep_list[self.edge_index[i, 0]],xp_list[self.edge_index[i, 1]]))
-
+            xpp_list_list[self.edge_index[i, 1]].append(self.part_dp_list[self.edge_index[i, 1]](F_dep_list[self.edge_index[i, 0]],xp_list[self.edge_index[i, 1]]))
 
         xp_list_new = []
-        for i in range(self.cls_p-1):
+        for i in range(self.cls_p - 1):
             decomp_fp, att_fp = self.decomp_fp_list[i](xf, xp_list[i])
-            if i+1 in self.upper_part_list:
+            if i + 1 in self.upper_part_list:
                 message = decomp_pu_list[self.upper_part_list.index(i+1)]+sum(xpp_list_list[i])
-            elif i+1 in self.lower_part_list:
+                # message = decomp_pu_list[self.upper_part_list.index(i + 1)]
+            elif i + 1 in self.lower_part_list:
                 message = decomp_pl_list[self.lower_part_list.index(i+1)]+sum(xpp_list_list[i])
+                # message = decomp_pl_list[self.lower_part_list.index(i + 1)]
             xp_list_new.append(self.node_update_list[i](xp_list[i], message))
         return xp_list_new
 

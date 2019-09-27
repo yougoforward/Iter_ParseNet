@@ -26,7 +26,7 @@ class Composition(nn.Module):
     def forward(self, xh, xp_list):
         xp_att_list = [self.node_att(xp) for xp in xp_list]
         com_att = torch.max(torch.stack(xp_att_list, dim=1), dim=1, keepdim=False)[0]
-        xph_message = self.conv_ch(torch.cat([xh, sum(xp_list)*com_att], dim=1))
+        xph_message = sum([self.conv_ch(torch.cat([xh, xp*com_att], dim=1)) for xp in xp_list])
         return xph_message
 
 class Decomposition(nn.Module):
@@ -83,7 +83,7 @@ class deformable_dense_Context(nn.Module):
                     kernel_size=3,
                     stride=1,
                     groups=1,
-                    dilation=1,
+                    dilation=2,
                     deformable_groups=1,
                     bias=False
                 ), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
@@ -95,7 +95,7 @@ class deformable_dense_Context(nn.Module):
                 kernel_size=3,
                 stride=1,
                 groups=1,
-                dilation=2,
+                dilation=4,
                 deformable_groups=1,
                 bias=False
             ), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
@@ -107,7 +107,7 @@ class deformable_dense_Context(nn.Module):
                 kernel_size=3,
                 stride=1,
                 groups=1,
-                dilation=4,
+                dilation=8,
                 deformable_groups=1,
                 bias=False
             ), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
@@ -185,7 +185,7 @@ class conv_Update(nn.Module):
         super(conv_Update, self).__init__()
         self.hidden_dim = hidden_dim
         dtype = torch.cuda.FloatTensor
-        self.update = ConvGRU(input_dim=256+hidden_dim,
+        self.update = ConvGRU(input_dim=2* hidden_dim,
                         hidden_dim=hidden_dim,
                         kernel_size=(1,1),
                         num_layers=1,
@@ -275,9 +275,9 @@ class Full_Graph(nn.Module):
         self.comp_h = Composition(hidden_dim)
         self.conv_Update = conv_Update(hidden_dim)
 
-    def forward(self, xf, xh_list, xp_list, f_fea):
+    def forward(self, xf, xh_list, xp_list):
         comp_h = self.comp_h(xf, xh_list)
-        xf =self.conv_Update(xf, torch.cat([f_fea, comp_h], dim=1))
+        xf =self.conv_Update(xf,comp_h)
         return xf
 
 
@@ -299,7 +299,7 @@ class Half_Graph(nn.Module):
         self.update_u = conv_Update(hidden_dim)
         self.update_l = conv_Update(hidden_dim)
 
-    def forward(self, xf, xh_list, xp_list, h_fea):
+    def forward(self, xf, xh_list, xp_list):
         decomp_list = self.decomp_fh_list(xf, xh_list)
         # upper half
         upper_parts = []
@@ -308,7 +308,7 @@ class Half_Graph(nn.Module):
 
         comp_u = self.comp_u(xh_list[0], upper_parts)
         message_u = decomp_list[0]+comp_u
-        xh_u = self.update_u(xh_list[0], torch.cat([h_fea, message_u], dim=1))
+        xh_u = self.update_u(xh_list[0], message_u)
 
         # lower half
         lower_parts = []
@@ -317,7 +317,7 @@ class Half_Graph(nn.Module):
 
         comp_l = self.comp_l(xh_list[1], lower_parts)
         message_l = decomp_list[1]+comp_l
-        xh_l = self.update_l(xh_list[1], torch.cat([h_fea, message_l], dim=1))
+        xh_l = self.update_l(xh_list[1], message_l)
 
         xh_list_new = [xh_u, xh_l]
         return xh_list_new
@@ -341,7 +341,7 @@ class Part_Graph(nn.Module):
         self.part_dp_list = nn.ModuleList([Part_Dependency(hidden_dim) for i in range(self.edge_index_num)])
         self.node_update_list = nn.ModuleList([conv_Update(hidden_dim) for i in range(self.cls_p - 1)])
 
-    def forward(self, xf, xh_list, xp_list, p_fea):
+    def forward(self, xf, xh_list, xp_list):
         # upper half
         upper_parts = []
         for part in self.upper_part_list:
@@ -393,13 +393,13 @@ class GNN(nn.Module):
         self.part_infer = Part_Graph(adj_matrix, self.upper_half_node, self.lower_half_node, in_dim, hidden_dim, cls_p,
                                      cls_h, cls_f)
 
-    def forward(self, xp_list, xh_list, xf, p_fea, h_fea, f_fea):
+    def forward(self, xp_list, xh_list, xf):
         # for full body node
-        xf_new = self.full_infer(xf, xh_list, xp_list, f_fea)
+        xf_new = self.full_infer(xf, xh_list, xp_list)
         # for half body node
-        xh_list_new = self.half_infer(xf, xh_list, xp_list, h_fea)
+        xh_list_new = self.half_infer(xf, xh_list, xp_list)
         # for part node
-        xp_list_new = self.part_infer(xf, xh_list, xp_list, p_fea)
+        xp_list_new = self.part_infer(xf, xh_list, xp_list)
 
         return xp_list_new, xh_list_new, xf_new
 

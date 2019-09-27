@@ -26,7 +26,7 @@ class Composition(nn.Module):
     def forward(self, xh, xp_list):
         xp_att_list = [self.node_att(xp) for xp in xp_list]
         com_att = torch.max(torch.stack(xp_att_list, dim=1), dim=1, keepdim=False)[0]
-        xph_message = self.conv_ch(torch.cat([xh, sum(xp_list)*com_att], dim=1))
+        xph_message = sum([self.conv_ch(torch.cat([xh, xp*com_att], dim=1)) for xp in xp_list])
         return xph_message
 
 class Decomposition(nn.Module):
