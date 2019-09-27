@@ -360,7 +360,6 @@ class Part_Graph(nn.Module):
 
         xp_list_new = []
         for i in range(self.cls_p - 1):
-            decomp_fp, att_fp = self.decomp_fp_list[i](xf, xp_list[i])
             if i + 1 in self.upper_part_list:
                 # message = decomp_pu_list[self.upper_part_list.index(i+1)]+sum(xpp_list_list[i])
 
