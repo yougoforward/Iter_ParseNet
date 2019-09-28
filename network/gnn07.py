@@ -108,7 +108,7 @@ class Dep_Context(nn.Module):
         project2 = torch.matmul(project1, torch.cat([hu.view(n,self.hidden_dim,-1), coord_fea.permute(0,2,1)], dim=1))#n,hw,hw
         att_context = torch.max(project2, dim=2, keepdim=False)[0]
         
-        return self.sigmoid(att_context.view(n,h,w))*p_fea*(1-att_hu)
+        return self.sigmoid(att_context.view(n,1,h,w))*p_fea*(1-att_hu)
 
 class Contexture(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, parts=6):
