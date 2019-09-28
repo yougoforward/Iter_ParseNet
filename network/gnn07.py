@@ -73,7 +73,7 @@ class node_att(nn.Module):
         return parent_att
 
 def generate_spatial_batch(N, featmap_H, featmap_W):
-    spatial_batch_val = np.zeros((N, featmap_H, featmap_W, 8), dtype=np.float32)
+    spatial_batch_val = torch.zeros((N, featmap_H, featmap_W, 8))
     for h in range(featmap_H):
         for w in range(featmap_W):
             xmin = w / featmap_W * 2 - 1
