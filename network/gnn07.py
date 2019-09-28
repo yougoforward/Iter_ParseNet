@@ -413,15 +413,16 @@ class GNN_infer(nn.Module):
 
         # gnn infer
         p_fea_list_new, h_fea_list_new, f_fea_new = self.gnn(p_node_list, h_node_list, f_node, xp)
-        p_fea_list_new2, h_fea_list_new2, f_fea_new2 = self.gnn(p_fea_list_new, h_fea_list_new, f_fea_new)
+        # p_fea_list_new2, h_fea_list_new2, f_fea_new2 = self.gnn(p_fea_list_new, h_fea_list_new, f_fea_new)
 
         # bg_node_new = self.bg_conv_new(torch.cat(p_fea_list_new + h_fea_list_new + [f_fea_new, bg_node], dim=1))
 
         # node supervision
         node = torch.cat([f_node] + h_node_list + p_node_list, dim=1)
         node_new = torch.cat([f_fea_new] + h_fea_list_new + p_fea_list_new, dim=1)
-        node_new2 = torch.cat([f_fea_new2] + h_fea_list_new2 + p_fea_list_new2, dim=1)
-        node_final = torch.cat([bg_node, node + node_new + node_new2], dim=1)
+        # node_new2 = torch.cat([f_fea_new2] + h_fea_list_new2 + p_fea_list_new2, dim=1)
+        node_final = torch.cat([bg_node, node + node_new], dim=1)
+        # node_final = torch.cat([bg_node, node + node_new + node_new2], dim=1)
         node_seg_final = self.node_cls_final(node_final)
         node_seg_list = list(torch.split(node_seg_final, 1, dim=1))
         f_seg = torch.cat(node_seg_list[0:2], dim=1)
