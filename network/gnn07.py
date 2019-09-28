@@ -72,9 +72,24 @@ class node_att(nn.Module):
         parent_att = xff_sum/torch.max(xff_sum)
         return parent_att
 
-def generate_spatial_batch(N, featmap_H, featmap_W):
+# def generate_spatial_batch(N, featmap_H, featmap_W):
+#     import numpy as np
+#     spatial_batch_val = np.zeros((N, featmap_H, featmap_W, 8), dtype=np.float32)
+#     for h in range(featmap_H):
+#         for w in range(featmap_W):
+#             xmin = w / featmap_W * 2 - 1
+#             xmax = (w+1) / featmap_W * 2 - 1
+#             xctr = (xmin+xmax) / 2
+#             ymin = h / featmap_H * 2 - 1
+#             ymax = (h+1) / featmap_H * 2 - 1
+#             yctr = (ymin+ymax) / 2
+#             spatial_batch_val[:, h, w, :] = \
+#                 [xmin, ymin, xmax, ymax, xctr, yctr, 1/featmap_W, 1/featmap_H]
+#     return spatial_batch_val
+
+def generate_spatial_batch(featmap_H, featmap_W):
     import numpy as np
-    spatial_batch_val = np.zeros((N, featmap_H, featmap_W, 8), dtype=np.float32)
+    spatial_batch_val = np.zeros((1, featmap_H, featmap_W, 8), dtype=np.float32)
     for h in range(featmap_H):
         for w in range(featmap_W):
             xmin = w / featmap_W * 2 - 1
@@ -97,13 +112,15 @@ class Dep_Context(nn.Module):
             nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
             nn.Sigmoid())
         self.sigmoid = nn.Sigmoid()
+        self.coord_fea = torch.from_numpy(generate_spatial_batch(60,60))
 
 
     def forward(self, p_fea, hu):
         n,c,h,w=p_fea.size()
         att_hu = self.att(hu)
         hu = att_hu*hu
-        coord_fea = torch.from_numpy(generate_spatial_batch(n,h,w)).to(p_fea.device).view(n,-1,8) #n,hw,8
+        # coord_fea = torch.from_numpy(generate_spatial_batch(n,h,w)).to(p_fea.device).view(n,-1,8) #n,hw,8
+        coord_fea = self.coord_fea.expand((n,h,w,8))
         project1 = torch.matmul(torch.cat([p_fea.view(n,self.in_dim,-1).permute(0,2,1), coord_fea], dim=2), self.W)#n,hw,hidden+8
         project2 = torch.matmul(project1, torch.cat([hu.view(n,self.hidden_dim,-1), coord_fea.permute(0,2,1)], dim=1))#n,hw,hw
         att_context = torch.max(project2, dim=2, keepdim=False)[0]
