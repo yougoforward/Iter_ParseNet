@@ -59,11 +59,40 @@ def parse_args():
     return args
 
 
+# def adjust_learning_rate(optimizer, epoch, i_iter, iters_per_epoch, method='poly'):
+#     if method == 'poly':
+#         current_step = epoch * iters_per_epoch + i_iter
+#         max_step = args.epochs * iters_per_epoch
+#         lr = args.learning_rate * ((1 - current_step / max_step) ** 0.9)
+#     else:
+#         lr = args.learning_rate
+#     optimizer.param_groups[0]['lr'] = lr
+#     return lr
+from utils.learning_policy import cosine_decay, restart_cosine_decay
+
 def adjust_learning_rate(optimizer, epoch, i_iter, iters_per_epoch, method='poly'):
     if method == 'poly':
         current_step = epoch * iters_per_epoch + i_iter
         max_step = args.epochs * iters_per_epoch
         lr = args.learning_rate * ((1 - current_step / max_step) ** 0.9)
+    elif method == 'cosine':
+        warm_step = int(0.05*epoch * iters_per_epoch)
+        warm_lr = 0.1*args.learning_rate
+        current_step = epoch * iters_per_epoch + i_iter
+        if current_step<warm_step:
+            lr = warm_lr
+        else:
+            lr = cosine_decay(learning_rate=args.learning_rate, global_step=epoch * iters_per_epoch + i_iter-warm_step, decay_steps=int(0.9*args.epochs * iters_per_epoch), alpha=0.000001)
+    elif method == 'restart_cosine':
+        warm_step = int(0.05 * epoch * iters_per_epoch)
+        warm_lr = 0.1 * args.learning_rate
+        current_step = epoch * iters_per_epoch + i_iter
+        if current_step < warm_step:
+            lr = warm_lr
+        else:
+            lr = restart_cosine_decay(learning_rate=args.learning_rate,
+                              global_step=epoch * iters_per_epoch + i_iter - warm_step,
+                              decay_steps=int(0.9 * args.epochs * iters_per_epoch), alpha=0.000001)
     else:
         lr = args.learning_rate
     optimizer.param_groups[0]['lr'] = lr
