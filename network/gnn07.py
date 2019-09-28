@@ -297,7 +297,7 @@ class Part_Graph(nn.Module):
         self.part_dp = Part_Dependency(in_dim, hidden_dim)
         self.node_update_list = nn.ModuleList([conv_Update(hidden_dim) for i in range(self.cls_p - 1)])
 
-    def forward(self, xf, xh_list, xp_list):
+    def forward(self, xf, xh_list, xp_list,xp):
         # upper half
         upper_parts = []
         for part in self.upper_part_list:
@@ -309,7 +309,7 @@ class Part_Graph(nn.Module):
         decomp_pu_list = self.decomp_hpu_list(xh_list[0], upper_parts )
         decomp_pl_list = self.decomp_hpl_list(xh_list[1], lower_parts )
 
-        F_dep_list = self.F_dep_list(xp_list)
+        F_dep_list = self.F_dep_list(xp_list, xp)
         xpp_list_list = [[] for i in range(self.cls_p - 1)]
         for i in range(self.edge_index_num):
             xpp_list_list[self.edge_index[i, 1]].append(self.part_dp(F_dep_list[self.edge_index[i, 0]],xp_list[self.edge_index[i, 1]]))
@@ -348,13 +348,13 @@ class GNN(nn.Module):
         self.part_infer = Part_Graph(adj_matrix, self.upper_half_node, self.lower_half_node, in_dim, hidden_dim, cls_p,
                                      cls_h, cls_f)
 
-    def forward(self, xp_list, xh_list, xf):
+    def forward(self, xp_list, xh_list, xf, xp):
         # for full body node
         xf_new = self.full_infer(xf, xh_list, xp_list)
         # for half body node
         xh_list_new = self.half_infer(xf, xh_list, xp_list)
         # for part node
-        xp_list_new = self.part_infer(xf, xh_list, xp_list)
+        xp_list_new = self.part_infer(xf, xh_list, xp_list, xp)
 
         return xp_list_new, xh_list_new, xf_new
 
@@ -411,7 +411,7 @@ class GNN_infer(nn.Module):
         bg_node = self.bg_conv(torch.cat([xp, xh, xf], dim=1))
 
         # gnn infer
-        p_fea_list_new, h_fea_list_new, f_fea_new = self.gnn(p_node_list, h_node_list, f_node)
+        p_fea_list_new, h_fea_list_new, f_fea_new = self.gnn(p_node_list, h_node_list, f_node, xp)
         p_fea_list_new2, h_fea_list_new2, f_fea_new2 = self.gnn(p_fea_list_new, h_fea_list_new, f_fea_new)
 
         # bg_node_new = self.bg_conv_new(torch.cat(p_fea_list_new + h_fea_list_new + [f_fea_new, bg_node], dim=1))
