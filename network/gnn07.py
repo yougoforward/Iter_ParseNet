@@ -103,7 +103,7 @@ class Dep_Context(nn.Module):
         n,c,h,w=p_fea.size()
         att_hu = self.att(hu)
         hu = att_hu*hu
-        coord_fea = generate_spatial_batch(n,h,w).to(p_fea.device).view(n,-1,8) #n,hw,8
+        coord_fea = torch.from_numpy(generate_spatial_batch(n,h,w)).to(p_fea.device).view(n,-1,8) #n,hw,8
         project1 = torch.matmul(torch.cat([p_fea.view(n,self.in_dim,-1).permute(0,2,1), coord_fea], dim=2), self.W)#n,hw,hidden+8
         project2 = torch.matmul(project1, torch.cat([hu.view(n,self.hidden_dim,-1), coord_fea.permute(0,2,1)], dim=1))#n,hw,hw
         att_context = torch.max(project2, dim=2, keepdims=False)[0]
