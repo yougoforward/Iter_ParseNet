@@ -123,7 +123,7 @@ class ABRLovaszLoss_List(nn.Module):
         # seg loss
         loss=[]
         for i in range(len(preds[0])):
-            pred = F.interpolate(input=preds[0], size=(h, w), mode='bilinear', align_corners=True)
+            pred = F.interpolate(input=preds[0][i], size=(h, w), mode='bilinear', align_corners=True)
             pred = F.softmax(input=pred, dim=1)
             loss.append(lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
         loss = sum(loss)
@@ -131,7 +131,7 @@ class ABRLovaszLoss_List(nn.Module):
         # half body
         loss_hb = []
         for i in range(len(preds[1])):
-            pred_hb = F.interpolate(input=preds[1], size=(h, w), mode='bilinear', align_corners=True)
+            pred_hb = F.interpolate(input=preds[1][i], size=(h, w), mode='bilinear', align_corners=True)
             pred_hb = F.softmax(input=pred_hb, dim=1)
             loss_hb.append(lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
                                       only_present=self.only_present))
@@ -140,7 +140,7 @@ class ABRLovaszLoss_List(nn.Module):
         # full body
         loss_fb=[]
         for i in range(len(preds[2])):
-            pred_fb = F.interpolate(input=preds[2], size=(h, w), mode='bilinear', align_corners=True)
+            pred_fb = F.interpolate(input=preds[2][i], size=(h, w), mode='bilinear', align_corners=True)
             pred_fb = F.softmax(input=pred_fb, dim=1)
             loss_fb.append(lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
                                       only_present=self.only_present))
