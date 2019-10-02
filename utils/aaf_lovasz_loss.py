@@ -144,7 +144,7 @@ class ABRLovaszLoss_List(nn.Module):
             pred_fb = F.softmax(input=pred_fb, dim=1)
             loss_fb.append(lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
                                       only_present=self.only_present))
-            loss_fb = sum(loss_fb)
+        loss_fb = sum(loss_fb)
 
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
