@@ -138,7 +138,7 @@ class ABRLovaszLoss_List(nn.Module):
         loss_hb = sum(loss_hb)
 
         # full body
-        loss_fb=[]
+        loss_fb = []
         for i in range(len(preds[2])):
             pred_fb = F.interpolate(input=preds[2][i], size=(h, w), mode='bilinear', align_corners=True)
             pred_fb = F.softmax(input=pred_fb, dim=1)
