@@ -14,13 +14,11 @@ from torch.utils import data
 
 from dataset.dataloader import DataGenerator
 # from dataset.datasets import DatasetGenerator
-from network.gnn02 import get_model
+from network.gnn08 import get_model
 # from network.abrnet import get_model
 from progress.bar import Bar
 # from utils.aaf_lovasz_loss import gnn_ABRLovaszLoss as ABRLovaszLoss
-# from utils.aaf_lovasz_loss import ABRLovaszLoss
 from utils.aaf_lovasz_loss import ABRLovaszLoss
-#
 from utils.metric import *
 from utils.parallel import DataParallelModel, DataParallelCriterion
 from utils.visualize import inv_preprocess, decode_predictions
@@ -59,37 +57,11 @@ def parse_args():
     return args
 
 
-# def adjust_learning_rate(optimizer, epoch, i_iter, iters_per_epoch, method='poly'):
-#     if method == 'poly':
-#         current_step = epoch * iters_per_epoch + i_iter
-#         max_step = args.epochs * iters_per_epoch
-#         lr = args.learning_rate * ((1 - current_step / max_step) ** 0.9)
-#     else:
-#         lr = args.learning_rate
-#     optimizer.param_groups[0]['lr'] = lr
-#     return lr
-from utils.learning_policy import cosine_decay, restart_cosine_decay
-
 def adjust_learning_rate(optimizer, epoch, i_iter, iters_per_epoch, method='poly'):
     if method == 'poly':
         current_step = epoch * iters_per_epoch + i_iter
         max_step = args.epochs * iters_per_epoch
         lr = args.learning_rate * ((1 - current_step / max_step) ** 0.9)
-    elif method == 'cosine':
-        warm_step = 5 * iters_per_epoch
-        warm_lr = 0.001*args.learning_rate
-        decay_steps = 10 * iters_per_epoch
-        lr = cosine_decay(learning_rate=args.learning_rate, global_step=epoch * iters_per_epoch + i_iter,
-                          warm_step=warm_step, warm_lr= warm_lr,
-                          decay_steps=decay_steps, alpha=0.0001)
-
-    elif method == 'restart_cosine':
-        warm_step = 5 * iters_per_epoch
-        warm_lr = 0.001 * args.learning_rate
-        decay_steps = 10 * iters_per_epoch
-        lr = restart_cosine_decay(learning_rate=args.learning_rate, global_step=epoch * iters_per_epoch + i_iter,
-                          warm_step=warm_step, warm_lr=warm_lr,
-                          decay_steps=decay_steps, alpha=0.0001)
     else:
         lr = args.learning_rate
     optimizer.param_groups[0]['lr'] = lr
@@ -253,9 +225,9 @@ def validation(model, val_loader, epoch, writer):
             h, w = target.size(1), target.size(2)
             outputs = model(image)
             outputs = gather(outputs, 0, dim=0)
-            preds = F.interpolate(input=outputs[0], size=(h, w), mode='bilinear', align_corners=True)
-            preds_hb = F.interpolate(input=outputs[1], size=(h, w), mode='bilinear', align_corners=True)
-            preds_fb = F.interpolate(input=outputs[2], size=(h, w), mode='bilinear', align_corners=True)
+            preds = F.interpolate(input=outputs[0][-1], size=(h, w), mode='bilinear', align_corners=True)
+            preds_hb = F.interpolate(input=outputs[1][-1], size=(h, w), mode='bilinear', align_corners=True)
+            preds_fb = F.interpolate(input=outputs[2][-1], size=(h, w), mode='bilinear', align_corners=True)
             if idx % 50 == 0:
                 img_vis = inv_preprocess(image, num_images=args.save_num)
                 label_vis = decode_predictions(target.int(), num_images=args.save_num, num_classes=args.num_classes)

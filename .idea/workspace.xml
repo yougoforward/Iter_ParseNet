@@ -2,7 +2,16 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="2810911a-08cc-4176-bfd2-ef66950fbb73" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/network/gnn08.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/train_gnn08.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/utils/BoundaryLabelRelaxationLoss.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/utils/config.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/utils/transforms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/network/gnn07.py" beforeDir="false" afterPath="$PROJECT_DIR$/network/gnn07.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/train_gnn04.py" beforeDir="false" afterPath="$PROJECT_DIR$/train_gnn04.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/aaf_lovasz_loss.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/aaf_lovasz_loss.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/learning_policy.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/learning_policy.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -24,7 +33,7 @@
   <component name="PropertiesComponent">
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/network/gnn03.py" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/utils" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
@@ -32,6 +41,7 @@
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/utils" />
       <recent name="$PROJECT_DIR$/network" />
       <recent name="$PROJECT_DIR$" />
     </key>
@@ -73,5 +83,16 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/utils/transforms.py</url>
+          <line>33</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>
