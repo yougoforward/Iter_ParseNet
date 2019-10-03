@@ -226,7 +226,7 @@ def validation(model, val_loader, epoch, writer):
             h, w = target.size(1), target.size(2)
             outputs = model(image)
             outputs = gather(outputs, 0, dim=0)
-            preds = F.interpolate(input=outputs[0][-1], size=(h, w), mode='bilinear', align_corners=True)
+            preds = F.interpolate(input=outputs[0], size=(h, w), mode='bilinear', align_corners=True)
             preds_hb = F.interpolate(input=outputs[1][-1], size=(h, w), mode='bilinear', align_corners=True)
             preds_fb = F.interpolate(input=outputs[2][-1], size=(h, w), mode='bilinear', align_corners=True)
             if idx % 50 == 0:
