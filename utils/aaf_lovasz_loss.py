@@ -151,6 +151,53 @@ class ABRLovaszLoss_List(nn.Module):
         loss_dsn = self.criterion(pred_dsn, targets[0])
         return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn
 
+class ABRLovaszLoss_List_final(nn.Module):
+    """Lovasz loss for Alpha process"""
+
+    def __init__(self, ignore_index=None, only_present=True, cls_p=7, cls_h=3, cls_f=2):
+        super(ABRLovaszLoss_List_final, self).__init__()
+        self.ignore_index = ignore_index
+        self.only_present = only_present
+        self.weight = torch.FloatTensor([0.82877791, 0.95688253, 0.94921949, 1.00538108, 1.0201687,  1.01665831, 1.05470914])
+        self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=self.weight)
+
+    def forward(self, preds, targets):
+        h, w = targets[0].size(1), targets[0].size(2)
+        # seg loss
+        pred = F.interpolate(input=preds[0], size=(h, w), mode='bilinear', align_corners=True)
+        pred = F.softmax(input=pred, dim=1)
+        final_loss = lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present)
+        # seg loss
+        loss=[]
+        for i in range(len(preds[3])):
+            pred = F.interpolate(input=preds[0][i], size=(h, w), mode='bilinear', align_corners=True)
+            pred = F.softmax(input=pred, dim=1)
+            loss.append(lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
+        loss = sum(loss)
+
+        # half body
+        loss_hb = []
+        for i in range(len(preds[1])):
+            pred_hb = F.interpolate(input=preds[1][i], size=(h, w), mode='bilinear', align_corners=True)
+            pred_hb = F.softmax(input=pred_hb, dim=1)
+            loss_hb.append(lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
+                                      only_present=self.only_present))
+        loss_hb = sum(loss_hb)
+
+        # full body
+        loss_fb = []
+        for i in range(len(preds[2])):
+            pred_fb = F.interpolate(input=preds[2][i], size=(h, w), mode='bilinear', align_corners=True)
+            pred_fb = F.softmax(input=pred_fb, dim=1)
+            loss_fb.append(lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
+                                      only_present=self.only_present))
+        loss_fb = sum(loss_fb)
+
+        # dsn loss
+        pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
+        loss_dsn = self.criterion(pred_dsn, targets[0])
+        return final_loss + 0.4*loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn
+
 class gnn_ABRLovaszLoss(nn.Module):
     """Lovasz loss for Alpha process"""
 
