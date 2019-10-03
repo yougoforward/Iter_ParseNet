@@ -170,7 +170,7 @@ class ABRLovaszLoss_List_final(nn.Module):
         # seg loss
         loss=[]
         for i in range(len(preds[3])):
-            pred = F.interpolate(input=preds[0][i], size=(h, w), mode='bilinear', align_corners=True)
+            pred = F.interpolate(input=preds[3][i], size=(h, w), mode='bilinear', align_corners=True)
             pred = F.softmax(input=pred, dim=1)
             loss.append(lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
         loss = sum(loss)
