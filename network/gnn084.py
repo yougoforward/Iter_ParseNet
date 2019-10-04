@@ -14,7 +14,7 @@ from modules.convGRU import ConvGRU
 from modules.dcn import DFConv2d
 
 class Composition(nn.Module):
-    def __init__(self, hidden_dim):
+    def __init__(self, hidden_dim, parts=2):
         super(Composition, self).__init__()
         self.conv_ch = nn.Sequential(
             nn.Conv2d(2 * hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
@@ -22,11 +22,22 @@ class Composition(nn.Module):
             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
-        self.node_att = node_att()
+        # self.node_att = node_att()
+        self.conv_p = nn.ModuleList([nn.Sequential(
+            nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
+        ) for i in range(parts)])
+        self.conv_h = nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True)
+        self.softmax = nn.Softmax(dim=1)
 
     def forward(self, xh, xp_list):
-        xp_att_list = [self.node_att(xp) for xp in xp_list]
-        com_att = torch.max(torch.stack(xp_att_list, dim=1), dim=1, keepdim=False)[0]
+        comp_map = [self.conv_p[i](xp_list[i]) for i in range(len(xp_list))]
+        bg_map = self.conv_h(xh)
+        maps = torch.cat([bg_map] + comp_map, dim=1)
+        comp_att = self.softmax(maps)
+        comp_att_list = list(torch.split(comp_att, 1, dim=1))
+        # xp_att_list = [self.node_att(xp) for xp in xp_list]
+        # com_att = torch.max(torch.stack(xp_att_list, dim=1), dim=1, keepdim=False)[0]
+        com_att = sum(comp_att_list[1:])
         xph_message = sum([self.conv_ch(torch.cat([xh, xp * com_att], dim=1)) for xp in xp_list])
         return xph_message
 
@@ -117,10 +128,12 @@ class Dep_Context(nn.Module):
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
         self.W = nn.Parameter(torch.ones(in_dim + 8, hidden_dim + 8))
-        self.att = node_att()
+        # self.att = node_att()
+        self.att = nn.Sequential(nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
+                                 nn.Sigmoid())
         self.sigmoid = nn.Sigmoid()
         self.coord_fea = torch.from_numpy(generate_spatial_batch(60, 60))
-        self.maxpool = nn.AdaptiveMaxPool2d(1, 1)
+        self.maxpool = nn.AdaptiveMaxPool2d(1)
 
     def forward(self, p_fea, hu):
         n, c, h, w = p_fea.size()
