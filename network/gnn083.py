@@ -71,7 +71,7 @@ class Decomp_att(nn.Module):
 class node_att(nn.Module):
     def __init__(self):
         super(node_att, self).__init__()
-        self.maxpool = nn.AdaptiveMaxPool2d(1,1)
+        self.maxpool = nn.AdaptiveMaxPool2d(1)
 
     def forward(self, xf):
         xff = xf * xf
