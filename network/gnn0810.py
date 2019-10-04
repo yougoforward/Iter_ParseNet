@@ -459,8 +459,8 @@ class GNN_infer(nn.Module):
         # node supervision
         f_node = F.interpolate(f_node, (th, tw))
         f_fea_new = F.interpolate(f_fea_new, (th, tw))
-        up_h_node_list = [F.interpolate((hn, (th,tw))) for hn in h_node_list]
-        up_h_fea_list_new = [F.interpolate((hn, (th,tw))) for hn in h_fea_list_new]
+        up_h_node_list = [F.interpolate(hn, (th,tw)) for hn in h_node_list]
+        up_h_fea_list_new = [F.interpolate(hn, (th,tw)) for hn in h_fea_list_new]
 
         node = torch.cat([f_node] + up_h_node_list + p_node_list, dim=1)
         node_new = torch.cat([f_fea_new] + up_h_fea_list_new + p_fea_list_new, dim=1)
