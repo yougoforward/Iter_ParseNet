@@ -118,6 +118,9 @@ class ABRLovaszLoss_List_att(nn.Module):
         self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=self.weight)
         self.upper_part_list = upper_part_list
         self.lower_part_list = lower_part_list
+        self.num_classes = cls_p
+        self.cls_h = cls_h
+        self.cls_f = cls_f
 
     def forward(self, preds, targets):
         h, w = targets[0].size(1), targets[0].size(2)
@@ -209,7 +212,7 @@ class ABRLovaszLoss_List_att(nn.Module):
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
-        return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4*loss_dsn+0.4*loss_up_att+0.4*loss_lp_att+ 0.4 * loss_dsn
+        return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4*loss_fh_att+0.4*loss_up_att+0.4*loss_lp_att+ 0.4 * loss_dsn
 
 class ABRLovaszLoss_List(nn.Module):
     """Lovasz loss for Alpha process"""
