@@ -31,9 +31,9 @@ class DecoderModule(nn.Module):
 class AlphaHBDecoder(nn.Module):
     def __init__(self, hbody_cls):
         super(AlphaHBDecoder, self).__init__()
-        self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False),
+        self.conv1 = nn.Sequential(nn.Conv2d(512, 512, kernel_size=3, padding=1, stride=1, bias=False),
+                                   BatchNorm2d(512), nn.ReLU(inplace=False),
+                                   nn.Conv2d(512, 256, kernel_size=1, padding=0, stride=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False), SEModule(256, reduction=16),
                                    nn.Conv2d(256, hbody_cls, kernel_size=1, padding=0, stride=1, bias=True))
 
