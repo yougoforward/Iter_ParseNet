@@ -477,8 +477,8 @@ class GNN_infer(nn.Module):
         h_seg_new = torch.cat([node_seg_list_new[0]] + node_seg_list_new[2:4], dim=1)
         p_seg_new = torch.cat([node_seg_list_new[0]] + node_seg_list_new[4:], dim=1)
 
-        p_seg_final = self.final_cls(torch.cat([bg_node, node_new, xp], dim=1))
-        return p_seg_final, [p_seg, p_seg_new], [h_seg, h_seg_new], [f_seg, f_seg_new]
+        # p_seg_final = self.final_cls(p_seg, xp, xl)
+        return [p_seg, p_seg_new], [h_seg, h_seg_new], [f_seg, f_seg_new]
 
 
 class Decoder(nn.Module):
@@ -508,8 +508,8 @@ class Decoder(nn.Module):
         alpha_fb_fea = self.layerf(seg, x[1])
 
         # gnn infer
-        p_seg_final, p_seg, h_seg, f_seg = self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, x[0])
-        return p_seg_final, h_seg, f_seg, p_seg, x_dsn
+        p_seg, h_seg, f_seg = self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, x[0])
+        return p_seg, h_seg, f_seg, x_dsn
 
 
 class OCNet(nn.Module):
