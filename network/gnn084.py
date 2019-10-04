@@ -272,7 +272,7 @@ class Full_Graph(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, cls_p=7, cls_h=3, cls_f=2):
         super(Full_Graph, self).__init__()
         self.hidden = hidden_dim
-        self.comp_h = Composition(hidden_dim)
+        self.comp_h = Composition(hidden_dim, parts=2)
         self.conv_Update = conv_Update(hidden_dim)
 
     def forward(self, xf, xh_list, xp_list):
@@ -293,8 +293,8 @@ class Half_Graph(nn.Module):
         self.hidden = hidden_dim
 
         self.decomp_fh_list = Decomposition(hidden_dim, parts=2)
-        self.comp_u = Composition(hidden_dim)
-        self.comp_l = Composition(hidden_dim)
+        self.comp_u = Composition(hidden_dim, parts=self.upper_parts_len)
+        self.comp_l = Composition(hidden_dim, parts=self.lower_parts_len)
 
         self.update_u = conv_Update(hidden_dim)
         self.update_l = conv_Update(hidden_dim)
