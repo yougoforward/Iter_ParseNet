@@ -122,7 +122,7 @@ class Dep_Context(nn.Module):
         self.W = nn.Parameter(torch.ones(in_dim + 8, hidden_dim + 8))
         self.att = node_att()
         self.sigmoid = nn.Sigmoid()
-        self.coord_fea = torch.from_numpy(generate_spatial_batch(60, 60))
+        self.coord_fea = torch.from_numpy(generate_spatial_batch(119, 119))
         self.maxpool = nn.AdaptiveMaxPool2d(1)
 
     def forward(self, p_fea, hu):
