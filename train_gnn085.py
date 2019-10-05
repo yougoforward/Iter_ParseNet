@@ -131,7 +131,7 @@ def main(args):
         _ = train(model, train_loader, epoch, criterion, optimizer, writer)
 
         # validation
-        if epoch %10 ==0 or epoch > args.epochs*0.8:
+        if epoch %10 ==0 or epoch > args.epochs-10:
             val_pixacc, val_miou = validation(model, val_loader, epoch, writer)
             # save model
             if val_pixacc > best_val_pixAcc:
