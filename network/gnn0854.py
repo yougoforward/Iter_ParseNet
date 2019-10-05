@@ -13,7 +13,6 @@ BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
 from modules.convGRU import ConvGRU
 from modules.dcn import DFConv2d
 
-
 class Composition(nn.Module):
     def __init__(self, hidden_dim):
         super(Composition, self).__init__()
@@ -134,7 +133,6 @@ class Dep_Context(nn.Module):
         co_context = torch.bmm(attention, hu.view(n, self.hidden_dim, -1).permute(0, 2, 1)).permute(0, 2, 1).view(n,
                                                                                                                   self.hidden_dim,
                                                                                                                   h, w)
-
         return co_context
 
 
@@ -146,7 +144,7 @@ class Contexture(nn.Module):
         self.parts = parts
         self.att_list = nn.ModuleList([nn.Sequential(
             nn.Conv2d(hidden_dim, len(part_list_list[i])+ 1, kernel_size=1, padding=0, stride=1, bias=True),
-        ) for i in len(part_list_list)])
+        ) for i in range(len(part_list_list))])
 
         self.softmax = nn.Softmax(dim=1)
 
