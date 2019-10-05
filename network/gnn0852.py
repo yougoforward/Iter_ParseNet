@@ -123,6 +123,7 @@ class Dep_Context(nn.Module):
         self.sigmoid = nn.Sigmoid()
         self.coord_fea = torch.from_numpy(generate_spatial_batch(60, 60))
         self.maxpool = nn.AdaptiveMaxPool2d(1)
+        self.softmax=nn.Softmax(dim=-1)
 
     def forward(self, p_fea, hu):
         n, c, h, w = p_fea.size()
@@ -132,13 +133,28 @@ class Dep_Context(nn.Module):
         coord_fea = self.coord_fea.to(p_fea.device).repeat((n, 1, 1, 1)).view(n, -1, 8)
         project1 = torch.matmul(torch.cat([p_fea.view(n, self.in_dim, -1).permute(0, 2, 1), coord_fea], dim=2),
                                 self.W)  # n,hw,hidden+8
-        project2 = torch.matmul(project1, torch.cat([hu.view(n, self.hidden_dim, -1), coord_fea.permute(0, 2, 1)],
+        energy = torch.matmul(project1, torch.cat([hu.view(n, self.hidden_dim, -1), coord_fea.permute(0, 2, 1)],
                                                     dim=1))  # n,hw,hw
-        att_context = torch.max(project2, dim=2, keepdim=False)[0].view(n, 1, h, w)
-        dep_att = att_context/self.maxpool(att_context)
+        attention = self.softmax(energy)
+        co_context = torch.bmm(attention, p_fea.view(n, self.in_dim, -1).permute(0, 2, 1)).permute(0,2,1).view(n, self.in_dim, h,w)
 
-        return dep_att * p_fea * (1 - att_hu)
+        return co_context
 
+class Decomp_att(nn.Module):
+    def __init__(self, in_dim =256, hidden_dim=10, parts=2):
+        super(Decomp_att, self).__init__()
+        self.conv_fh = nn.ModuleList([nn.Sequential(
+            nn.Conv2d(in_dim + hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
+        ) for i in range(parts)])
+        self.conv_f = nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True)
+        self.softmax= nn.Softmax(dim=1)
+
+    def forward(self, dep_cont, xp_adj_list):
+        decomp_map = [self.conv_fh[i](torch.cat([xf, xh_list[i]], dim=1)) for i in range(len(xh_list))]
+        bg_map = self.conv_f(xf)
+        maps = torch.cat([bg_map]+ decomp_map, dim=1)
+        decomp_att = self.softmax(maps)
+        return decomp_att, maps
 
 class Contexture(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, parts=6):
@@ -147,8 +163,9 @@ class Contexture(nn.Module):
         self.F_cont = Dep_Context(in_dim, hidden_dim)
         self.parts = parts
 
-    def forward(self, xp_list, p_fea):
+    def forward(self, xp_list, p_fea, xp_adj_list):
         F_dep_list = [self.F_cont(p_fea, xp_list[i]) for i in range(len(xp_list))]
+
         return F_dep_list
 
 
