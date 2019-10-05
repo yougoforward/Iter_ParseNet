@@ -141,7 +141,7 @@ class Contexture(nn.Module):
         self.F_cont = Dep_Context(in_dim, hidden_dim)
         self.parts = parts
 
-    def forward(self, xp_list, p_fea, xp_adj_list):
+    def forward(self, xp_list, p_fea):
         F_dep_list = [self.F_cont(p_fea, xp_list[i]) for i in range(len(xp_list))]
 
         return F_dep_list
