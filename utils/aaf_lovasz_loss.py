@@ -224,33 +224,48 @@ class ABRLovaszLoss_List_att_final(nn.Module):
                                                    only_present=self.only_present))
         loss_lp_att = sum(loss_lp_att)
 
-        # com_map, bce loss
+        # com bce loss
         com_full_onehot = one_hot_fb_list[1].float().unsqueeze(1)
-        loss_com_full_att = []
+        com_u_onehot = one_hot_hb_list[1].float().unsqueeze(1)
+        com_l_onehot = one_hot_hb_list[2].float().unsqueeze(1)
+        com_onehot = torch.cat([com_full_onehot,com_u_onehot, com_l_onehot], dim=1)
+        loss_com_att = []
         for i in range(len(preds[6])):
             pred_com_full = F.interpolate(input=preds[6][i], size=(h, w), mode='bilinear', align_corners=True)
-            loss_com_full_att.append(torch.mean(self.bceloss(pred_com_full, com_full_onehot)*ignore))
-        loss_com_full_att = sum(loss_com_full_att)
-        # com_u_map, bce loss
-        com_u_onehot = one_hot_hb_list[1].float().unsqueeze(1)
-        loss_com_u_att = []
-        for i in range(len(preds[7])):
             pred_com_u = F.interpolate(input=preds[7][i], size=(h, w), mode='bilinear', align_corners=True)
-            loss_com_u_att.append(torch.mean(self.bceloss(pred_com_u, com_u_onehot) * ignore))
-        loss_com_u_att = sum(loss_com_u_att)
-        # com_l_map, bce loss
-        com_l_onehot = one_hot_hb_list[2].float().unsqueeze(1)
-        loss_com_l_att = []
-        for i in range(len(preds[8])):
             pred_com_l = F.interpolate(input=preds[8][i], size=(h, w), mode='bilinear', align_corners=True)
-            loss_com_l_att.append(torch.mean(self.bceloss(pred_com_l, com_l_onehot) * ignore))
-        loss_com_l_att = sum(loss_com_l_att)
+            loss_com_att.append(torch.mean(self.bceloss(torch.cat([pred_com_full, pred_com_u, pred_com_l], dim=1), com_onehot) * ignore))
+        loss_com_att = sum(loss_com_att)
+
+        # # com_map, bce loss
+        # com_full_onehot = one_hot_fb_list[1].float().unsqueeze(1)
+        # loss_com_full_att = []
+        # for i in range(len(preds[6])):
+        #     pred_com_full = F.interpolate(input=preds[6][i], size=(h, w), mode='bilinear', align_corners=True)
+        #     loss_com_full_att.append(torch.mean(self.bceloss(pred_com_full, com_full_onehot)*ignore))
+        # loss_com_full_att = sum(loss_com_full_att)
+        #
+        # # com_u_map, bce loss
+        # com_u_onehot = one_hot_hb_list[1].float().unsqueeze(1)
+        # loss_com_u_att = []
+        # for i in range(len(preds[7])):
+        #     pred_com_u = F.interpolate(input=preds[7][i], size=(h, w), mode='bilinear', align_corners=True)
+        #     loss_com_u_att.append(torch.mean(self.bceloss(pred_com_u, com_u_onehot) * ignore))
+        # loss_com_u_att = sum(loss_com_u_att)
+        #
+        # # com_l_map, bce loss
+        # com_l_onehot = one_hot_hb_list[2].float().unsqueeze(1)
+        # loss_com_l_att = []
+        # for i in range(len(preds[8])):
+        #     pred_com_l = F.interpolate(input=preds[8][i], size=(h, w), mode='bilinear', align_corners=True)
+        #     loss_com_l_att.append(torch.mean(self.bceloss(pred_com_l, com_l_onehot) * ignore))
+        # loss_com_l_att = sum(loss_com_l_att)
 
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
         return loss + 0.4 * loss_hb + 0.4 * loss_fb + \
-               0.4*(loss_fh_att+loss_up_att+loss_lp_att+loss_com_full_att+loss_com_u_att+loss_com_l_att) + 0.4 * loss_dsn
+               0.4*(loss_fh_att+loss_up_att+loss_lp_att+loss_com_att) + 0.4 * loss_dsn
 
 class ABRLovaszLoss_List_att(nn.Module):
     """Lovasz loss for Alpha process"""
