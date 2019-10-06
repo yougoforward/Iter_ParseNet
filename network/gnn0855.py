@@ -25,15 +25,16 @@ class Composition(nn.Module):
         self.com_att = nn.Sequential(
             nn.Conv2d(parts * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True)
+            nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
+            nn.Sigmoid()
         )
-        self.sigmoid= nn.Sigmoid()
+        # self.sigmoid= nn.Sigmoid()
 
     def forward(self, xh, xp_list):
-        com_map = self.com_att(torch.cat(xp_list, dim=1))
-        com_att = self.sigmoid(com_map)
+        com_att = self.com_att(torch.cat(xp_list, dim=1))
+        # com_att = self.sigmoid(com_map)
         xph_message = sum([self.conv_ch(torch.cat([xh, xp * com_att], dim=1)) for xp in xp_list])
-        return xph_message, com_map
+        return xph_message, com_att
 
 
 class Decomposition(nn.Module):
