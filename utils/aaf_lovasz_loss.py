@@ -503,8 +503,7 @@ class ABRLovaszLoss_List_att(nn.Module):
             # one_hot_hb_list[i][targets[1]==255]=255
 
         #decomp up
-        upper_bg_node = one_hot_hb_list[0]
-        upper_bg_node[one_hot_hb_list[1]==0]=1
+        upper_bg_node = 1-one_hot_hb_list[1]
         upper_parts=[]
         for i in self.upper_part_list:
             upper_parts.append(one_hot_pb_list[i])
@@ -518,9 +517,9 @@ class ABRLovaszLoss_List_att(nn.Module):
             loss_up_att.append(lovasz_softmax_flat(*flatten_probas(pred_up, targets_up, self.ignore_index),
                                                    only_present=self.only_present))
         loss_up_att = sum(loss_up_att)
+
         #decomp lp
-        lower_bg_node = one_hot_hb_list[0]
-        lower_bg_node[one_hot_hb_list[2] == 0] = 1
+        lower_bg_node = 1-one_hot_hb_list[2]
         lower_parts = []
         for i in self.lower_part_list:
             lower_parts.append(one_hot_pb_list[i])
