@@ -22,10 +22,7 @@ class Composition(nn.Module):
             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
-        # self.node_att = node_att()
     def forward(self, xh, xp_list, xp_att_list):
-        # xp_att_list = [self.node_att(xp) for xp in xp_list]
-        # com_att = torch.max(torch.stack(xp_att_list, dim=1), dim=1, keepdim=False)[0]
         com_att = sum(xp_att_list)
         xph_message = sum([self.conv_ch(torch.cat([xh, xp * com_att], dim=1)) for xp in xp_list])
         return xph_message
@@ -73,22 +70,6 @@ class node_att(nn.Module):
         xff_sum = torch.sum(xff, dim=1, keepdim=True)
         parent_att = xff_sum / self.maxpool(xff_sum)
         return parent_att
-
-
-# def generate_spatial_batch(N, featmap_H, featmap_W):
-#     import numpy as np
-#     spatial_batch_val = np.zeros((N, featmap_H, featmap_W, 8), dtype=np.float32)
-#     for h in range(featmap_H):
-#         for w in range(featmap_W):
-#             xmin = w / featmap_W * 2 - 1
-#             xmax = (w+1) / featmap_W * 2 - 1
-#             xctr = (xmin+xmax) / 2
-#             ymin = h / featmap_H * 2 - 1
-#             ymax = (h+1) / featmap_H * 2 - 1
-#             yctr = (ymin+ymax) / 2
-#             spatial_batch_val[:, h, w, :] = \
-#                 [xmin, ymin, xmax, ymax, xctr, yctr, 1/featmap_W, 1/featmap_H]
-#     return spatial_batch_val
 
 def generate_spatial_batch(featmap_H, featmap_W):
     import numpy as np
