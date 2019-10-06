@@ -149,7 +149,7 @@ class Contexture(nn.Module):
         self.parts = parts
         self.att_list = nn.ModuleList([nn.Sequential(
             nn.Conv2d(hidden_dim, len(part_list_list[i])+ 1, kernel_size=1, padding=0, stride=1, bias=True),
-        ) for i in len(part_list_list)])
+        ) for i in range(len(part_list_list))])
 
         self.softmax = nn.Softmax(dim=1)
 
