@@ -121,6 +121,7 @@ class ABRLovaszLoss_List_att_final(nn.Module):
         self.num_classes = cls_p
         self.cls_h = cls_h
         self.cls_f = cls_f
+        self.bceloss = torch.nn.BCELoss(reduction='none')
 
     def forward(self, preds, targets):
         h, w = targets[0].size(1), targets[0].size(2)
