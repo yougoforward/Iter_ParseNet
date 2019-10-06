@@ -359,7 +359,7 @@ class Part_Graph(nn.Module):
         decomp_pu_list, decomp_pu_att_list, decomp_pu_att_map = self.decomp_hpu_list(xh_list[0], upper_parts)
         decomp_pl_list, decomp_pl_att_list, decomp_pl_att_map = self.decomp_hpl_list(xh_list[1], lower_parts)
 
-        F_dep_list, att_list_list, att_list = self.F_dep_list(xp_list, xp, self.part_list_list)
+        F_dep_list, att_list_list, Fdep_att_list = self.F_dep_list(xp_list, xp, self.part_list_list)
 
         xpp_list_list = [[] for i in range(self.cls_p - 1)]
         for i in range(self.edge_index_num):
@@ -378,7 +378,7 @@ class Part_Graph(nn.Module):
                 #
                 # message = decomp_pl_list[self.lower_part_list.index(i + 1)]
             xp_list_new.append(self.node_update_list[i](xp_list[i], message))
-        return xp_list_new, decomp_pu_att_map, decomp_pl_att_map
+        return xp_list_new, decomp_pu_att_map, decomp_pl_att_map, Fdep_att_list
 
 
 class GNN(nn.Module):
@@ -407,9 +407,9 @@ class GNN(nn.Module):
         # for half body node
         xh_list_new, decomp_fh_att_map, com_u_map, com_l_map = self.half_infer(xf, xh_list, xp_list)
         # for part node
-        xp_list_new, decomp_up_att_map, decomp_lp_att_map = self.part_infer(xf, xh_list, xp_list, xp)
+        xp_list_new, decomp_up_att_map, decomp_lp_att_map, Fdep_att_list = self.part_infer(xf, xh_list, xp_list, xp)
 
-        return xp_list_new, xh_list_new, xf_new, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, com_map, com_u_map, com_l_map
+        return xp_list_new, xh_list_new, xf_new, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, com_map, com_u_map, com_l_map, Fdep_att_list
 
 
 class GNN_infer(nn.Module):
@@ -478,7 +478,7 @@ class GNN_infer(nn.Module):
 
         # gnn infer
         p_fea_list_new, h_fea_list_new, f_fea_new, decomp_fh_att_map, decomp_up_att_map, \
-        decomp_lp_att_map, com_map, com_u_map, com_l_map = self.gnn(
+        decomp_lp_att_map, com_map, com_u_map, com_l_map, Fdep_att_list = self.gnn(
             p_node_list, h_node_list, f_node, xp)
         # node supervision
         node_new = torch.cat([f_fea_new] + h_fea_list_new + p_fea_list_new, dim=1)
@@ -490,7 +490,7 @@ class GNN_infer(nn.Module):
 
         # p_seg_final = self.final_cls(p_seg, xp, xl)
         return [p_seg, p_seg_new], [h_seg, h_seg_new], [f_seg, f_seg_new], [decomp_fh_att_map], [decomp_up_att_map], [
-            decomp_lp_att_map], [com_map], [com_u_map], [com_l_map]
+            decomp_lp_att_map], [com_map], [com_u_map], [com_l_map], [Fdep_att_list]
 
 
 class Decoder(nn.Module):
@@ -522,9 +522,9 @@ class Decoder(nn.Module):
 
         # gnn infer
         p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, com_map, \
-        com_u_map, com_l_map = self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, x[0])
+        com_u_map, com_l_map, Fdep_att_list = self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, x[0])
 
-        return p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, com_map, com_u_map, com_l_map, x_dsn
+        return p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, com_map, com_u_map, com_l_map, Fdep_att_list, x_dsn
 
 class OCNet(nn.Module):
     def __init__(self, block, layers, num_classes):
