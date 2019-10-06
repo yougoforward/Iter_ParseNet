@@ -197,8 +197,7 @@ class ABRLovaszLoss_List_att_final2(nn.Module):
         ignore = (targets[0] != 255).float().unsqueeze(1)
 
         #decomp up
-        upper_bg_node = one_hot_hb_list[0]
-        upper_bg_node[one_hot_hb_list[1]==0]=1
+        upper_bg_node = 1-one_hot_hb_list[1]
         upper_parts=[]
         for i in self.upper_part_list:
             upper_parts.append(one_hot_pb_list[i])
@@ -213,8 +212,7 @@ class ABRLovaszLoss_List_att_final2(nn.Module):
                                                    only_present=self.only_present))
         loss_up_att = sum(loss_up_att)
         #decomp lp
-        lower_bg_node = one_hot_hb_list[0]
-        lower_bg_node[one_hot_hb_list[2] == 0] = 1
+        lower_bg_node = 1-one_hot_hb_list[2]
         lower_parts = []
         for i in self.lower_part_list:
             lower_parts.append(one_hot_pb_list[i])
@@ -264,8 +262,6 @@ class ABRLovaszLoss_List_att_final2(nn.Module):
             loss_dp_att.append(loss_dp)
 
         loss_dp_att = sum(loss_dp_att)
-
-
 
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
@@ -357,8 +353,7 @@ class ABRLovaszLoss_List_att_final(nn.Module):
 
 
         #decomp up
-        upper_bg_node = one_hot_hb_list[0]
-        upper_bg_node[one_hot_hb_list[1]==0]=1
+        upper_bg_node = 1-one_hot_hb_list[1]
         upper_parts=[]
         for i in self.upper_part_list:
             upper_parts.append(one_hot_pb_list[i])
@@ -373,8 +368,7 @@ class ABRLovaszLoss_List_att_final(nn.Module):
                                                    only_present=self.only_present))
         loss_up_att = sum(loss_up_att)
         #decomp lp
-        lower_bg_node = one_hot_hb_list[0]
-        lower_bg_node[one_hot_hb_list[2] == 0] = 1
+        lower_bg_node = 1-one_hot_hb_list[2]
         lower_parts = []
         for i in self.lower_part_list:
             lower_parts.append(one_hot_pb_list[i])
