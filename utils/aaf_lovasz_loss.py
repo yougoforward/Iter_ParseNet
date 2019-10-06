@@ -225,21 +225,21 @@ class ABRLovaszLoss_List_att_final(nn.Module):
         loss_lp_att = sum(loss_lp_att)
 
         # com_map, bce loss
-        com_full_onehot = one_hot_fb_list[1]
+        com_full_onehot = one_hot_fb_list[1].float()
         loss_com_full_att = []
         for i in range(len(preds[6])):
             pred_com_full = F.interpolate(input=preds[6][i], size=(h, w), mode='bilinear', align_corners=True)
             loss_com_full_att.append(torch.mean(self.bceloss(pred_com_full, com_full_onehot)*ignore))
         loss_com_full_att = sum(loss_com_full_att)
         # com_u_map, bce loss
-        com_u_onehot = one_hot_hb_list[1]
+        com_u_onehot = one_hot_hb_list[1].float()
         loss_com_u_att = []
         for i in range(len(preds[7])):
             pred_com_u = F.interpolate(input=preds[7][i], size=(h, w), mode='bilinear', align_corners=True)
             loss_com_u_att.append(torch.mean(self.bceloss(pred_com_u, com_u_onehot) * ignore))
         loss_com_u_att = sum(loss_com_u_att)
         # com_l_map, bce loss
-        com_l_onehot = one_hot_hb_list[2]
+        com_l_onehot = one_hot_hb_list[2].float()
         loss_com_l_att = []
         for i in range(len(preds[8])):
             pred_com_l = F.interpolate(input=preds[8][i], size=(h, w), mode='bilinear', align_corners=True)
