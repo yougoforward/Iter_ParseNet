@@ -247,7 +247,7 @@ class ABRLovaszLoss_List_att_final2(nn.Module):
         loss_dp_att = []
         for i in range(len(preds[9])):
             loss_dp = []
-            for j in range(self.num_classes):
+            for j in range(self.num_classes-1):
                 part_list = self.part_list_list[j]
                 parts_onehot = []
                 for k in part_list:
