@@ -224,7 +224,7 @@ class ABRLovaszLoss_List_att_final3(nn.Module):
         loss_lp_att = sum(loss_lp_att)
 
         # com_map, bce loss
-        com_full_onehot = one_hot_fb_list[1].float().unsqueeze(1)
+        com_full_onehot = one_hot_fb_list[1].float()
         com_full_onehot[targets[0] == 255] = 255
         loss_com_full_att = []
         for i in range(len(preds[6])):
@@ -235,7 +235,7 @@ class ABRLovaszLoss_List_att_final3(nn.Module):
         loss_com_full_att = sum(loss_com_full_att)
 
         # com_u_map, bce loss
-        com_u_onehot = one_hot_hb_list[1].float().unsqueeze(1)
+        com_u_onehot = one_hot_hb_list[1].float()
         com_u_onehot[targets[0] == 255] = 255
 
         loss_com_u_att = []
@@ -247,7 +247,7 @@ class ABRLovaszLoss_List_att_final3(nn.Module):
         loss_com_u_att = sum(loss_com_u_att)
 
         # com_l_map, bce loss
-        com_l_onehot = one_hot_hb_list[2].float().unsqueeze(1)
+        com_l_onehot = one_hot_hb_list[2].float()
         com_l_onehot[targets[0] == 255] = 255
 
         loss_com_l_att = []
