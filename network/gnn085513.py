@@ -433,9 +433,10 @@ class GNN_infer(nn.Module):
         self.node_cls_final = nn.Conv2d(hidden_dim * (cls_p + cls_h + cls_f - 2), (cls_p + cls_h + cls_f - 2),
                                         kernel_size=1, padding=0, stride=1, bias=True,
                                         groups=(cls_p + cls_h + cls_f - 2))
-        self.final_cls = nn.Conv2d((cls_p + cls_h + cls_f - 2) * hidden_dim + in_dim, cls_p, kernel_size=1, padding=0,
-                                   stride=1,
-                                   bias=True)
+        # self.final_cls = nn.Conv2d((cls_p + cls_h + cls_f - 2) * hidden_dim + in_dim, cls_p, kernel_size=1, padding=0,
+        #                            stride=1,
+        #                            bias=True)
+        self.final_cls = Final_classifer(in_dim, hidden_dim, cls_p, cls_h, cls_f)
 
         self.softmax = nn.Softmax(dim=1)
 
