@@ -512,7 +512,7 @@ class Final_classifer(nn.Module):
         x = torch.cat([xt, xl], dim=1)
         p_new = self.conv3(x)
 
-        node_list = [self.cls[i](p_new.unsqueeze(1), [p_node_list[i]])[-1] for i in range(self.cp)]
+        node_list = [self.cls[i](p_new.unsqueeze(1), [p_node_list[i]])[-1][0][0] for i in range(self.cp)]
         out = self.node_cls(torch.cat(node_list, dim=1))
         return out
 
