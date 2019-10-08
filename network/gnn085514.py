@@ -489,12 +489,19 @@ class Final_classifer(nn.Module):
             nn.Conv2d(in_dim + 48, 256, kernel_size=3, padding=1, dilation=1, bias=False),
             BatchNorm2d(256), nn.ReLU(inplace=False),
             nn.Conv2d(256, 256, kernel_size=3, padding=1, dilation=1, bias=False),
-            BatchNorm2d(256), nn.ReLU(inplace=False),
-            )
-        self.cls = nn.ModuleList([nn.Sequential(nn.Conv2d(256+hidden_dim, hidden_dim, kernel_size=1, padding=0, dilation=1, bias=False),
-                                                BatchNorm2d(hidden_dim), nn.ReLU(),
-                                                nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, dilation=1, bias=True))
+            BatchNorm2d(256), nn.ReLU(inplace=False)
+        )
+        dtype = torch.cuda.FloatTensor
+        self.cls = nn.ModuleList([ConvGRU(input_dim=256,
+                              hidden_dim=hidden_dim,
+                              kernel_size=(3, 3),
+                              num_layers=1,
+                              dtype=dtype,
+                              batch_first=True,
+                              bias=True,
+                              return_all_layers=False)
                                   for i in range(cls_p)])
+        self.node_cls = nn.Conv2d(cls_p*hidden_dim, cls_p, kernel_size=1, padding=0, dilation=1, groups=cls_p, bias=True)
     def forward(self, p_node_list, xp, xl):
         # classifier
         _, _, th, tw = xl.size()
@@ -504,8 +511,8 @@ class Final_classifer(nn.Module):
         x = torch.cat([xt, xl], dim=1)
         p_new = self.conv3(x)
 
-        cls_list = [self.cls[i](torch.cat([p_new, p_node_list[i]], dim=1)) for i in range(self.cp)]
-        out = torch.cat(cls_list, dim=1)
+        node_list = [self.cls[i](p_new.unsqueeze(1), [p_node_list[i]])[-1] for i in range(self.cp)]
+        out = self.node_cls(torch.cat(node_list, dim=1))
         return out
 
 class Decoder(nn.Module):
