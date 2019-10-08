@@ -25,13 +25,12 @@ class Composition(nn.Module):
         self.com_att = nn.Sequential(
             nn.Conv2d(parts * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(hidden_dim, 2, kernel_size=1, padding=0, stride=1, bias=True),
+            nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
+            nn.Sigmoid()
         )
-        self.softmax = nn.Softmax(dim=1)
     def forward(self, xh, xp_list):
         com_att = self.com_att(torch.cat(xp_list, dim=1))
-        com_att_list = list(torch.split(self.softmax(com_att),1,dim=1))
-        xph_message = sum([self.conv_ch(torch.cat([xh, xp * com_att_list[1]], dim=1)) for xp in xp_list])
+        xph_message = sum([self.conv_ch(torch.cat([xh, xp * com_att], dim=1)) for xp in xp_list])
         return xph_message, com_att
 
 
@@ -493,7 +492,10 @@ class Final_classifer(nn.Module):
             nn.Conv2d(256, 256, kernel_size=3, padding=1, dilation=1, bias=False),
             BatchNorm2d(256), nn.ReLU(inplace=False),
             )
-        self.cls = nn.ModuleList([nn.Conv2d(256+hidden_dim, 1, kernel_size=1, padding=0, dilation=1, bias=True) for i in range(cls_p)])
+        self.cls = nn.ModuleList([nn.Sequential(nn.Conv2d(256+hidden_dim, hidden_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+                                                BatchNorm2d(256), nn.ReLU(),
+                                                nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, dilation=1, bias=True))
+                                  for i in range(cls_p)])
     def forward(self, p_node_list, xp, xl):
         # classifier
         _, _, th, tw = xl.size()
@@ -536,7 +538,7 @@ class Decoder(nn.Module):
 
         # gnn infer
         p_seg_final, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, com_map, \
-        com_u_map, com_l_map,  p_seg = self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, x[0])
+        com_u_map, com_l_map, p_seg = self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, x[0])
 
         return p_seg_final, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, com_map, com_u_map, com_l_map,  p_seg, x_dsn
 
