@@ -493,7 +493,7 @@ class Final_classifer(nn.Module):
             BatchNorm2d(256), nn.ReLU(inplace=False),
             )
         self.cls = nn.ModuleList([nn.Sequential(nn.Conv2d(256+hidden_dim, hidden_dim, kernel_size=1, padding=0, dilation=1, bias=False),
-                                                BatchNorm2d(256), nn.ReLU(),
+                                                BatchNorm2d(hidden_dim), nn.ReLU(),
                                                 nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, dilation=1, bias=True))
                                   for i in range(cls_p)])
     def forward(self, p_node_list, xp, xl):
