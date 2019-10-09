@@ -201,12 +201,12 @@ class DecoderModule(nn.Module):
         xt = self.conv0(F.interpolate(xt, size=(h, w), mode='bilinear', align_corners=True) + self.alpha * xm)
         _, _, th, tw = xl.size()
         xt_fea = self.conv1(xt)
-        xt = F.interpolate(xt, size=(th, tw), mode='bilinear', align_corners=True)
-        xl = self.conv2(xl)
-        x = torch.cat([xt, xl], dim=1)
-        x_fea = self.conv3(x)
+        # xt = F.interpolate(xt, size=(th, tw), mode='bilinear', align_corners=True)
+        # xl = self.conv2(xl)
+        # x = torch.cat([xt, xl], dim=1)
+        # x_fea = self.conv3(x)
         # x_seg = self.conv4(x_fea)
-        return xt_fea, x_fea
+        return xt_fea
 
 
 class AlphaHBDecoder(nn.Module):
@@ -470,7 +470,7 @@ class GNN_infer(nn.Module):
         h_seg_new = torch.cat([node_seg_list_new[0]] + node_seg_list_new[2:4], dim=1)
         p_seg_new = torch.cat([node_seg_list_new[0]] + node_seg_list_new[4:], dim=1)
 
-        p_seg_final = self.final_cls([bg_node]+p_fea_list_new, xl)
+        p_seg_final = self.final_cls([bg_node]+p_fea_list_new, xp, xl)
         return p_seg_final, [h_seg, h_seg_new], [f_seg, f_seg_new], [decomp_fh_att_map], [decomp_up_att_map], [
             decomp_lp_att_map], [com_map], [com_u_map], [com_l_map], [p_seg, p_seg_new]
 
@@ -492,22 +492,20 @@ class Final_classifer(nn.Module):
             nn.Conv2d(256, 256, kernel_size=3, padding=1, dilation=1, bias=False),
             BatchNorm2d(256), nn.ReLU(inplace=False)
         )
-        dtype = torch.cuda.FloatTensor
-        self.cls = nn.ModuleList([ConvGRU(input_dim=256,
-                              hidden_dim=hidden_dim,
-                              kernel_size=(3, 3),
-                              num_layers=1,
-                              dtype=dtype,
-                              batch_first=True,
-                              bias=True,
-                              return_all_layers=False)
-                                  for i in range(cls_p)])
+        self.cls = nn.ModuleList([nn.Sequential(
+            nn.Conv2d(hidden_dim + 48, 256, kernel_size=3, padding=1, dilation=1, bias=False),
+            BatchNorm2d(256), nn.ReLU(inplace=False),
+            nn.Conv2d(256, hidden_dim, kernel_size=3, padding=1, dilation=1, bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
+        ) for i in range(cls_p)])
         self.node_cls = nn.Conv2d(cls_p*hidden_dim, cls_p, kernel_size=1, padding=0, dilation=1, groups=cls_p, bias=True)
-    def forward(self, p_node_list, xl):
+    def forward(self, p_node_list, xp, xl):
         # classifier
         _, _, th, tw = xl.size()
         p_node_list = [F.interpolate(node, size=(th, tw), mode='bilinear', align_corners=True) for node in p_node_list]
-        node_list = [self.cls[i](xl.unsqueeze(1), [p_node_list[i]])[-1][0][0] for i in range(self.cp)]
+        xl = self.conv2(xl)
+
+        node_list = [self.cls[i](torch.cat([xl, p_node_list[i]], dim=1)) for i in range(self.cp)]
         out = self.node_cls(torch.cat(node_list, dim=1))
         return out
 
@@ -534,13 +532,13 @@ class Decoder(nn.Module):
         seg = self.layer5(x[-1])
 
         # direct infer
-        x_fea, xl_fea = self.layer6(seg, x[1], x[0])
+        x_fea = self.layer6(seg, x[1], x[0])
         alpha_hb_fea = self.layerh(seg, x[1])
         alpha_fb_fea = self.layerf(seg, x[1])
 
         # gnn infer
         p_seg_final, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, com_map, \
-        com_u_map, com_l_map, p_seg = self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, xl_fea)
+        com_u_map, com_l_map, p_seg = self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, x[0])
 
         return p_seg_final, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, com_map, com_u_map, com_l_map,  p_seg, x_dsn
 
