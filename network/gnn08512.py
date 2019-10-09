@@ -469,7 +469,7 @@ class Final_classifer(nn.Module):
         _, _, th, tw = xl.size()
         node_list = [F.interpolate(node, size=(th, tw), mode='bilinear', align_corners=True) for node in node_list]
         xl = self.conv2(xl)
-        node_list = [self.cls[i](torch.cat([xl, node_list[i]], dim=1)) for i in range(self.cp)]
+        node_list = [self.cls[i](torch.cat([xl, node_list[i]], dim=1)) for i in range(self.cp+self.ch+self.cf-2)]
         out = torch.cat(node_list, dim=1)
         return out
 
