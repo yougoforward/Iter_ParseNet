@@ -14,7 +14,7 @@ from modules.convGRU import ConvGRU
 from modules.dcn import DFConv2d
 
 class Composition(nn.Module):
-    def __init__(self, hidden_dim):
+   def __init__(self, hidden_dim):
         super(Composition, self).__init__()
         self.conv_ch = nn.Sequential(
             nn.Conv2d(2 * hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
