@@ -539,7 +539,7 @@ class ABRLovaszLoss_List_att_final2(nn.Module):
         # dependency decomposition
 
         loss_dp_att = []
-        for i in range(len(preds[9])):
+        for i in range(len(preds[-2])):
             loss_dp = []
             for j in range(self.num_classes-1):
                 part_list = self.part_list_list[j]
@@ -550,7 +550,7 @@ class ABRLovaszLoss_List_att_final2(nn.Module):
                 targets_dp_onehot = torch.stack([parts_bg_node] + parts_onehot, dim=1)
                 targets_dp = targets_dp_onehot.argmax(dim=1, keepdim=False)
                 targets_dp[targets[0] == 255] = 255
-                pred_dp = F.interpolate(input=preds[9][i][j], size=(h, w), mode='bilinear', align_corners=True)
+                pred_dp = F.interpolate(input=preds[-2][i][j], size=(h, w), mode='bilinear', align_corners=True)
                 pred_dp = F.softmax(input=pred_dp, dim=1)
                 loss_dp.append(lovasz_softmax_flat(*flatten_probas(pred_dp, targets_dp, self.ignore_index),
                                                    only_present=self.only_present))
