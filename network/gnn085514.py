@@ -531,13 +531,13 @@ class Decoder(nn.Module):
         seg = self.layer5(x[-1])
 
         # direct infer
-        x_fea, xl_fea = self.layer6(seg, x[1], x[0])
+        x_fea = self.layer6(seg, x[1], x[0])
         alpha_hb_fea = self.layerh(seg, x[1])
         alpha_fb_fea = self.layerf(seg, x[1])
 
         # gnn infer
         p_seg_final, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, com_map, \
-        com_u_map, com_l_map, p_seg = self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, xl_fea)
+        com_u_map, com_l_map, p_seg = self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, x[0])
 
         return p_seg_final, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, com_map, com_u_map, com_l_map,  p_seg, x_dsn
 
