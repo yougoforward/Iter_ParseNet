@@ -93,7 +93,7 @@ class Dep_Context(nn.Module):
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
         self.W = nn.Parameter(torch.ones(in_dim + 8, hidden_dim + 8))
-        # self.att = node_att()
+        self.att = node_att()
         self.sigmoid = nn.Sigmoid()
         self.coord_fea = torch.from_numpy(generate_spatial_batch(60, 60))
         self.maxpool = nn.AdaptiveMaxPool2d(1)
@@ -103,18 +103,24 @@ class Dep_Context(nn.Module):
                                      BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
     def forward(self, p_fea, hu):
         n, c, h, w = p_fea.size()
-        # att_hu = self.att(hu)
-        # hu = att_hu * hu
+        att_hu = self.att(hu)
+        hu = att_hu * hu
         # coord_fea = torch.from_numpy(generate_spatial_batch(n,h,w)).to(p_fea.device).view(n,-1,8) #n,hw,8
         coord_fea = self.coord_fea.to(p_fea.device).repeat((n, 1, 1, 1)).view(n, -1, 8)
         project1 = torch.matmul(torch.cat([p_fea.view(n, self.in_dim, -1).permute(0, 2, 1), coord_fea], dim=2),
                                 self.W)  # n,hw,hidden+8
         energy = torch.matmul(project1, torch.cat([hu.view(n, self.hidden_dim, -1), coord_fea.permute(0, 2, 1)],
                                                   dim=1))  # n,hw,hw
-        attention = self.softmax(energy)
-        co_context = torch.bmm(p_fea.view(n, self.in_dim, -1), attention).view(n, self.in_dim, h, w)
-        co_context = self.project(co_context)
-        return co_context
+
+        attention = torch.max(energy, dim=2, keepdim=False)[0].view(n, 1, h, w)
+        dep_att = attention / self.maxpool(attention)
+
+        return self.project(dep_att * p_fea * (1 - att_hu))
+
+        # attention = self.softmax(energy)
+        # co_context = torch.bmm(p_fea.view(n, self.in_dim, -1), attention).view(n, self.in_dim, h, w)
+        # co_context = self.project(co_context)
+        # return co_context
 
 
 class Contexture(nn.Module):
