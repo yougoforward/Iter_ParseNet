@@ -109,8 +109,8 @@ class Dep_Context(nn.Module):
                                      BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
     def forward(self, p_fea, hu):
         n, c, h, w = p_fea.size()
-        att_hu = self.att(hu)
-        hu = att_hu * hu
+        # att_hu = self.att(hu)
+        # hu = att_hu * hu
         # coord_fea = torch.from_numpy(generate_spatial_batch(n,h,w)).to(p_fea.device).view(n,-1,8) #n,hw,8
         coord_fea = self.coord_fea.to(p_fea.device).repeat((n, 1, 1, 1)).view(n, -1, 8)
         project1 = torch.matmul(torch.cat([self.img_conv(p_fea).view(n, self.in_dim, -1).permute(0, 2, 1), coord_fea], dim=2),
