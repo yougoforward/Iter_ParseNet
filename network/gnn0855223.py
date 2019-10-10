@@ -103,6 +103,7 @@ class Dep_Context(nn.Module):
                                      BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
         self.img_conv = nn.Conv2d(in_dim, in_dim, kernel_size=1, padding=0, stride=1, bias=True)
         self.node_conv = nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=True)
+        
         self.alpha = nn.Parameter(torch.ones(1))
 
     def forward(self, p_fea, hu):
