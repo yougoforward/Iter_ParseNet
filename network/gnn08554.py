@@ -92,7 +92,7 @@ class Dep_Context(nn.Module):
         super(Dep_Context, self).__init__()
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
-        self.W = nn.Parameter(torch.ones(in_dim + 8, hidden_dim + 8))
+        self.W = nn.Parameter(torch.ones(hidden_dim + 8, hidden_dim + 8))
         self.att = node_att()
         self.sigmoid = nn.Sigmoid()
         self.coord_fea = torch.from_numpy(generate_spatial_batch(60, 60))
