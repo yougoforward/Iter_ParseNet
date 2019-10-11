@@ -100,7 +100,10 @@ class Dep_Context(nn.Module):
         self.softmax = nn.Softmax(dim=-1)
 
         self.project = nn.Sequential(nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-                                     BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
+                                     BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+                                     nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+                                     BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
+                                     )
     def forward(self, p_fea, hu, att_hu):
         n, c, h, w = p_fea.size()
         # att_hu = self.att(hu)
@@ -113,8 +116,8 @@ class Dep_Context(nn.Module):
                                                   dim=1))  # n,hw,hw
         attention = self.softmax(energy)
         co_context = torch.bmm(hu.view(n, self.hidden_dim, -1), attention.permute(0,2,1)).view(n, -1, h, w)
-        # context_fea = self.project(p_fea)
-        return co_context
+        context_fea = self.project(p_fea)
+        return co_context, context_fea
 
 
 class Contexture(nn.Module):
@@ -130,8 +133,14 @@ class Contexture(nn.Module):
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, xp_list, p_fea, part_list_list, xp_att_list):
-        F_dep_list = [self.F_cont(p_fea, xp_list[i], xp_att_list[i]) for i in range(len(xp_list))]
-        att_list = [self.att_list[i](p_fea) for i in range(len(xp_list))]
+        F_dep_list = []
+        F_fea_list = []
+        for i in range(len(xp_list)):
+            dep, fea = self.F_cont(p_fea, xp_list[i])
+            F_dep_list.append(dep)
+            F_fea_list.append(fea)
+        # F_dep_list = [self.F_cont(p_fea, xp_list[i]) for i in range(len(xp_list))]
+        att_list = [self.att_list[i](F_fea_list[i]) for i in range(len(xp_list))]
         att_list_list = [list(torch.split(self.softmax(att_list[i]), 1, dim=1)) for i in range(len(xp_list))]
         return F_dep_list, att_list_list, att_list
 
