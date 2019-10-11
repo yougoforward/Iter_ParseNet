@@ -437,7 +437,6 @@ class GNN_infer(nn.Module):
                                    bias=True)
 
         self.softmax = nn.Softmax(dim=1)
-
     def forward(self, xp, xh, xf, xl):
         # _, _, th, tw = xp.size()
         # _, _, h, w = xh.size()
@@ -495,7 +494,6 @@ class Decoder(nn.Module):
     def forward(self, x):
         x_dsn = self.layer_dsn(x[-2])
         seg = self.layer5(x[-1])
-
         # direct infer
         x_fea = self.layer6(seg, x[1], x[0])
         alpha_hb_fea = self.layerh(seg, x[1])
