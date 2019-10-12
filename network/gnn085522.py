@@ -99,26 +99,28 @@ class Dep_Context(nn.Module):
         self.maxpool = nn.AdaptiveMaxPool2d(1)
         self.softmax = nn.Softmax(dim=-1)
 
-        self.project = nn.Sequential(nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-                                     BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
-        self.img_conv = nn.Sequential(nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-                                     BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-                                      nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+        # self.project = nn.Sequential(nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+        #                              BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
+        self.img_conv = nn.Sequential(nn.Conv2d(in_dim, 2*hidden_dim, kernel_size=3, padding=4, stride=1, dilation=4, bias=False),
+                                      BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False),
+                                      nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=3, padding=4, stride=1, dilation=4, bias=False),
                                       BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
                                       )
+        self.alpha = nn.Parameter(torch.ones(1))
+
     def forward(self, p_fea, hu):
         n, c, h, w = p_fea.size()
         # att_hu = self.att(hu)
         # hu = att_hu * hu
         # coord_fea = torch.from_numpy(generate_spatial_batch(n,h,w)).to(p_fea.device).view(n,-1,8) #n,hw,8
         coord_fea = self.coord_fea.to(p_fea.device).repeat((n, 1, 1, 1)).view(n, -1, 8)
-        project1 = torch.matmul(torch.cat([self.img_conv(p_fea).view(n, self.hidden_dim, -1).permute(0, 2, 1), coord_fea], dim=2),
+        project1 = torch.matmul(torch.cat([p_fea.view(n, self.hidden_dim, -1).permute(0, 2, 1), coord_fea], dim=2),
                                 self.W)  # n,hw,hidden+8
         energy = torch.matmul(project1, torch.cat([hu.view(n, self.hidden_dim, -1), coord_fea.permute(0, 2, 1)],
                                                   dim=1))  # n,hw,hw
         attention = self.softmax(energy)
         co_context = torch.bmm(p_fea.view(n, self.in_dim, -1), attention).view(n, self.in_dim, h, w)
-        co_context = self.project(co_context)
+        co_context = self.img_conv(co_context*self.alpha+p_fea)
         return co_context
 
 
@@ -310,7 +312,7 @@ class Part_Graph(nn.Module):
         self.lower_part_list = lower_part_list
         self.edge_index = torch.nonzero(adj_matrix)
         self.edge_index_num = self.edge_index.shape[0]
-        self.part_list_list = [[] for i in range(self.cls_p - 1)]
+        self.part_list_list = [[i] for i in range(self.cls_p - 1)]
         for i in range(self.edge_index_num):
             self.part_list_list[self.edge_index[i, 1]].append(self.edge_index[i, 0])
 
