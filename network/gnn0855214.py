@@ -136,7 +136,7 @@ class Contexture(nn.Module):
         F_dep_list = []
         F_fea_list = []
         for i in range(len(xp_list)):
-            dep, fea = self.F_cont(p_fea, xp_list[i])
+            dep, fea = self.F_cont(p_fea, xp_list[i], xp_att_list[i])
             F_dep_list.append(dep)
             F_fea_list.append(fea)
         # F_dep_list = [self.F_cont(p_fea, xp_list[i]) for i in range(len(xp_list))]
