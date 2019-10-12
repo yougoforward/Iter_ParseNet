@@ -118,7 +118,7 @@ class Dep_Context(nn.Module):
         #                                           dim=1))  # n,hw,hw
         # attention = self.softmax(energy)
         # co_context = torch.bmm(hu.view(n, self.hidden_dim, -1), attention.permute(0,2,1)).view(n, -1, h, w)
-        co_context = self.img_conv([p_fea, hu])
+        co_context = self.img_conv(torch([p_fea, hu], dim=1))
         return co_context
 
 
