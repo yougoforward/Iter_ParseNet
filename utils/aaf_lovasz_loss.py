@@ -553,7 +553,7 @@ class ABRLovaszLoss_List_att_final22(nn.Module):
                 targets_dp = targets_dp_onehot.argmax(dim=1, keepdim=False)
                 targets_dp[targets[0] == 255] = 255
                 pred_context = F.interpolate(input=preds[-2][i][j], size=(h, w), mode='bilinear', align_corners=True)
-                loss_context.append(torch.mean(self.bceloss(pred_context, sum(parts_onehot)) * ignore))
+                loss_context.append(torch.mean(self.bceloss(pred_context, sum(parts_onehot).float()) * ignore))
                 pred_dp = F.interpolate(input=preds[-3][i][j], size=(h, w), mode='bilinear', align_corners=True)
                 pred_dp = F.softmax(input=pred_dp, dim=1)
                 loss_dp.append(lovasz_softmax_flat(*flatten_probas(pred_dp, targets_dp, self.ignore_index),
