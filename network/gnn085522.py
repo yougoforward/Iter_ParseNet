@@ -130,15 +130,17 @@ class Contexture(nn.Module):
 
         self.F_cont = Dep_Context(in_dim, hidden_dim)
         self.parts = parts
-        self.att_list = nn.ModuleList([nn.Sequential(
-            nn.Conv2d(hidden_dim, len(part_list_list[i])+ 1, kernel_size=1, padding=0, stride=1, bias=True),
+        self.att_list = nn.ModuleList([
+            nn.Sequential(nn.Conv2d(in_dim, 2*hidden_dim, kernel_size=3, padding=1, stride=1, dilation=1, bias=False),
+                          BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False),
+                          nn.Conv2d(hidden_dim, len(part_list_list[i])+ 1, kernel_size=1, padding=0, stride=1, bias=True),
         ) for i in range(len(part_list_list))])
 
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, xp_list, p_fea, part_list_list):
         F_dep_list = [self.F_cont(p_fea, xp_list[i]) for i in range(len(xp_list))]
-        att_list = [self.att_list[i](F_dep_list[i]) for i in range(len(xp_list))]
+        att_list = [self.att_list[i](p_fea) for i in range(len(xp_list))]
         att_list_list = [list(torch.split(self.softmax(att_list[i]), 1, dim=1)) for i in range(len(xp_list))]
         return F_dep_list, att_list_list, att_list
 
