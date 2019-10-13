@@ -93,7 +93,7 @@ class Dep_Context(nn.Module):
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
         self.W = nn.Parameter(torch.ones(in_dim + 8, hidden_dim + 8))
-        self.att = node_att()
+        # self.att = node_att()
         self.sigmoid = nn.Sigmoid()
         self.coord_fea = torch.from_numpy(generate_spatial_batch(60, 60))
         self.maxpool = nn.AdaptiveMaxPool2d(1)
@@ -103,8 +103,8 @@ class Dep_Context(nn.Module):
                                      BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
     def forward(self, p_fea, hu):
         n, c, h, w = p_fea.size()
-        att_hu = self.att(hu)
-        hu = att_hu * hu
+        # att_hu = self.att(hu)
+        # hu = att_hu * hu
         # coord_fea = torch.from_numpy(generate_spatial_batch(n,h,w)).to(p_fea.device).view(n,-1,8) #n,hw,8
         coord_fea = self.coord_fea.to(p_fea.device).repeat((n, 1, 1, 1)).view(n, -1, 8)
         project1 = torch.matmul(torch.cat([p_fea.view(n, self.in_dim, -1).permute(0, 2, 1), coord_fea], dim=2),
@@ -115,7 +115,7 @@ class Dep_Context(nn.Module):
         attention = torch.max(energy, dim=2, keepdim=False)[0].view(n, 1, h, w)
         dep_att = attention / self.maxpool(attention)
 
-        return self.project(dep_att * p_fea * (1 - att_hu))
+        return self.project(dep_att * p_fea)
 
         # attention = self.softmax(energy)
         # co_context = torch.bmm(p_fea.view(n, self.in_dim, -1), attention).view(n, self.in_dim, h, w)
@@ -338,8 +338,8 @@ class Part_Graph(nn.Module):
         xpp_list_list = [[] for i in range(self.cls_p - 1)]
         for i in range(self.edge_index_num):
             xpp_list_list[self.edge_index[i, 1]].append(
-                self.part_dp(att_list_list[self.edge_index[i, 0]][1+self.part_list_list[self.edge_index[i, 0]].index(self.edge_index[i, 1])] *
-                    F_dep_list[self.edge_index[i, 0]], xp_list[self.edge_index[i, 1]]))
+                # self.part_dp(att_list_list[self.edge_index[i, 0]][1+self.part_list_list[self.edge_index[i, 0]].index(self.edge_index[i, 1])] *
+                self.part_dp(F_dep_list[self.edge_index[i, 0]], xp_list[self.edge_index[i, 1]]))
 
         xp_list_new = []
         for i in range(self.cls_p - 1):
