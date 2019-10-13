@@ -533,7 +533,7 @@ class ABRLovaszLoss_List_att_final22(nn.Module):
         #     pred_com_full = F.interpolate(input=preds[6][i], size=(h, w), mode='bilinear', align_corners=True)
         #     pred_com_u = F.interpolate(input=preds[7][i], size=(h, w), mode='bilinear', align_corners=True)
         #     pred_com_l = F.interpolate(input=preds[8][i], size=(h, w), mode='bilinear', align_corners=True)
-        #     loss_com_att.append(torch.mean(self.bceloss(torch.cat([pred_com_full, pred_com_u, pred_com_l], dim=1), com_onehot) * ignore))
+        #     loss_com_att.append(torch.mean(self.bceloss(F.sigmoid(torch.cat([pred_com_full, pred_com_u, pred_com_l], dim=1)), com_onehot) * ignore))
         # loss_com_att = sum(loss_com_att)
 
         # dependency context
@@ -553,7 +553,7 @@ class ABRLovaszLoss_List_att_final22(nn.Module):
                 targets_dp = targets_dp_onehot.argmax(dim=1, keepdim=False)
                 targets_dp[targets[0] == 255] = 255
                 pred_context = F.interpolate(input=preds[-2][i][j], size=(h, w), mode='bilinear', align_corners=True)
-                loss_context.append(torch.mean(self.bceloss(pred_context, sum(parts_onehot).float()) * ignore))
+                loss_context.append(torch.mean(self.bceloss(F.sigmoid(pred_context), sum(parts_onehot).float()) * ignore))
                 pred_dp = F.interpolate(input=preds[-3][i][j], size=(h, w), mode='bilinear', align_corners=True)
                 pred_dp = F.softmax(input=pred_dp, dim=1)
                 loss_dp.append(lovasz_softmax_flat(*flatten_probas(pred_dp, targets_dp, self.ignore_index),
