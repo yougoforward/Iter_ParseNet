@@ -538,9 +538,10 @@ class ABRLovaszLoss_List_att_final22(nn.Module):
 
         # dependency context
         # dependency decomposition
-
+        loss_context_att =[]
         loss_dp_att = []
         for i in range(len(preds[-2])):
+            loss_context = []
             loss_dp = []
             for j in range(self.num_classes-1):
                 part_list = self.part_list_list[j]
@@ -551,20 +552,25 @@ class ABRLovaszLoss_List_att_final22(nn.Module):
                 targets_dp_onehot = torch.stack([parts_bg_node] + parts_onehot, dim=1)
                 targets_dp = targets_dp_onehot.argmax(dim=1, keepdim=False)
                 targets_dp[targets[0] == 255] = 255
-                pred_dp = F.interpolate(input=preds[-2][i][j], size=(h, w), mode='bilinear', align_corners=True)
+                pred_context = F.interpolate(input=preds[-2][i][j], size=(h, w), mode='bilinear', align_corners=True)
+                loss_context.append(torch.mean(self.bceloss(pred_context, sum(parts_onehot)) * ignore))
+                pred_dp = F.interpolate(input=preds[-3][i][j], size=(h, w), mode='bilinear', align_corners=True)
                 pred_dp = F.softmax(input=pred_dp, dim=1)
                 loss_dp.append(lovasz_softmax_flat(*flatten_probas(pred_dp, targets_dp, self.ignore_index),
                                                    only_present=self.only_present))
             loss_dp = sum(loss_dp)
             loss_dp_att.append(loss_dp)
+            loss_context = sum(loss_context)
+            loss_context_att.append(loss_context)
 
         loss_dp_att = sum(loss_dp_att)
+        loss_context_att = sum(loss_context_att)
 
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
         return loss + 0.4 * loss_hb + 0.4 * loss_fb + \
-               0.4*(loss_fh_att + loss_up_att + loss_lp_att) + 0.1*loss_dp_att + 0.4 * loss_dsn
+               0.4*(loss_fh_att + loss_up_att + loss_lp_att) + 0.4*(loss_dp_att+loss_context_att) + 0.4 * loss_dsn
 
 class ABRLovaszLoss_List_att_final2(nn.Module):
     """Lovasz loss for Alpha process"""
