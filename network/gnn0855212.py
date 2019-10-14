@@ -93,7 +93,7 @@ class Dep_Context(nn.Module):
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
         self.W = nn.Parameter(torch.ones(in_dim + 8, hidden_dim + 8))
-        self.att = node_att()
+        # self.att = node_att()
         self.sigmoid = nn.Sigmoid()
         self.coord_fea = torch.from_numpy(generate_spatial_batch(60, 60))
         self.maxpool = nn.AdaptiveMaxPool2d(1)
@@ -350,11 +350,11 @@ class Part_Graph(nn.Module):
         for i in range(self.cls_p - 1):
             if i + 1 in self.upper_part_list:
                 # message = decomp_pu_list[self.upper_part_list.index(i + 1)] + sum(xpp_list_list[i])
-                #
+                # message = decomp_pu_list[self.upper_part_list.index(i + 1)]
                 message = decomp_pu_list[self.upper_part_list.index(i + 1)]+ torch.max(torch.stack(xpp_list_list[i], dim=1), dim=1, keepdim=False)[0]
             elif i + 1 in self.lower_part_list:
                 # message = decomp_pl_list[self.lower_part_list.index(i + 1)] + sum(xpp_list_list[i])
-                #
+                # message = decomp_pl_list[self.lower_part_list.index(i + 1)]
                 message = decomp_pl_list[self.lower_part_list.index(i + 1)]+ torch.max(torch.stack(xpp_list_list[i], dim=1), dim=1, keepdim=False)[0]
             xp_list_new.append(self.node_update_list[i](xp_list[i], message))
         return xp_list_new, decomp_pu_att_map, decomp_pl_att_map, Fdep_att_list, context_att_list
