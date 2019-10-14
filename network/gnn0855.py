@@ -114,7 +114,7 @@ class Dep_Context(nn.Module):
         # hu = att_hu * hu
         # coord_fea = torch.from_numpy(generate_spatial_batch(n,h,w)).to(p_fea.device).view(n,-1,8) #n,hw,8
         coord_fea = self.coord_fea.to(p_fea.device).repeat((n, 1, 1, 1)).permute(0,3,1,2)
-        query = self.img_conv(torch.cat([p_fea, coord_fea], dim=1)).permute(0, 2, 1)
+        query = self.img_conv(torch.cat([p_fea, coord_fea], dim=1))
         project1 = torch.bmm(query.view(n, self.in_dim, -1).permute(0,2,1), self.W)  # n,hw,hidden
         energy = torch.matmul(project1, self.node_conv(torch.cat([hu, coord_fea], dim=1)).view(n, self.hidden_dim, -1).permute(0,2,1))  # n,hw,hw
         attention = self.softmax(energy)
