@@ -93,34 +93,33 @@ class Dep_Context(nn.Module):
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
         self.W = nn.Parameter(torch.ones(in_dim + 8, hidden_dim + 8))
-        # self.att = node_att()
+        self.att = node_att()
         self.sigmoid = nn.Sigmoid()
         self.coord_fea = torch.from_numpy(generate_spatial_batch(60, 60))
         self.maxpool = nn.AdaptiveMaxPool2d(1)
         self.softmax = nn.Softmax(dim=-1)
 
-        self.project = nn.Sequential(nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-                                     BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
+        # self.project = nn.Sequential(nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+        #                              BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
+        self.img_conv = nn.Sequential(nn.Conv2d(in_dim+hidden_dim, 2*hidden_dim, kernel_size=3, padding=1, stride=1, dilation=1, bias=False),
+                                      BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False),
+                                      nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, dilation=1, bias=False),
+                                      BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
+                                      )
     def forward(self, p_fea, hu):
-        n, c, h, w = p_fea.size()
+        # n, c, h, w = p_fea.size()
         # att_hu = self.att(hu)
         # hu = att_hu * hu
-        # coord_fea = torch.from_numpy(generate_spatial_batch(n,h,w)).to(p_fea.device).view(n,-1,8) #n,hw,8
-        coord_fea = self.coord_fea.to(p_fea.device).repeat((n, 1, 1, 1)).view(n, -1, 8)
-        project1 = torch.matmul(torch.cat([p_fea.view(n, self.in_dim, -1).permute(0, 2, 1), coord_fea], dim=2),
-                                self.W)  # n,hw,hidden+8
-        energy = torch.matmul(project1, torch.cat([hu.view(n, self.hidden_dim, -1), coord_fea.permute(0, 2, 1)],
-                                                  dim=1))  # n,hw,hw
-
-        attention = torch.max(energy, dim=2, keepdim=False)[0].view(n, 1, h, w)
-        dep_att = attention / self.maxpool(attention)
-
-        return self.project(dep_att * p_fea)
-
+        # # coord_fea = torch.from_numpy(generate_spatial_batch(n,h,w)).to(p_fea.device).view(n,-1,8) #n,hw,8
+        # coord_fea = self.coord_fea.to(p_fea.device).repeat((n, 1, 1, 1)).view(n, -1, 8)
+        # project1 = torch.matmul(torch.cat([p_fea.view(n, self.in_dim, -1).permute(0, 2, 1), coord_fea], dim=2),
+        #                         self.W)  # n,hw,hidden+8
+        # energy = torch.matmul(project1, torch.cat([hu.view(n, self.hidden_dim, -1), coord_fea.permute(0, 2, 1)],
+        #                                           dim=1))  # n,hw,hw
         # attention = self.softmax(energy)
-        # co_context = torch.bmm(p_fea.view(n, self.in_dim, -1), attention).view(n, self.in_dim, h, w)
-        # co_context = self.project(co_context)
-        # return co_context
+        # co_context = torch.bmm(hu.view(n, self.hidden_dim, -1), attention.permute(0,2,1)).view(n, -1, h, w)
+        co_context = self.img_conv(torch.cat([p_fea, hu], dim=1))
+        return co_context
 
 
 class Contexture(nn.Module):
@@ -130,16 +129,23 @@ class Contexture(nn.Module):
         self.F_cont = Dep_Context(in_dim, hidden_dim)
         self.parts = parts
         self.att_list = nn.ModuleList([nn.Sequential(
+            nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1, dilation=1, bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
             nn.Conv2d(hidden_dim, len(part_list_list[i])+ 1, kernel_size=1, padding=0, stride=1, bias=True),
+        ) for i in range(len(part_list_list))])
+
+        self.context_att_list = nn.ModuleList([nn.Sequential(
+            nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True)
         ) for i in range(len(part_list_list))])
 
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, xp_list, p_fea, part_list_list):
         F_dep_list = [self.F_cont(p_fea, xp_list[i]) for i in range(len(xp_list))]
-        att_list = [self.att_list[i](F_dep_list[i]) for i in range(len(xp_list))]
+        att_list = [self.att_list[i](p_fea) for i in range(len(xp_list))]
+        context_att_list = [self.context_att_list[i](F_dep_list[i]) for i in range(len(xp_list))]
         att_list_list = [list(torch.split(self.softmax(att_list[i]), 1, dim=1)) for i in range(len(xp_list))]
-        return F_dep_list, att_list_list, att_list
+        return F_dep_list, att_list_list, att_list, context_att_list
 
 
 class Part_Dependency(nn.Module):
@@ -311,7 +317,7 @@ class Part_Graph(nn.Module):
         self.lower_part_list = lower_part_list
         self.edge_index = torch.nonzero(adj_matrix)
         self.edge_index_num = self.edge_index.shape[0]
-        self.part_list_list = [[] for i in range(self.cls_p - 1)]
+        self.part_list_list = [[i] for i in range(self.cls_p - 1)]
         for i in range(self.edge_index_num):
             self.part_list_list[self.edge_index[i, 1]].append(self.edge_index[i, 0])
 
@@ -333,26 +339,25 @@ class Part_Graph(nn.Module):
         decomp_pu_list, decomp_pu_att_list, decomp_pu_att_map = self.decomp_hpu_list(xh_list[0], upper_parts)
         decomp_pl_list, decomp_pl_att_list, decomp_pl_att_map = self.decomp_hpl_list(xh_list[1], lower_parts)
 
-        # F_dep_list, att_list_list, Fdep_att_list = self.F_dep_list(xp_list, xp, self.part_list_list)
-        #
-        # xpp_list_list = [[] for i in range(self.cls_p - 1)]
-        # for i in range(self.edge_index_num):
-        #     xpp_list_list[self.edge_index[i, 1]].append(
-        #         # self.part_dp(att_list_list[self.edge_index[i, 0]][1+self.part_list_list[self.edge_index[i, 0]].index(self.edge_index[i, 1])] *
-        #         self.part_dp(F_dep_list[self.edge_index[i, 0]], xp_list[self.edge_index[i, 1]]))
+        F_dep_list, att_list_list, Fdep_att_list, context_att_list = self.F_dep_list(xp_list, xp, self.part_list_list)
+
+        xpp_list_list = [[] for i in range(self.cls_p - 1)]
+        for i in range(self.edge_index_num):
+            xpp_list_list[self.edge_index[i, 1]].append(
+                att_list_list[self.edge_index[i, 0]][1+self.part_list_list[self.edge_index[i, 0]].index(self.edge_index[i, 1])] * self.part_dp(F_dep_list[self.edge_index[i, 0]], xp_list[self.edge_index[i, 1]]))
 
         xp_list_new = []
         for i in range(self.cls_p - 1):
             if i + 1 in self.upper_part_list:
-                # message = decomp_pu_list[self.upper_part_list.index(i + 1)] + sum(xpp_list_list[i])
+                message = decomp_pu_list[self.upper_part_list.index(i + 1)] + sum(xpp_list_list[i])
 
-                message = decomp_pu_list[self.upper_part_list.index(i + 1)]
+                # message = decomp_pu_list[self.upper_part_list.index(i + 1)]+ torch.max(torch.stack(xpp_list_list[i], dim=1), dim=1, keepdim=False)[0]
             elif i + 1 in self.lower_part_list:
-                # message = decomp_pl_list[self.lower_part_list.index(i + 1)] + sum(xpp_list_list[i])
+                message = decomp_pl_list[self.lower_part_list.index(i + 1)] + sum(xpp_list_list[i])
 
-                message = decomp_pl_list[self.lower_part_list.index(i + 1)]
+                # message = decomp_pl_list[self.lower_part_list.index(i + 1)]+ torch.max(torch.stack(xpp_list_list[i], dim=1), dim=1, keepdim=False)[0]
             xp_list_new.append(self.node_update_list[i](xp_list[i], message))
-        return xp_list_new, decomp_pu_att_map, decomp_pl_att_map, Fdep_att_list
+        return xp_list_new, decomp_pu_att_map, decomp_pl_att_map, Fdep_att_list, context_att_list
 
 
 class GNN(nn.Module):
@@ -381,9 +386,9 @@ class GNN(nn.Module):
         # for half body node
         xh_list_new, decomp_fh_att_map = self.half_infer(xf, xh_list, xp_list, f_att_list, h_att_list, p_att_list)
         # for part node
-        xp_list_new, decomp_up_att_map, decomp_lp_att_map, Fdep_att_list = self.part_infer(xf, xh_list, xp_list, xp)
+        xp_list_new, decomp_up_att_map, decomp_lp_att_map, Fdep_att_list, context_att_list = self.part_infer(xf, xh_list, xp_list, xp)
 
-        return xp_list_new, xh_list_new, xf_new, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, Fdep_att_list
+        return xp_list_new, xh_list_new, xf_new, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, Fdep_att_list, context_att_list
 
 
 class GNN_infer(nn.Module):
@@ -456,7 +461,7 @@ class GNN_infer(nn.Module):
 
         # gnn infer
         p_fea_list_new, h_fea_list_new, f_fea_new, decomp_fh_att_map, decomp_up_att_map, \
-        decomp_lp_att_map, Fdep_att_list = self.gnn(p_node_list, h_node_list, f_node, xp, f_att_list, h_att_list, p_att_list)
+        decomp_lp_att_map, Fdep_att_list, context_att_list = self.gnn(p_node_list, h_node_list, f_node, xp, f_att_list, h_att_list, p_att_list)
         # node supervision
         node_new = torch.cat([f_fea_new] + h_fea_list_new + p_fea_list_new, dim=1)
         node_seg_new = self.node_cls_final(torch.cat([bg_node, node_new], dim=1))
@@ -467,7 +472,7 @@ class GNN_infer(nn.Module):
 
         # p_seg_final = self.final_cls(p_seg, xp, xl)
         return [p_seg, p_seg_new], [h_seg, h_seg_new], [f_seg, f_seg_new], [decomp_fh_att_map], [decomp_up_att_map], [
-            decomp_lp_att_map], [Fdep_att_list]
+            decomp_lp_att_map], [Fdep_att_list], [context_att_list]
 
 
 class Decoder(nn.Module):
@@ -499,9 +504,9 @@ class Decoder(nn.Module):
 
         # gnn infer
         p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, \
-        Fdep_att_list = self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, x[0])
+        Fdep_att_list , context_att_list= self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, x[0])
 
-        return p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, Fdep_att_list, x_dsn
+        return p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, Fdep_att_list, context_att_list, x_dsn
 
 class OCNet(nn.Module):
     def __init__(self, block, layers, num_classes):
