@@ -736,7 +736,7 @@ class ABRLovaszLoss_List_att_final2(nn.Module):
 class ABRLovaszLoss_List_att_final(nn.Module):
     """Lovasz loss for Alpha process"""
 
-    def __init__(self, ignore_index=None, only_present=True, upper_part_list=[1, 2, 3, 4], lower_part_list=[5, 6], cls_p=7, cls_h=3, cls_f=2):
+    def __init__(self, adj_matrix, ignore_index=None, only_present=True, upper_part_list=[1, 2, 3, 4], lower_part_list=[5, 6], cls_p=7, cls_h=3, cls_f=2):
         super(ABRLovaszLoss_List_att_final, self).__init__()
         self.ignore_index = ignore_index
         self.only_present = only_present
