@@ -18,7 +18,7 @@ from network.gnn08554 import get_model
 # from network.abrnet import get_model
 from progress.bar import Bar
 # from utils.aaf_lovasz_loss import gnn_ABRLovaszLoss as ABRLovaszLoss
-from utils.aaf_lovasz_loss import ABRLovaszLoss_List_att as ABRLovaszLoss
+from utils.aaf_lovasz_loss import ABRLovaszLoss_List_att_final as ABRLovaszLoss
 from utils.metric import *
 from utils.parallel import DataParallelModel, DataParallelCriterion
 from utils.visualize import inv_preprocess, decode_predictions
@@ -113,7 +113,9 @@ def main(args):
                                  batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
     # define criterion & optimizer
-    criterion = ABRLovaszLoss(ignore_index=args.ignore_label, only_present=True, upper_part_list=[1, 2, 3, 4], lower_part_list=[5, 6], cls_p= args.num_classes, cls_h= args.hbody_cls, cls_f= args.fbody_cls)
+    criterion = ABRLovaszLoss(adj_matrix = torch.tensor(
+            [[0, 1, 0, 0, 0, 0], [1, 0, 1, 0, 1, 0], [0, 1, 0, 1, 0, 0], [0, 0, 1, 0, 0, 0], [0, 1, 0, 0, 0, 1],
+             [0, 0, 0, 0, 1, 0]], requires_grad=False), ignore_index=args.ignore_label, only_present=True, upper_part_list=[1, 2, 3, 4], lower_part_list=[5, 6], cls_p= args.num_classes, cls_h= args.hbody_cls, cls_f= args.fbody_cls)
     criterion = DataParallelCriterion(criterion).cuda()
 
     optimizer = optim.SGD(
