@@ -96,7 +96,7 @@ class Dep_Context(nn.Module):
         # self.att = node_att()
         self.sigmoid = nn.Sigmoid()
         self.coord_fea = torch.from_numpy(generate_spatial_batch(60, 60))
-        self.maxpool = nn.AdaptiveMaxPool2d(1, return_indices=True)
+        self.maxpool = nn.AdaptiveMaxPool2d(1)
         self.softmax = nn.Softmax(dim=-1)
 
         # self.project = nn.Sequential(nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
@@ -112,13 +112,11 @@ class Dep_Context(nn.Module):
         coord_fea = self.coord_fea.to(p_fea.device).repeat((n, 1, 1, 1)).view(n, -1, 8)
         project1 = torch.matmul(torch.cat([p_fea.view(n, self.in_dim, -1).permute(0, 2, 1), coord_fea], dim=2),
                                 self.W)  # n,hw,hidden+8
-
-        hu_max, hu_max_idx = self.maxpool(hu)
         energy = torch.matmul(project1, torch.cat([hu.view(n, self.hidden_dim, -1), coord_fea.permute(0, 2, 1)],
                                                   dim=1))  # n,hw,hw
 
-        # attention = self.softmax(energy)
-        # co_context = torch.bmm(hu.view(n, self.hidden_dim, -1), attention.permute(0,2,1)).view(n, -1, h, w)
+        attention = self.softmax(energy)
+        co_context = torch.bmm(hu.view(n, self.hidden_dim, -1), attention.permute(0,2,1)).view(n, -1, h, w)
         # co_context = self.img_conv(p_fea)
         return co_context
 
