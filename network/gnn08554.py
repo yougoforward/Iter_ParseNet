@@ -368,7 +368,7 @@ class Part_Graph(nn.Module):
 
         xp_list_new = []
         for i in range(self.cls_p - 1):
-            context_att = sum([p_att_list[i+1] for j in self.part_list_list[i]])
+            context_att = sum([p_att_list[j+1] for j in self.part_list_list[i]])
             context = self.context[i](xp *context_att)
             part_dp = self.part_dp(context, xp_list[i])
 
