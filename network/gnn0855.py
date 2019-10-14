@@ -116,7 +116,7 @@ class Dep_Context(nn.Module):
         coord_fea = self.coord_fea.to(p_fea.device).repeat((n, 1, 1, 1)).permute(0,3,1,2)
         query = self.img_conv(torch.cat([p_fea, coord_fea], dim=1))
         print(query.shape)
-        project1 = torch.bmm(query.permute(0, 2, 3, 1).view(n, -1, self.in_dim), self.W)  # n,hw,hidden
+        project1 = torch.matmul(query.view(n, self.in_dim, -1).permute(0, 2, 1), self.W)  # n,hw,hidden
         energy = torch.matmul(project1, self.node_conv(torch.cat([hu, coord_fea], dim=1)).view(n, self.hidden_dim, -1))  # n,hw,hw
         attention = self.softmax(energy)
         co_context = torch.bmm(p_fea.view(n, self.in_dim, -1), attention).view(n, self.in_dim, h, w)
