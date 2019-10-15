@@ -444,7 +444,7 @@ class GNN_infer(nn.Module):
 
         # p_seg_final = self.final_cls(p_seg, xp, xl)
         return [p_seg, p_seg_new], [h_seg, h_seg_new], [f_seg, f_seg_new], [decomp_fh_att_map], [decomp_up_att_map], [
-            decomp_lp_att_map], [Fdep_att_list]
+            decomp_lp_att_map]
 
 
 class Decoder(nn.Module):
