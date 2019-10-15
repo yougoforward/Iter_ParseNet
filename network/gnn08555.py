@@ -92,7 +92,7 @@ class Dep_Context(nn.Module):
         super(Dep_Context, self).__init__()
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
-        self.W = nn.Parameter(torch.ones(hidden_dim, hidden_dim))
+        self.W = nn.Parameter(torch.ones(in_dim, hidden_dim))
         # self.att = node_att()
         self.sigmoid = nn.Sigmoid()
         self.coord_fea = torch.from_numpy(generate_spatial_batch(60, 60))
@@ -102,7 +102,7 @@ class Dep_Context(nn.Module):
         self.project = nn.Sequential(nn.Conv2d(in_dim, 2*hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
                                      BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False),
                                      nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-                                     BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
+                                     BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False)
                                      )
         self.img_conv = nn.Sequential(nn.Conv2d(in_dim+8, hidden_dim, kernel_size=1, stride=1, padding=0, bias=False),
                                       BatchNorm2d(hidden_dim), nn.ReLU())
@@ -121,11 +121,12 @@ class Dep_Context(nn.Module):
         energy = torch.matmul(project1, self.node_conv(torch.cat([hu, coord_fea], dim=1)).view(n, self.hidden_dim, -1))  # n,hw,hw
         attention = self.softmax(energy)
 
-        p_fea_conv = self.project(p_fea)
-        co_context = torch.bmm(p_fea_conv.view(n, self.hidden_dim, -1), attention).view(n, self.in_dim, h, w)
-        # co_context = self.project(self.alpha*co_context+p_fea_conv)
-        co_context = self.alpha*co_context+p_fea_conv
-        return co_context
+        # p_fea_conv = self.project(p_fea)
+        co_context = torch.bmm(p_fea.view(n, self.hidden_dim, -1), attention).view(n, self.in_dim, h, w)
+        co_context = self.project(self.alpha*co_context+p_fea)
+        # co_context = self.alpha*co_context+p_fea_conv
+        co_bg, co_context = torch.split(co_context, self.hidden_dim, dim=1)
+        return co_bg, co_context
 
 
 class Contexture(nn.Module):
@@ -134,22 +135,27 @@ class Contexture(nn.Module):
 
         self.F_cont = Dep_Context(in_dim, hidden_dim)
         self.parts = parts
-        self.att_list = nn.ModuleList([nn.Sequential(
-            nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1, dilation=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(hidden_dim, len(part_list_list[i])+ 1, kernel_size=1, padding=0, stride=1, bias=True),
-        ) for i in range(len(part_list_list))])
+        self.att_list = nn.ModuleList([nn.Conv2d(hidden_dim, len(part_list_list[i])+ 1, kernel_size=1, padding=0, stride=1, bias=True)
+                                       for i in range(len(part_list_list))])
 
         self.context_att_list = nn.ModuleList([nn.Sequential(
-            nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True)
+            nn.Conv2d(3*hidden_dim, 3, kernel_size=1, padding=0, stride=1, group=3, bias=True)
         ) for i in range(len(part_list_list))])
 
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, xp_list, p_fea, part_list_list):
-        F_dep_list = [self.F_cont(p_fea, xp_list[i]) for i in range(len(xp_list))]
-        att_list = [self.att_list[i](p_fea) for i in range(len(xp_list))]
-        context_att_list = [self.context_att_list[i](F_dep_list[i]) for i in range(len(xp_list))]
+        context_att_fea_list = []
+        F_dep_list =[]
+        for i in range(len(xp_list)):
+            co_bg, co_context = self.F_cont(p_fea, xp_list[i])
+            context_att_fea = torch.cat((co_bg, xp_list[i], co_context), dim=1)
+            context_att_fea_list.append(context_att_fea)
+            F_dep_list.append(co_context)
+
+        # F_dep_list = [self.F_cont(p_fea, xp_list[i]) for i in range(len(xp_list))]
+        att_list = [self.att_list[i](F_dep_list[i]) for i in range(len(xp_list))]
+        context_att_list = [self.context_att_list[i](context_att_fea_list[i]) for i in range(len(xp_list))]
         att_list_list = [list(torch.split(self.softmax(att_list[i]), 1, dim=1)) for i in range(len(xp_list))]
         return F_dep_list, att_list_list, att_list, context_att_list
 
