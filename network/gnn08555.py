@@ -104,8 +104,8 @@ class Dep_Context(nn.Module):
                                      nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
                                      BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False)
                                      )
-        self.img_conv = nn.Sequential(nn.Conv2d(in_dim+8, hidden_dim, kernel_size=1, stride=1, padding=0, bias=False),
-                                      BatchNorm2d(hidden_dim), nn.ReLU())
+        self.img_conv = nn.Sequential(nn.Conv2d(in_dim+8, in_dim, kernel_size=1, stride=1, padding=0, bias=False),
+                                      BatchNorm2d(in_dim), nn.ReLU())
         self.node_conv = nn.Sequential(nn.Conv2d(hidden_dim + 8, hidden_dim, kernel_size=1, stride=1, padding=0, bias=False),
                                       BatchNorm2d(hidden_dim), nn.ReLU())
         self.alpha = nn.Parameter(torch.ones(1))
@@ -122,7 +122,7 @@ class Dep_Context(nn.Module):
         attention = self.softmax(energy)
 
         # p_fea_conv = self.project(p_fea)
-        co_context = torch.bmm(p_fea.view(n, self.hidden_dim, -1), attention).view(n, self.in_dim, h, w)
+        co_context = torch.bmm(p_fea.view(n, self.in_dim, -1), attention).view(n, self.in_dim, h, w)
         co_context = self.project(self.alpha*co_context+p_fea)
         # co_context = self.alpha*co_context+p_fea_conv
         co_bg, co_context = torch.split(co_context, self.hidden_dim, dim=1)
