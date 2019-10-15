@@ -339,13 +339,13 @@ class Part_Graph(nn.Module):
                 kernel_size=3,
                 stride=1,
                 groups=1,
-                dilation=4,
+                dilation=2,
                 deformable_groups=1,
                 bias=False
             ), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
 
-    def forward(self, xf, xh_list, xp_list, xp):
+    def forward(self, xf, xh_list, xp_list, xp, p_att_list):
         # upper half
         upper_parts = []
         for part in self.upper_part_list:
@@ -357,7 +357,8 @@ class Part_Graph(nn.Module):
         decomp_pu_list, decomp_pu_att_list, decomp_pu_att_map = self.decomp_hpu_list(xh_list[0], upper_parts)
         decomp_pl_list, decomp_pl_att_list, decomp_pl_att_map = self.decomp_hpl_list(xh_list[1], lower_parts)
 
-        context = self.context(xp)
+        full_att = sum(p_att_list[1:])
+        context = self.context(xp*full_att)
         # F_dep_list, att_list_list, Fdep_att_list = self.F_dep_list(xp_list, xp, self.part_list_list)
         #
         # xpp_list_list = [[] for i in range(self.cls_p - 1)]
@@ -368,7 +369,9 @@ class Part_Graph(nn.Module):
 
         xp_list_new = []
         for i in range(self.cls_p - 1):
-            part_dp = self.part_dp(context, xp_list[i])
+            context_att = sum([p_att_list[j+1] for j in self.part_list_list[i]])
+
+            part_dp = self.part_dp(context*context_att, xp_list[i])
 
             if i + 1 in self.upper_part_list:
                 # message = decomp_pu_list[self.upper_part_list.index(i + 1)] + sum(xpp_list_list[i])
