@@ -296,7 +296,7 @@ class Part_Graph(nn.Module):
         self.decomp_hpl_list = Decomposition(hidden_dim, parts=len(lower_part_list))
 
         self.node_coord = Node_coord(in_dim= in_dim, hidden_dim= hidden_dim, parts= self.cls_p-1)
-        self.context = nn.ModuleList([Dep_Context(in_dim= in_dim, hidden_dim=hidden_dim) for i in range(self.cls_p - 1)])
+        self.context = nn.ModuleList([Dep_Context(in_dim= in_dim, hidden_dim=hidden_dim) for i in range(self.edge_index_num)])
         self.part_dp = Part_Dependency(in_dim, hidden_dim)
         self.node_update_list = nn.ModuleList([conv_Update(hidden_dim) for i in range(self.cls_p - 1)])
 
@@ -317,7 +317,7 @@ class Part_Graph(nn.Module):
         xpp_list_list = [[] for i in range(self.cls_p - 1)]
         for i in range(self.edge_index_num):
             xpp_list_list[self.edge_index[i, 1]].append(
-                self.part_dp(self.context(xp_list[self.edge_index[i, 0]],xp_list[self.edge_index[i, 1]],Nord_coord_list[self.edge_index[i, 0]],Nord_coord_list[self.edge_index[i, 1]]), xp_list[self.edge_index[i, 1]]))
+                self.part_dp(self.context[i](xp_list[self.edge_index[i, 0]],xp_list[self.edge_index[i, 1]],Nord_coord_list[self.edge_index[i, 0]],Nord_coord_list[self.edge_index[i, 1]]), xp_list[self.edge_index[i, 1]]))
         xp_list_new = []
         for i in range(self.cls_p - 1):
             if i + 1 in self.upper_part_list:
