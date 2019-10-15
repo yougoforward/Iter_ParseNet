@@ -133,7 +133,9 @@ class Contexture(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, parts=6, part_list_list=None):
         super(Contexture, self).__init__()
 
-        self.F_cont = Dep_Context(in_dim, hidden_dim)
+        # self.F_cont = Dep_Context(in_dim, hidden_dim)
+        self.F_cont = nn.ModuleList([Dep_Context(in_dim, hidden_dim) for i in range(len(part_list_list))])
+
         self.parts = parts
         self.att_list = nn.ModuleList([nn.Conv2d(hidden_dim, len(part_list_list[i])+ 1, kernel_size=1, padding=0, stride=1, bias=True)
                                        for i in range(len(part_list_list))])
@@ -148,7 +150,7 @@ class Contexture(nn.Module):
         context_att_fea_list = []
         F_dep_list =[]
         for i in range(len(xp_list)):
-            co_bg, co_context = self.F_cont(p_fea, xp_list[i])
+            co_bg, co_context = self.F_cont[i](p_fea, xp_list[i])
             context_att_fea = torch.cat((co_bg, xp_list[i], co_context), dim=1)
             context_att_fea_list.append(context_att_fea)
             F_dep_list.append(co_context)
