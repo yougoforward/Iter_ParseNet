@@ -320,6 +320,8 @@ class Part_Graph(nn.Module):
         # self.F_dep_list = Contexture(in_dim=in_dim, hidden_dim=hidden_dim, parts=self.cls_p - 1, part_list_list=self.part_list_list)
         self.part_dp = Part_Dependency(in_dim, hidden_dim)
         self.node_update_list = nn.ModuleList([conv_Update(hidden_dim) for i in range(self.cls_p - 1)])
+        self.node_update_list2 = nn.ModuleList([conv_Update(hidden_dim) for i in range(self.cls_p - 1)])
+
         self.context = nn.Sequential(
             DFConv2d(
                 in_dim,
@@ -376,12 +378,12 @@ class Part_Graph(nn.Module):
             if i + 1 in self.upper_part_list:
                 # message = decomp_pu_list[self.upper_part_list.index(i + 1)] + sum(xpp_list_list[i])
                 #
-                message = decomp_pu_list[self.upper_part_list.index(i + 1)]+part_dp
+                message = decomp_pu_list[self.upper_part_list.index(i + 1)]
             elif i + 1 in self.lower_part_list:
                 # message = decomp_pl_list[self.lower_part_list.index(i + 1)] + sum(xpp_list_list[i])
                 #
-                message = decomp_pl_list[self.lower_part_list.index(i + 1)]+part_dp
-            xp_list_new.append(self.node_update_list[i](xp_list[i], message))
+                message = decomp_pl_list[self.lower_part_list.index(i + 1)]
+            xp_list_new.append(self.node_update_list2[i](self.node_update_list[i](xp_list[i], message), part_dp))
         return xp_list_new, decomp_pu_att_map, decomp_pl_att_map
 
 
