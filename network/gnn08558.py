@@ -117,7 +117,7 @@ class Dep_Context(nn.Module):
         energy = torch.matmul(project1, hv_coord.view(n, self.hidden_dim, -1))  # n,hw,hw
         attention = self.softmax(energy)
         co_context = torch.bmm(hu.view(n, self.hidden_dim, -1), attention).view(n, self.hidden_dim, h, w)
-        return co_context
+        return co_context+self.alpha*hv
 
 class Part_Dependency(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10):
@@ -299,6 +299,8 @@ class Part_Graph(nn.Module):
         self.context = nn.ModuleList([Dep_Context(in_dim= in_dim, hidden_dim=hidden_dim) for i in range(self.edge_index_num)])
         self.part_dp = Part_Dependency(in_dim, hidden_dim)
         self.node_update_list = nn.ModuleList([conv_Update(hidden_dim) for i in range(self.cls_p - 1)])
+        self.node_update_list2 = nn.ModuleList([conv_Update(hidden_dim) for i in range(self.cls_p - 1)])
+
 
     def forward(self, xf, xh_list, xp_list, xp, p_att_list):
         # upper half
@@ -320,15 +322,19 @@ class Part_Graph(nn.Module):
                 self.part_dp(p_att_list[self.edge_index[i, 1]]*self.context[i](xp_list[self.edge_index[i, 0]],xp_list[self.edge_index[i, 1]],Nord_coord_list[self.edge_index[i, 0]],Nord_coord_list[self.edge_index[i, 1]]), xp_list[self.edge_index[i, 1]]))
         xp_list_new = []
         for i in range(self.cls_p - 1):
+            # part_dp = torch.max(torch.stack(xpp_list_list[i], dim=1), dim=1, keepdim=False)[0]
+            part_dp = sum(xpp_list_list[i])
             if i + 1 in self.upper_part_list:
                 # message = decomp_pu_list[self.upper_part_list.index(i + 1)] + sum(xpp_list_list[i])
                 #
-                message = decomp_pu_list[self.upper_part_list.index(i + 1)] + torch.max(torch.stack(xpp_list_list[i], dim=1), dim=1, keepdim=False)[0]
+                message = decomp_pu_list[self.upper_part_list.index(i + 1)]
             elif i + 1 in self.lower_part_list:
                 # message = decomp_pl_list[self.lower_part_list.index(i + 1)] + sum(xpp_list_list[i])
                 #
-                message = decomp_pl_list[self.lower_part_list.index(i + 1)] + torch.max(torch.stack(xpp_list_list[i], dim=1), dim=1, keepdim=False)[0]
+                message = decomp_pl_list[self.lower_part_list.index(i + 1)]
             xp_list_new.append(self.node_update_list[i](xp_list[i], message))
+            xp_list_new.append(self.node_update_list2[i](self.node_update_list[i](xp_list[i], message), part_dp))
+
         return xp_list_new, decomp_pu_att_map, decomp_pl_att_map
 
 
