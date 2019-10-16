@@ -439,7 +439,7 @@ class GNN_infer(nn.Module):
                                    stride=1,
                                    bias=True)
 
-    def forward(self, xp, xh, xf, xp2, xl):
+    def forward(self, xp, xh, xf, xl):
         # _, _, th, tw = xp.size()
         # _, _, h, w = xh.size()
         #
