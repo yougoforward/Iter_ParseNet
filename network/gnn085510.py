@@ -123,8 +123,9 @@ class Dep_Context(nn.Module):
         co_context = self.alpha*co_context+p_fea
         # co_context = p_fea
         co_context = self.project(co_context)
-        co_bg, co_context = torch.split(co_context, self.hidden_dim, dim=1)
-        return co_bg, co_context
+        return co_context
+        # co_bg, co_context = torch.split(co_context, self.hidden_dim, dim=1)
+        # return co_bg, co_context
 
 class Contexture(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, parts=6, part_list_list=None):
@@ -144,13 +145,16 @@ class Contexture(nn.Module):
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, xp_list, p_fea, part_list_list):
+        context_list = []
         F_dep_list =[]
         for i in range(len(xp_list)):
-            co_bg, co_context = self.F_cont[i](p_fea, xp_list[i])
+            context = self.F_cont[i](p_fea, xp_list[i])
+            co_bg, co_context = torch.split(context, self.hidden_dim, dim=1)
             F_dep_list.append(co_context)
+            context_list.append(context)
 
         att_list = [self.att_list[i](F_dep_list[i]) for i in range(len(xp_list))]
-        context_att_list = [self.context_att_list[i](F_dep_list[i]) for i in range(len(xp_list))]
+        context_att_list = [self.context_att_list[i](context_list[i]) for i in range(len(xp_list))]
         att_list_list = [list(torch.split(self.softmax(att_list[i]), 1, dim=1)) for i in range(len(xp_list))]
         return F_dep_list, att_list_list, att_list, context_att_list
 
