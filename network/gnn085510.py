@@ -120,8 +120,8 @@ class Dep_Context(nn.Module):
         attention = self.softmax(energy)
 
         co_context = torch.bmm(p_fea.view(n, self.in_dim, -1), attention).view(n, self.in_dim, h, w)
-        # co_context = self.alpha*co_context+p_fea
-        co_context = p_fea
+        co_context = self.alpha*co_context+p_fea
+        # co_context = p_fea
         co_context = self.project(co_context)
         co_bg, co_context = torch.split(co_context, self.hidden_dim, dim=1)
         return co_bg, co_context
