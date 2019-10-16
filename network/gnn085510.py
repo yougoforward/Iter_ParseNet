@@ -436,6 +436,8 @@ class GNN_infer(nn.Module):
         self.final_cls = nn.Conv2d((cls_p + cls_h + cls_f - 2) * hidden_dim + in_dim, cls_p, kernel_size=1, padding=0,
                                    stride=1,
                                    bias=True)
+        self.softmax = nn.Softmax(dim=1)
+
 
     def forward(self, xp, xh, xf, xl):
         # _, _, th, tw = xp.size()

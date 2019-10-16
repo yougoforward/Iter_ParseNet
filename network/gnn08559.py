@@ -437,6 +437,8 @@ class GNN_infer(nn.Module):
                                    stride=1,
                                    bias=True)
 
+        self.softmax = nn.Softmax(dim=1)
+
     def forward(self, xp, xh, xf, xl):
         # _, _, th, tw = xp.size()
         # _, _, h, w = xh.size()
