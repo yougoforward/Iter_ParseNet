@@ -133,7 +133,7 @@ class Dep_Context(nn.Module):
 class Contexture(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, parts=6, part_list_list=None):
         super(Contexture, self).__init__()
-
+        self.hidden_dim =hidden_dim
         # self.F_cont = Dep_Context(in_dim, hidden_dim)
         self.project_list = nn.ModuleList([nn.Sequential(nn.Conv2d(in_dim, in_dim, kernel_size=1, padding=0, stride=1, bias=False),
                                      BatchNorm2d(in_dim), nn.ReLU(inplace=False),
