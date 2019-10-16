@@ -227,9 +227,7 @@ class DecoderModule(nn.Module):
         self.alpha = nn.Parameter(torch.ones(1))
 
         self.conv2 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False), SEModule(256, reduction=16))
+                                   BatchNorm2d(256), nn.ReLU(inplace=False))
 
     def forward(self, xt, xm, xl):
         _, _, h, w = xm.size()
