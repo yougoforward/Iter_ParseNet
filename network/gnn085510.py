@@ -99,7 +99,7 @@ class Dep_Context(nn.Module):
         self.maxpool = nn.AdaptiveMaxPool2d(1)
         self.softmax = nn.Softmax(dim=-1)
 
-        self.project = nn.Sequential(nn.Conv2d(in_dim, in_dim, kernel_size=1, padding=0, stride=1, bias=False),
+        self.project = nn.Sequential(nn.Conv2d(in_dim+in_dim, in_dim, kernel_size=1, padding=0, stride=1, bias=False),
                                      BatchNorm2d(in_dim), nn.ReLU(inplace=False),
                                      nn.Conv2d(in_dim, 2*hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
                                      BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False)
@@ -122,7 +122,7 @@ class Dep_Context(nn.Module):
         co_context = torch.bmm(p_fea.view(n, self.in_dim, -1), attention).view(n, self.in_dim, h, w)
         co_context = self.alpha*co_context+p_fea
         # co_context = p_fea
-        co_context = self.project(co_context)
+        co_context = self.project(torch.cat([co_context, p_fea], dim=1))
         return co_context
         # co_bg, co_context = torch.split(co_context, self.hidden_dim, dim=1)
         # return co_bg, co_context

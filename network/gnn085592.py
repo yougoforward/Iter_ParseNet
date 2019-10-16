@@ -99,7 +99,7 @@ class Dep_Context(nn.Module):
         self.maxpool = nn.AdaptiveMaxPool2d(1)
         self.softmax = nn.Softmax(dim=-1)
 
-        self.project = nn.Sequential(nn.Conv2d(in_dim, in_dim, kernel_size=1, padding=0, stride=1, bias=False),
+        self.project = nn.Sequential(nn.Conv2d(in_dim+hidden_dim, in_dim, kernel_size=1, padding=0, stride=1, bias=False),
                                      BatchNorm2d(in_dim), nn.ReLU(inplace=False),
                                      nn.Conv2d(in_dim, 2*hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
                                      BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False)
@@ -122,10 +122,12 @@ class Dep_Context(nn.Module):
         co_context = torch.bmm(hu.view(n, self.hidden_dim, -1), attention.permute(0,2,1)).view(n, self.hidden_dim, h, w)
         # co_context = self.alpha*co_context+p_fea
 
-        context = self.project(p_fea)
-        return context, self.alpha*co_context
+        context = self.project(torch.cat([p_fea, co_context], dim=1))
+        # context = self.project(p_fea)
+        # return context, self.alpha*co_context
         # co_bg, co_context = torch.split(co_context, self.hidden_dim, dim=1)
         # return co_bg, co_context
+        return context
 
 class Contexture(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, parts=6, part_list_list=None):
@@ -148,9 +150,9 @@ class Contexture(nn.Module):
         context_list = []
         F_dep_list =[]
         for i in range(len(xp_list)):
-            context,co_context0 = self.F_cont[i](p_fea, xp_list[i])
+            context = self.F_cont[i](p_fea, xp_list[i])
             co_bg, co_context = torch.split(context, self.hidden_dim, dim=1)
-            F_dep_list.append(co_context+co_context0)
+            F_dep_list.append(co_context)
             context_list.append(context)
 
         att_list = [self.att_list[i](F_dep_list[i]) for i in range(len(xp_list))]
