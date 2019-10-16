@@ -112,16 +112,16 @@ class Dep_Context(nn.Module):
 
     def forward(self, p_fea, hu):
         n, c, h, w = p_fea.size()
-        # coord_fea = torch.from_numpy(generate_spatial_batch(n,h,w)).to(p_fea.device).view(n,-1,8) #n,hw,8
-        coord_fea = self.coord_fea.to(p_fea.device).repeat((n, 1, 1, 1)).permute(0,3,1,2)
-        query = self.img_conv(torch.cat([p_fea, coord_fea], dim=1))
-        project1 = torch.matmul(query.view(n, self.in_dim, -1).permute(0, 2, 1), self.W)  # n,hw,hidden
-        energy = torch.matmul(project1, self.node_conv(torch.cat([hu, coord_fea], dim=1)).view(n, self.hidden_dim, -1))  # n,hw,hw
-        attention = self.softmax(energy)
-
-        co_context = torch.bmm(p_fea.view(n, self.in_dim, -1), attention).view(n, self.in_dim, h, w)
-        co_context = self.alpha*co_context+p_fea
-        # co_context = p_fea
+        # # coord_fea = torch.from_numpy(generate_spatial_batch(n,h,w)).to(p_fea.device).view(n,-1,8) #n,hw,8
+        # coord_fea = self.coord_fea.to(p_fea.device).repeat((n, 1, 1, 1)).permute(0,3,1,2)
+        # query = self.img_conv(torch.cat([p_fea, coord_fea], dim=1))
+        # project1 = torch.matmul(query.view(n, self.in_dim, -1).permute(0, 2, 1), self.W)  # n,hw,hidden
+        # energy = torch.matmul(project1, self.node_conv(torch.cat([hu, coord_fea], dim=1)).view(n, self.hidden_dim, -1))  # n,hw,hw
+        # attention = self.softmax(energy)
+        #
+        # co_context = torch.bmm(p_fea.view(n, self.in_dim, -1), attention).view(n, self.in_dim, h, w)
+        # co_context = self.alpha*co_context+p_fea
+        co_context = p_fea
         co_context = self.project(co_context)
         return co_context
         # co_bg, co_context = torch.split(co_context, self.hidden_dim, dim=1)
