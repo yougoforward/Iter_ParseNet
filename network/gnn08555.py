@@ -123,10 +123,11 @@ class Dep_Context(nn.Module):
 
         # p_fea_conv = self.project(p_fea)
         co_context = torch.bmm(p_fea.view(n, self.in_dim, -1), attention).view(n, self.in_dim, h, w)
-        co_context = self.project(self.alpha*co_context+p_fea)
+        # co_context = self.project(self.alpha*co_context+p_fea)
         # co_context = self.alpha*co_context+p_fea_conv
-        co_bg, co_context = torch.split(co_context, self.hidden_dim, dim=1)
-        return co_bg, co_context
+        # co_bg, co_context = torch.split(co_context, self.hidden_dim, dim=1)
+        # return co_bg, co_context
+        return self.alpha*co_context+p_fea
 
 
 class Contexture(nn.Module):
@@ -134,7 +135,12 @@ class Contexture(nn.Module):
         super(Contexture, self).__init__()
 
         # self.F_cont = Dep_Context(in_dim, hidden_dim)
-        self.F_cont = nn.ModuleList([Dep_Context(in_dim, hidden_dim) for i in range(len(part_list_list))])
+        self.project_list = nn.ModuleList([nn.Sequential(nn.Conv2d(in_dim, in_dim, kernel_size=1, padding=0, stride=1, bias=False),
+                                     BatchNorm2d(in_dim), nn.ReLU(inplace=False),
+                                     nn.Conv2d(in_dim, 2*hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+                                     BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False)
+                                     ) for i in range(len(part_list_list))])
+        self.F_cont = Dep_Context(in_dim, hidden_dim)
 
         self.parts = parts
         self.att_list = nn.ModuleList([nn.Conv2d(hidden_dim, len(part_list_list[i])+ 1, kernel_size=1, padding=0, stride=1, bias=True)
@@ -150,7 +156,11 @@ class Contexture(nn.Module):
         context_att_fea_list = []
         F_dep_list =[]
         for i in range(len(xp_list)):
-            co_bg, co_context = self.F_cont[i](p_fea, xp_list[i])
+            context = self.F_cont(p_fea, xp_list[i])
+            context = self.project_list[i](context)
+            co_bg, co_context = torch.split(context, self.hidden_dim, dim=1)
+
+            # co_bg, co_context = self.F_cont[i](p_fea, xp_list[i])
             context_att_fea = torch.cat((co_bg, xp_list[i], co_context), dim=1)
             context_att_fea_list.append(context_att_fea)
             F_dep_list.append(co_context)
