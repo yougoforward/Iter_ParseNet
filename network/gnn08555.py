@@ -216,6 +216,11 @@ class DecoderModule(nn.Module):
         # self.conv4 = nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True)
         self.alpha = nn.Parameter(torch.ones(1))
 
+        self.conv2 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
+                                   BatchNorm2d(256), nn.ReLU(inplace=False),
+                                   nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False),
+                                   BatchNorm2d(256), nn.ReLU(inplace=False), SEModule(256, reduction=16))
+
     def forward(self, xt, xm, xl):
         _, _, h, w = xm.size()
         xt = self.conv0(F.interpolate(xt, size=(h, w), mode='bilinear', align_corners=True) + self.alpha * xm)
@@ -226,7 +231,9 @@ class DecoderModule(nn.Module):
         # x = torch.cat([xt, xl], dim=1)
         # x_fea = self.conv3(x)
         # x_seg = self.conv4(x_fea)
-        return xt_fea
+
+        xt_fea2 = self.conv2(xt)
+        return xt_fea, xt_fea2
 
 
 class AlphaHBDecoder(nn.Module):
@@ -394,13 +401,13 @@ class GNN(nn.Module):
         self.part_infer = Part_Graph(adj_matrix, self.upper_half_node, self.lower_half_node, in_dim, hidden_dim, cls_p,
                                      cls_h, cls_f)
 
-    def forward(self, xp_list, xh_list, xf, xp, f_att_list, h_att_list, p_att_list):
+    def forward(self, xp_list, xh_list, xf, xp, xp2, f_att_list, h_att_list, p_att_list):
         # for full body node
         xf_new = self.full_infer(xf, xh_list, xp_list, f_att_list, h_att_list, p_att_list)
         # for half body node
         xh_list_new, decomp_fh_att_map = self.half_infer(xf, xh_list, xp_list, f_att_list, h_att_list, p_att_list)
         # for part node
-        xp_list_new, decomp_up_att_map, decomp_lp_att_map, Fdep_att_list, context_att_list = self.part_infer(xf, xh_list, xp_list, xp)
+        xp_list_new, decomp_up_att_map, decomp_lp_att_map, Fdep_att_list, context_att_list = self.part_infer(xf, xh_list, xp_list, xp2)
 
         return xp_list_new, xh_list_new, xf_new, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, Fdep_att_list, context_att_list
 
@@ -450,7 +457,7 @@ class GNN_infer(nn.Module):
 
         self.softmax = nn.Softmax(dim=1)
 
-    def forward(self, xp, xh, xf, xl):
+    def forward(self, xp, xh, xf, xp2, xl):
         # _, _, th, tw = xp.size()
         # _, _, h, w = xh.size()
         #
@@ -475,7 +482,7 @@ class GNN_infer(nn.Module):
 
         # gnn infer
         p_fea_list_new, h_fea_list_new, f_fea_new, decomp_fh_att_map, decomp_up_att_map, \
-        decomp_lp_att_map, Fdep_att_list, context_att_list = self.gnn(p_node_list, h_node_list, f_node, xp, f_att_list, h_att_list, p_att_list)
+        decomp_lp_att_map, Fdep_att_list, context_att_list = self.gnn(p_node_list, h_node_list, f_node, xp, xp2,  f_att_list, h_att_list, p_att_list)
         # node supervision
         node_new = torch.cat([f_fea_new] + h_fea_list_new + p_fea_list_new, dim=1)
         node_seg_new = self.node_cls_final(torch.cat([bg_node, node_new], dim=1))
@@ -512,13 +519,13 @@ class Decoder(nn.Module):
         seg = self.layer5(x[-1])
 
         # direct infer
-        x_fea = self.layer6(seg, x[1], x[0])
+        x_fea, x_fea2 = self.layer6(seg, x[1], x[0])
         alpha_hb_fea = self.layerh(seg, x[1])
         alpha_fb_fea = self.layerf(seg, x[1])
 
         # gnn infer
         p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, \
-        Fdep_att_list , context_att_list= self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, x[0])
+        Fdep_att_list , context_att_list= self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, x_fea2, x[0])
 
         return p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, Fdep_att_list, context_att_list, x_dsn
 
