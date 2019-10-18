@@ -341,7 +341,7 @@ class Part_Graph(nn.Module):
         self.part_dp = Part_Dependency(in_dim, hidden_dim)
         self.node_update_list = nn.ModuleList([conv_Update(hidden_dim) for i in range(self.cls_p - 1)])
 
-    def forward(self, xf, xh_list, xp_list, xp):
+    def forward(self, xf, xh_list, xp_list, xp, p_att_list):
         # upper half
         upper_parts = []
         for part in self.upper_part_list:
@@ -353,7 +353,7 @@ class Part_Graph(nn.Module):
         decomp_pu_list, decomp_pu_att_list, decomp_pu_att_map = self.decomp_hpu_list(xh_list[0], upper_parts)
         decomp_pl_list, decomp_pl_att_list, decomp_pl_att_map = self.decomp_hpl_list(xh_list[1], lower_parts)
 
-        F_dep_list, att_list_list, Fdep_att_list, context_att_list = self.F_dep_list(xp_list, xp, self.part_list_list)
+        F_dep_list, att_list_list, Fdep_att_list, context_att_list = self.F_dep_list(xp_list, xp, self.part_list_list, p_att_list)
 
         xpp_list_list = [[] for i in range(self.cls_p - 1)]
         for i in range(self.edge_index_num):
@@ -400,7 +400,7 @@ class GNN(nn.Module):
         # for half body node
         xh_list_new, decomp_fh_att_map = self.half_infer(xf, xh_list, xp_list, f_att_list, h_att_list, p_att_list)
         # for part node
-        xp_list_new, decomp_up_att_map, decomp_lp_att_map, Fdep_att_list, context_att_list = self.part_infer(xf, xh_list, xp_list, xp)
+        xp_list_new, decomp_up_att_map, decomp_lp_att_map, Fdep_att_list, context_att_list = self.part_infer(xf, xh_list, xp_list, xp, p_att_list)
 
         return xp_list_new, xh_list_new, xf_new, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, Fdep_att_list, context_att_list
 
