@@ -119,7 +119,7 @@ class Dep_Context(nn.Module):
         node_fea = self.node_conv(torch.cat([hu, coord_fea], dim=1))
         node_fea_center = torch.sum(node_fea*hu_att, (2,3), keepdim=True)/torch.sum(hu_att, (2,3), keepdim=True)
 
-        project1 = torch.matmul(query.view(n, self.in_dim, -1).permute(0, 2, 1), node_fea_center.view(n, self.hidden_dim, -1)).view(n, -1)  # n,hw,hidden
+        project1 = torch.matmul(query.view(n, self.hidden_dim, -1).permute(0, 2, 1), node_fea_center.view(n, self.hidden_dim, -1)).view(n, -1)  # n,hw,hidden
         project1 = project1*project1
         project_att = project1/torch.max(project1, dim=1)[0]
 
