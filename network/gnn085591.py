@@ -147,11 +147,11 @@ class Contexture(nn.Module):
 
         self.softmax = nn.Softmax(dim=1)
 
-    def forward(self, xp_list, p_fea, part_list_list):
+    def forward(self, xp_list, p_fea, part_list_list, p_att_list):
         context_list = []
         F_dep_list =[]
         for i in range(len(xp_list)):
-            context = self.F_cont[i](p_fea, xp_list[i])
+            context = self.F_cont[i](p_fea, xp_list[i], p_att_list[i+1])
             co_bg, co_context = torch.split(context, self.hidden_dim, dim=1)
             F_dep_list.append(co_context)
             context_list.append(context)
