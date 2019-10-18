@@ -123,9 +123,9 @@ class Dep_Context(nn.Module):
         project1 = project1*project1
         project_att = project1/torch.max(project1, dim=1, keepdim=True)[0]
 
-        context_att = project_att*(1-hu_att)
+        context_att = project_att.view(n,1, h, w)*(1-hu_att)
         context_att = context_att*context_att
-        context_att = context_att/torch.max(context_att, dim=1, keepdim=True)[0]
+        context_att = context_att/torch.max(context_att, dim=(2,3), keepdim=True)[0]
         co_context = context_att*p_fea
         co_context = self.project(co_context)
         return co_context
