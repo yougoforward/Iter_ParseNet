@@ -18,7 +18,7 @@ from network.gnn085591 import get_model
 # from network.abrnet import get_model
 from progress.bar import Bar
 # from utils.aaf_lovasz_loss import gnn_ABRLovaszLoss as ABRLovaszLoss
-from utils.aaf_lovasz_loss import ABRLovaszLoss_List_att_final2 as ABRLovaszLoss
+from utils.aaf_lovasz_loss import ABRLovaszLoss_List_att_final20 as ABRLovaszLoss
 from utils.metric import *
 from utils.parallel import DataParallelModel, DataParallelCriterion
 from utils.visualize import inv_preprocess, decode_predictions
