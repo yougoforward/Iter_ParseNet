@@ -151,9 +151,9 @@ class Contexture(nn.Module):
         context_list = []
         F_dep_list =[self.F_cont[i](p_fea, xp_list[i], p_att_list[i+1]) for i in range(len(xp_list))]
 
-        att_list = [self.att_list[i](F_dep_list[i]) for i in range(len(xp_list))]
-        att_list_list = [list(torch.split(self.softmax(att_list[i]), 1, dim=1)) for i in range(len(xp_list))]
-        return F_dep_list, att_list_list, att_list
+        # att_list = [self.att_list[i](F_dep_list[i]) for i in range(len(xp_list))]
+        # att_list_list = [list(torch.split(self.softmax(att_list[i]), 1, dim=1)) for i in range(len(xp_list))]
+        return F_dep_list
 
 
 class Part_Dependency(nn.Module):
@@ -347,12 +347,12 @@ class Part_Graph(nn.Module):
         decomp_pu_list, decomp_pu_att_list, decomp_pu_att_map = self.decomp_hpu_list(xh_list[0], upper_parts)
         decomp_pl_list, decomp_pl_att_list, decomp_pl_att_map = self.decomp_hpl_list(xh_list[1], lower_parts)
 
-        F_dep_list, att_list_list, Fdep_att_list = self.F_dep_list(xp_list, xp, self.part_list_list, p_att_list)
+        F_dep_list = self.F_dep_list(xp_list, xp, self.part_list_list, p_att_list)
 
         xpp_list_list = [[] for i in range(self.cls_p - 1)]
         for i in range(self.edge_index_num):
             xpp_list_list[self.edge_index[i, 1]].append(
-                self.part_dp(att_list_list[self.edge_index[i, 0]][1+self.part_list_list[self.edge_index[i, 0]].index(self.edge_index[i, 1])] *
+                self.part_dp(p_att_list[self.edge_index[i, 1]+1] *
                     F_dep_list[self.edge_index[i, 0]], xp_list[self.edge_index[i, 1]]))
         xp_list_new = []
         for i in range(self.cls_p - 1):
