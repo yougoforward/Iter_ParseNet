@@ -141,7 +141,7 @@ class ChannelAttentionModule(nn.Module):
 class ASPPModule(nn.Module):
     """ASPP with OC module: aspp + oc context"""
 
-    def __init__(self, in_dim, out_dim, scale):
+    def __init__(self, in_dim, out_dim):
         super(ASPPModule, self).__init__()
 
         self.gap = nn.Sequential(nn.AdaptiveAvgPool2d(1),
@@ -160,8 +160,6 @@ class ASPPModule(nn.Module):
                                         InPlaceABNSync(out_dim))
 
         self.head_conv = nn.Sequential(nn.Conv2d(out_dim * 5, out_dim, kernel_size=1, padding=0, bias=False),
-                                       InPlaceABNSync(out_dim),
-                                       nn.Conv2d(out_dim, out_dim, kernel_size=3, stride=1, padding=1, bias=False),
                                        InPlaceABNSync(out_dim))
 
     def forward(self, x):
