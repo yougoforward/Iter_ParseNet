@@ -158,11 +158,12 @@ class Contexture(nn.Module):
     )
 
     def forward(self, xp_list, p_fea, part_list_list, p_att_list):
+        n,c,h,w = xp_list[0].size()
         context_list = []
         F_dep_list =[self.F_cont[i](p_fea, xp_list[i], p_att_list[i+1]) for i in range(len(xp_list))]
         node_center = torch.stack(F_dep_list, dim=1)
-        print(node_center.shape)
-        F_dep_list = torch.matmul(node_center.permute(0,2,1), torch.cat(p_att_list[1:], dim=1))
+        # print(node_center.shape)
+        F_dep_list = torch.matmul(node_center.permute(0,2,1), torch.cat(p_att_list[1:], dim=1).view(n, len(xp_list,-1))).view(n,c,h,w)
         F_dep_list = self.conv1x1(F_dep_list)
 
         # att_list = [self.att_list[i](F_dep_list[i]) for i in range(len(xp_list))]
