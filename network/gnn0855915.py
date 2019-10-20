@@ -139,10 +139,10 @@ class Dep_Context(nn.Module):
 class Contexture(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, parts=6, part_list_list=None):
         super(Contexture, self).__init__()
-        self.F_cont = nn.ModuleList([ASPPModule(in_dim, hidden_dim) for i in range(parts)])
+        self.F_cont = ASPPModule(in_dim+parts*hidden_dim, hidden_dim)
 
     def forward(self, xp_list, p_fea, part_list_list, p_att_list):
-        F_dep_list = [self.F_cont[i](p_fea) for i in range(len(xp_list))]
+        F_dep_list = self.F_cont(torch.cat([p_fea]+xp_list, dim=1)
         return F_dep_list
 
 
@@ -347,11 +347,11 @@ class Part_Graph(nn.Module):
         xp_list_new = []
         for i in range(self.cls_p - 1):
             if i + 1 in self.upper_part_list:
-                message = decomp_pu_list[self.upper_part_list.index(i + 1)] + self.part_dp(F_dep_list[i], xp_list[i])
+                message = decomp_pu_list[self.upper_part_list.index(i + 1)] + self.part_dp(F_dep_list*p_att_list[i+1], xp_list[i])
 
                 # message = decomp_pu_list[self.upper_part_list.index(i + 1)] + torch.max(torch.stack(xpp_list_list[i], dim=1), dim=1, keepdim=False)[0]
             elif i + 1 in self.lower_part_list:
-                message = decomp_pl_list[self.lower_part_list.index(i + 1)] + self.part_dp(F_dep_list[i], xp_list[i])
+                message = decomp_pl_list[self.lower_part_list.index(i + 1)] + self.part_dp(F_dep_list*p_att_list[i+1], xp_list[i])
 
                 # message = decomp_pl_list[self.lower_part_list.index(i + 1)] + torch.max(torch.stack(xpp_list_list[i], dim=1), dim=1, keepdim=False)[0]
             xp_list_new.append(self.node_update_list[i](xp_list[i], message))
