@@ -13,7 +13,7 @@ class abr_aaf_labelrelax(nn.Module):
     """Lovasz loss for Alpha process"""
 
     def __init__(self, ignore_index=None, only_present=True, upper_part_list=[1, 2, 3, 4], lower_part_list=[5, 6], cls_p=7, cls_h=3, cls_f=2):
-        super(ABRLovaszLoss_List_att_final, self).__init__()
+        super(abr_aaf_labelrelax, self).__init__()
         self.ignore_index = ignore_index
         self.only_present = only_present
         self.weight = torch.FloatTensor([0.82877791, 0.95688253, 0.94921949, 1.00538108, 1.0201687,  1.01665831, 1.05470914])
