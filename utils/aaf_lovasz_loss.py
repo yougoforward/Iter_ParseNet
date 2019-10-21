@@ -1640,7 +1640,7 @@ class AAF_Loss(nn.Module):
                                                          self.kld_margin,
                                                          w_edge[..., 2],
                                                          w_not_edge[..., 2])
-        dec = targets[-1]
+        dec = self.dec
         aaf_loss = torch.mean(eloss_1) * self.kld_lambda_1*dec
         aaf_loss += torch.mean(eloss_2) * self.kld_lambda_1*dec
         aaf_loss += torch.mean(eloss_3) * self.kld_lambda_1*dec
@@ -1648,7 +1648,6 @@ class AAF_Loss(nn.Module):
         aaf_loss += torch.mean(neloss_2) * self.kld_lambda_2*dec
         aaf_loss += torch.mean(neloss_3) * self.kld_lambda_2*dec
 
-        print(aaf_loss.shape)
         return aaf_loss
 
 
