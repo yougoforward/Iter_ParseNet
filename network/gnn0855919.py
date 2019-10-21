@@ -100,9 +100,9 @@ class Dep_Context(nn.Module):
         self.softmax = nn.Softmax(dim=1)
 
         self.img_conv = nn.Sequential(nn.Conv2d(in_dim+8, 64, kernel_size=1, stride=1, padding=0, bias=False),
-                                      BatchNorm2d(hidden_dim), nn.ReLU())
+                                      BatchNorm2d(64), nn.ReLU())
         self.node_conv = nn.Sequential(nn.Conv2d(in_dim + 8, 64, kernel_size=1, stride=1, padding=0, bias=False),
-                                      BatchNorm2d(hidden_dim), nn.ReLU())
+                                      BatchNorm2d(64), nn.ReLU())
         self.alpha = nn.Parameter(torch.ones(1))
 
         self.aspp = ASPPModule(in_dim, hidden_dim)
