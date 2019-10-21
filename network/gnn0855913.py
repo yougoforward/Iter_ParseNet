@@ -152,7 +152,7 @@ class Contexture(nn.Module):
 
         self.softmax = nn.Softmax(dim=1)
         self.conv1x1 = nn.Sequential(
-            nn.Conv2d(in_dim, parts*hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2*in_dim, parts*hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(parts*hidden_dim), nn.ReLU(inplace=False))
         self.img_conv = nn.Sequential(
             nn.Conv2d(in_dim, in_dim, kernel_size=1, padding=0, stride=1, bias=False),
@@ -161,11 +161,12 @@ class Contexture(nn.Module):
     def forward(self, xp_list, p_fea, part_list_list, p_att_list):
         n,c,h,w = p_fea.size()
         context_list = []
-        F_dep_list =[self.F_cont[i](p_fea, xp_list[i], p_att_list[i+1]) for i in range(len(xp_list))]
+        p_fea2 = self.img_conv(p_fea)
+        F_dep_list =[self.F_cont[i](p_fea2, xp_list[i], p_att_list[i+1]) for i in range(len(xp_list))]
         node_center = torch.stack(F_dep_list, dim=1)
         # print(node_center.shape)
         F_dep_list = torch.matmul(node_center.permute(0,2,1), torch.cat(p_att_list[1:], dim=1).view(n, len(xp_list),-1)).view(n,c,h,w)
-        F_dep_list = list(torch.split(self.conv1x1(F_dep_list), self.hidden_dim, dim=1))
+        F_dep_list = list(torch.split(self.conv1x1(torch.cat([F_dep_list, p_fea],dim=1), self.hidden_dim, dim=1))
 
         # att_list = [self.att_list[i](F_dep_list[i]) for i in range(len(xp_list))]
         # att_list_list = [list(torch.split(self.softmax(att_list[i]), 1, dim=1)) for i in range(len(xp_list))]
