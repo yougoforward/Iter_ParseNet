@@ -183,6 +183,7 @@ def train(model, train_loader, epoch, criterion, optimizer, writer):
         # compute output loss
         preds = model(images)
         loss = criterion(preds, [labels, hlabel, flabel, lr_labels])  # batch mean
+        print(loss.item.shape)
         train_loss += loss.item()
 
         # compute gradient and do SGD step
