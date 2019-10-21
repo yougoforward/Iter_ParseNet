@@ -2,9 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="2810911a-08cc-4176-bfd2-ef66950fbb73" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/train_gnn08512_da_aaf_lr_cos.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/aaf_lovasz_loss.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/aaf_lovasz_loss.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
