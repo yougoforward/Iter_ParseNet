@@ -186,4 +186,4 @@ class ImgWtLossSoftNLL(nn.Module):
                                           class_weights=torch.Tensor(class_weights).cuda(),
                                           border_weights=weights, mask=ignore_mask[i])
 
-        return loss
+        return loss/inputs.shape[0]
