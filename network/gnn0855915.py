@@ -140,10 +140,10 @@ class Contexture(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, parts=6, part_list_list=None):
         super(Contexture, self).__init__()
         self.hidden_dim = hidden_dim
-        self.F_cont = ASPPModule(in_dim+parts*hidden_dim, parts*hidden_dim)
+        self.F_cont = ASPPModule(parts*hidden_dim, parts*hidden_dim)
 
     def forward(self, xp_list, p_fea, part_list_list, p_att_list):
-        F_dep_list =list(torch.split(self.F_cont(torch.cat([p_fea]+xp_list, dim=1)), self.hidden_dim,dim=1))
+        F_dep_list =list(torch.split(self.F_cont(torch.cat(xp_list, dim=1)), self.hidden_dim,dim=1))
         return F_dep_list
 
 
