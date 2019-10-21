@@ -104,7 +104,8 @@ class Dep_Context(nn.Module):
         self.node_conv = nn.Sequential(nn.Conv2d(in_dim + 8, 64, kernel_size=1, stride=1, padding=0, bias=False),
                                       BatchNorm2d(64), nn.ReLU())
         self.alpha = nn.Parameter(torch.ones(1))
-
+        self.co_conv = nn.Sequential(nn.Conv2d(in_dim, hidden_dim, kernel_size=1, stride=1, padding=0, bias=False),
+                                       BatchNorm2d(hidden_dim), nn.ReLU())
         self.aspp = ASPPModule(in_dim, hidden_dim)
 
     def forward(self, p_fea, hu, hu_att, p_att_list, dp_node_list):
@@ -112,7 +113,7 @@ class Dep_Context(nn.Module):
         dp_att = sum([p_att_list[i+1] for i in dp_node_list])
         context_region_fea = p_fea*dp_att
         node_region_fea = p_fea*hu_att
-        context_fea = self.aspp(context_region_fea)
+        # context_fea = self.aspp(context_region_fea)
 
 
         # coord_fea = torch.from_numpy(generate_spatial_batch(n,h,w)).to(p_fea.device).view(n,-1,8) #n,hw,8
@@ -122,7 +123,8 @@ class Dep_Context(nn.Module):
 
         energy = torch.matmul(query.view(n, -1, h*w).permute(0, 2, 1), key.view(n, -1, h*w))  # n,hw,hidden
         attention = self.softmax(energy)
-        co_context = torch.matmul(context_fea.view(n, self.hidden_dim, -1), attention).view(n, self.hidden_dim, h, w)
+        co_context = torch.matmul(context_region_fea.view(n, self.in_dim, -1), attention).view(n, self.in_dim, h, w)
+        co_context = self.co_conv(co_context)
         return co_context
 
 class Contexture(nn.Module):
@@ -339,13 +341,13 @@ class Part_Graph(nn.Module):
         xp_list_new = []
         for i in range(self.cls_p - 1):
             if i + 1 in self.upper_part_list:
-                message = decomp_pu_list[self.upper_part_list.index(i + 1)] + self.part_dp(F_dep_list[i]*p_att_list[i+1], xp_list[i])
+                message = decomp_pu_list[self.upper_part_list.index(i + 1)] + self.part_dp(F_dep_list[i], xp_list[i])
                 # message = decomp_pu_list[self.upper_part_list.index(i + 1)] + F_dep_list[i]
 
 
                 # message = decomp_pu_list[self.upper_part_list.index(i + 1)] + torch.max(torch.stack(xpp_list_list[i], dim=1), dim=1, keepdim=False)[0]
             elif i + 1 in self.lower_part_list:
-                message = decomp_pl_list[self.lower_part_list.index(i + 1)] + self.part_dp(F_dep_list[i]*p_att_list[i+1], xp_list[i])
+                message = decomp_pl_list[self.lower_part_list.index(i + 1)] + self.part_dp(F_dep_list[i], xp_list[i])
                 # message = decomp_pl_list[self.lower_part_list.index(i + 1)] + F_dep_list[i]
 
                 # message = decomp_pl_list[self.lower_part_list.index(i + 1)] + torch.max(torch.stack(xpp_list_list[i], dim=1), dim=1, keepdim=False)[0]
