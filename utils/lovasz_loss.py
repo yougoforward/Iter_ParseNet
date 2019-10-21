@@ -2194,6 +2194,7 @@ class AAF_Loss(nn.Module):
         aaf_loss += torch.mean(neloss_3) * self.kld_lambda_2 * dec
 
         # return torch.stack([loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn, aaf_loss], dim=0)
+        print(aaf_loss.shape)
         return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + aaf_loss
 
 
