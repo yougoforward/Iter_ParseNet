@@ -157,6 +157,9 @@ class Contexture(nn.Module):
         self.img_conv = nn.Sequential(
             nn.Conv2d(in_dim, in_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(in_dim), nn.ReLU(inplace=False))
+        self.img_conv2 = nn.Sequential(
+            nn.Conv2d(in_dim, in_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(in_dim), nn.ReLU(inplace=False))
 
     def forward(self, xp_list, p_fea, part_list_list, p_att_list):
         n,c,h,w = p_fea.size()
@@ -166,6 +169,7 @@ class Contexture(nn.Module):
         node_center = torch.stack(F_dep_list, dim=1)
         # print(node_center.shape)
         F_dep_list = torch.matmul(node_center.permute(0,2,1), torch.cat(p_att_list[1:], dim=1).view(n, len(xp_list),-1)).view(n,c,h,w)
+        F_dep_list = self.img_conv2(F_dep_list)
         F_dep_list = list(torch.split(self.conv1x1(torch.cat([F_dep_list, p_fea],dim=1)), self.hidden_dim, dim=1))
 
         # att_list = [self.att_list[i](F_dep_list[i]) for i in range(len(xp_list))]
