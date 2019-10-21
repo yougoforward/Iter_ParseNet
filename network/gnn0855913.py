@@ -166,7 +166,7 @@ class Contexture(nn.Module):
         node_center = torch.stack(F_dep_list, dim=1)
         # print(node_center.shape)
         F_dep_list = torch.matmul(node_center.permute(0,2,1), torch.cat(p_att_list[1:], dim=1).view(n, len(xp_list),-1)).view(n,c,h,w)
-        F_dep_list = list(torch.split(self.conv1x1(torch.cat([F_dep_list, p_fea],dim=1), self.hidden_dim, dim=1))
+        F_dep_list = list(torch.split(self.conv1x1(torch.cat([F_dep_list, p_fea],dim=1)), self.hidden_dim, dim=1))
 
         # att_list = [self.att_list[i](F_dep_list[i]) for i in range(len(xp_list))]
         # att_list_list = [list(torch.split(self.softmax(att_list[i]), 1, dim=1)) for i in range(len(xp_list))]
