@@ -41,7 +41,7 @@ class abr_aaf_labelrelax(nn.Module):
             aaf_loss.append(self.aaf_loss([preds[0][i]], targets))
             label_relax_loss.append(self.label_relax_loss(pred0, targets[3]))
 
-        loss = sum(loss)+sum(aaf_loss)
+        loss = sum(loss)+sum(aaf_loss)+sum(label_relax_loss)
 
         # half body
         loss_hb = []
@@ -135,10 +135,6 @@ class abr_aaf_labelrelax(nn.Module):
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
-
-
-
-
 
         return loss + 0.4 * loss_hb + 0.4 * loss_fb + \
                0.4*(loss_fh_att+loss_up_att+loss_lp_att) + 0.4 * loss_dsn
