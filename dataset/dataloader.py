@@ -5,7 +5,7 @@ import random
 import cv2
 import numpy as np
 import torch.utils.data as data
-
+from .label_relax_transforms import RelaxedBoundaryLossToTensor
 
 # ###### Data loading #######
 def make_dataset(root, lst):
@@ -51,6 +51,8 @@ class DataGenerator(data.Dataset):
         self.segs = segs
         self.crop_size = crop_size
         self.training = training
+
+        self.label_relax = RelaxedBoundaryLossToTensor(ignore_id=255, num_classes=7)
 
     def __getitem__(self, index):
         mean = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32)

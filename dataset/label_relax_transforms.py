@@ -82,7 +82,7 @@ class RelaxedBoundaryLossToTensor(object):
 
     def new_one_hot_converter(self,a):
         ncols = self.num_classes+1
-        out = np.zeros( (a.size,ncols), dtype=np.uint8)
+        out = np.zeros((a.size,ncols), dtype=np.uint8)
         out[np.arange(a.size),a.ravel()] = 1
         out.shape = a.shape + (ncols,)
         return out

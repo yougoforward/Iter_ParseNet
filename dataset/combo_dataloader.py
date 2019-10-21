@@ -10,6 +10,7 @@ from dataset import cv2_aug_transforms as cv2_aug_trans
 # from dataset import transforms as trans
 import json
 import logging
+from .label_relax_transforms import RelaxedBoundaryLossToTensor
 
 class Configer(object):
     def __init__(self, hypes_file=None):
@@ -92,6 +93,8 @@ class DataGenerator(data.Dataset):
     def __init__(self, root, list_path, crop_size, training=True):
 
         imgs, segs = make_dataset(root, list_path)
+
+        self.label_relax = RelaxedBoundaryLossToTensor(ignore_id=255, num_classes=7)
 
         self.root = root
         self.imgs = imgs
@@ -192,7 +195,10 @@ class DataGenerator(data.Dataset):
         segmentations_half = seg_half.copy()
         segmentations_full = seg_full.copy()
 
-        return images, segmentations, segmentations_half, segmentations_full, name
+        #label_relaxation
+        lr_segmentations = self.label_relax(segmentations)
+
+        return images, segmentations, segmentations_half, segmentations_full, lr_segmentations, name
 
     def __len__(self):
         return len(self.imgs)

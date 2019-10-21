@@ -75,7 +75,7 @@
       },
       "random_rotate": {
         "ratio": 0.5,
-        "rotate_degree": 10
+        "rotate_degree": 20
       },
       "random_crop":{
         "ratio": 0.5,
