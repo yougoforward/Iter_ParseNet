@@ -35,11 +35,11 @@ class abr_aaf_labelrelax(nn.Module):
         aaf_loss = []
         label_relax_loss = []
         for i in range(len(preds[0])):
-            pred = F.interpolate(input=preds[0][i], size=(h, w), mode='bilinear', align_corners=True)
-            pred = F.softmax(input=pred, dim=1)
+            pred0 = F.interpolate(input=preds[0][i], size=(h, w), mode='bilinear', align_corners=True)
+            pred = F.softmax(input=pred0, dim=1)
             loss.append(lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
             aaf_loss.append(self.aaf_loss([preds[0][i]], targets))
-            label_relax_loss.append(self.label_relax_loss(preds[0][i], targets[3]))
+            label_relax_loss.append(self.label_relax_loss(pred0, targets[3]))
 
         loss = sum(loss)+sum(aaf_loss)
 
