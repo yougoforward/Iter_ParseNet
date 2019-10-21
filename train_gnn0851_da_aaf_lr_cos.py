@@ -227,7 +227,7 @@ def validation(model, val_loader, epoch, writer):
     bar = Bar('Processing {}'.format('val'), max=len(val_loader))
     bar.check_tty = False
     for idx, batch in enumerate(val_loader):
-        image, target, hlabel, flabel, _ = batch
+        image, target, hlabel, flabel, _, _ = batch
         image, target, hlabel, flabel = image.cuda(), target.cuda(), hlabel.cuda(), flabel.cuda()
         with torch.no_grad():
             h, w = target.size(1), target.size(2)
