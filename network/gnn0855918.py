@@ -134,6 +134,8 @@ class Contexture(nn.Module):
         self.att_list = nn.ModuleList(
             [nn.Conv2d(hidden_dim, len(part_list_list[i]) + 1, kernel_size=1, padding=0, stride=1, bias=True)
              for i in range(len(part_list_list))])
+        self.softmax = nn.Softmax(dim=1)
+
 
     def forward(self, xp_list, p_fea, part_list_list, p_att_list):
         F_dep_list =[self.F_cont[i](p_fea, xp_list[i], p_att_list, part_list_list[i]) for i in range(len(xp_list))]
