@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="2810911a-08cc-4176-bfd2-ef66950fbb73" name="Default Changelist" comment="" />
+    <list default="true" id="2810911a-08cc-4176-bfd2-ef66950fbb73" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/utils/BoundaryLabelRelaxationLoss.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/BoundaryLabelRelaxationLoss.py" afterDir="false" />
+    </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -30,6 +32,7 @@
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/dataset" />
       <recent name="$PROJECT_DIR$/utils" />
       <recent name="$PROJECT_DIR$/network" />
       <recent name="$PROJECT_DIR$" />
