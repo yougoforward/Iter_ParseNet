@@ -8,11 +8,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from .config import cfg
-from .transforms import RelaxedBoundaryLossToTensor
-
-
-# target_train_transform = RelaxedBoundaryLossToTensor(args.dataset_cls.ignore_label,  args.dataset_cls.num_classes)
-# mask = target_train_transform(mask)
 
 def get_loss(args):
     """
