@@ -42,7 +42,7 @@ class abr_aaf_labelrelax(nn.Module):
             label_relax_loss.append(self.label_relax_loss(pred0, targets[3]))
 
         # print(sum(aaf_loss))
-        print(sum(label_relax_loss).shape)
+        print((sum(label_relax_loss)).size())
 
         loss = sum(loss)+sum(aaf_loss)+sum(label_relax_loss)
 
