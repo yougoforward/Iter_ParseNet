@@ -16,7 +16,7 @@ def cosine_decay(learning_rate, global_step, warm_step, warm_lr, decay_steps, al
     # warm_lr = 0.01 * learning_rate
     # current_step = epoch * iters_per_epoch + i_iter
     if global_step < warm_step:
-        lr = warm_lr
+        lr = learning_rate*global_step/warm_step
     else:
         global_step = min(global_step, decay_steps)-warm_step
         cosine_decay = 0.5 * (1 + math.cos(math.pi * global_step / (decay_steps-warm_step)))
@@ -31,7 +31,7 @@ def restart_cosine_decay(learning_rate, global_step, warm_step, warm_lr, decay_s
     # current_step = epoch * iters_per_epoch + i_iter
     restart_step = int((warm_step+decay_steps)/2)
     if global_step < warm_step:
-        lr = warm_lr
+        lr = learning_rate*global_step/warm_step
     elif global_step <restart_step:
         end_steps = restart_step-warm_step
         cur_step = global_step-warm_step

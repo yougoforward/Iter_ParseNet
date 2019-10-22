@@ -2,6 +2,7 @@ import os
 import os.path
 import random
 
+from PIL import Image, ImageOps, ImageFilter
 import cv2
 import numpy as np
 import torch.utils.data as data
@@ -129,6 +130,12 @@ class DataGenerator(data.Dataset):
         seg = cv2.imread(self.segs[index], cv2.IMREAD_GRAYSCALE)
 
         if self.training:
+            #random blur
+            # gaussian blur as in PSP
+            if random.random() < 0.5:
+                sigma = random.random()*10
+                img = cv2.GaussianBlur(img, (0,0), int(sigma))
+
             if self.aug_train_transform is not None:
                 img, seg = self.aug_train_transform(img, labelmap=seg)
 
@@ -167,6 +174,7 @@ class DataGenerator(data.Dataset):
             flip = np.random.choice(2) * 2 - 1
             img = img[:, ::flip, :]
             seg = seg[:, ::flip]
+
             # Generate target maps
             img = img.transpose((2, 0, 1))
             seg_half = seg.copy()
