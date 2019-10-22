@@ -11,7 +11,7 @@ import math
 #     optimizer.param_groups[0]['lr'] = lr
 #     return lr
 
-def cosine_decay(learning_rate, global_step, warm_step, warm_lr, decay_steps, alpha=0.0001):
+def cosine_decay(learning_rate, global_step, warm_step, decay_steps, alpha=0.01):
     # warm_step = 5 * iters_per_epoch
     # warm_lr = 0.01 * learning_rate
     # current_step = epoch * iters_per_epoch + i_iter
@@ -25,7 +25,7 @@ def cosine_decay(learning_rate, global_step, warm_step, warm_lr, decay_steps, al
     return lr
 
 
-def restart_cosine_decay(learning_rate, global_step, warm_step, warm_lr, decay_steps, alpha=0.0001):
+def restart_cosine_decay(learning_rate, global_step, warm_step, decay_steps, alpha=0.01):
     # warm_step = 5 * iters_per_epoch
     # warm_lr = 0.01 * learning_rate
     # current_step = epoch * iters_per_epoch + i_iter
