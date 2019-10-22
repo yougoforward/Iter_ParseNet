@@ -182,7 +182,7 @@ class abr_aaf_labelrelax(nn.Module):
         # print(sum(aaf_loss))
         # print(sum(label_relax_loss))
 
-        loss = sum(loss)+aaf_loss+label_relax_loss
+        loss = sum(loss)+aaf_loss+0.1*label_relax_loss
 
         # half body
         loss_hb = []
