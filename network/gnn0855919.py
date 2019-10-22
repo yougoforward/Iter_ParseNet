@@ -110,7 +110,7 @@ class Dep_Context(nn.Module):
 
     def forward(self, p_fea, hu, hu_att, p_att_list, dp_node_list):
         n, c, h, w = p_fea.size()
-        dp_att = sum([p_att_list[i+1] for i in dp_node_list]+hu_att)
+        dp_att = sum([p_att_list[i+1] for i in dp_node_list]+[hu_att])
         context_region_fea = p_fea*dp_att
         node_region_fea = p_fea*hu_att
         # context_fea = self.aspp(context_region_fea)
