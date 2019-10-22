@@ -99,7 +99,7 @@ def customsoftmax(inp, multihotmask):
     """
     Custom Softmax
     """
-    soft = F.softmax(inp)
+    soft = F.softmax(inp, dim=1)
     # This takes the mask * softmax ( sums it up hence summing up the classes in border
     # then takes of summed up version vs no summed version
     return torch.log(
