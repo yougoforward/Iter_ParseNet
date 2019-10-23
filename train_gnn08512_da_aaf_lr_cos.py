@@ -68,9 +68,9 @@ def adjust_learning_rate(optimizer, epoch, i_iter, iters_per_epoch, method='poly
         # if epoch>args.epochs*0.9:
         #     lr = 0.1*args.learning_rate
     elif method == 'cosine':
-        lr = cosine_decay(learning_rate=args.learning_rate, global_step=epoch * iters_per_epoch + i_iter, warm_step = 10 * iters_per_epoch, decay_steps = args.epochs*iters_per_epoch, alpha=0.0001)
+        lr = cosine_decay(base_learning_rate=args.learning_rate, global_step=epoch * iters_per_epoch + i_iter, warm_step = 10 * iters_per_epoch, decay_steps = args.epochs*iters_per_epoch, alpha=0.0001)
     elif method== 'restart_cosine':
-        lr = restart_cosine_decay(learning_rate=args.learning_rate, global_step=epoch * iters_per_epoch + i_iter, warm_step = 10 * iters_per_epoch, decay_steps = args.epochs*iters_per_epoch, alpha=0.0001)
+        lr = restart_cosine_decay(base_learning_rate=args.learning_rate, global_step=epoch * iters_per_epoch + i_iter, warm_step = 10 * iters_per_epoch, decay_steps = args.epochs*iters_per_epoch, alpha=0.0001)
     else:
         lr = args.learning_rate
     optimizer.param_groups[0]['lr'] = lr
