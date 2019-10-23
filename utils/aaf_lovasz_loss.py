@@ -36,10 +36,10 @@ class abr_aaf_labelrelax2(nn.Module):
         pred = F.softmax(input=pred0, dim=1)
         loss_final = lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index),
                                          only_present=self.only_present)
-        aaf_loss = self.aaf_loss(preds, targets)
-        label_relax_loss = self.label_relax_loss(pred0, targets[3])
+        # aaf_loss = self.aaf_loss(preds, targets)
+        # label_relax_loss = self.label_relax_loss(pred0, targets[3])
 
-        loss_final = loss_final+aaf_loss
+        # loss_final = loss_final+aaf_loss
         # loss_final = loss_final + 0.05*label_relax_loss
 
         # seg loss
