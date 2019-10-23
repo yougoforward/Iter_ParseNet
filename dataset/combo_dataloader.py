@@ -136,8 +136,8 @@ class DataGenerator(data.Dataset):
             #     sigma = random.random()*10
             #     img = cv2.GaussianBlur(img, (int(sigma)*2+1,int(sigma)*2+1), int(sigma)+1)
 
-            if self.aug_train_transform is not None:
-                img, seg = self.aug_train_transform(img, labelmap=seg)
+            # if self.aug_train_transform is not None:
+            #     img, seg = self.aug_train_transform(img, labelmap=seg)
 
             # if self.img_transform is not None:
             #     img = self.img_transform(img)

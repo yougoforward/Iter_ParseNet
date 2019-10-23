@@ -13,7 +13,7 @@ from torch.nn.parallel.scatter_gather import gather
 from torch.utils import data
 
 from dataset.combo_dataloader import DataGenerator
-
+#
 # from dataset.dataloader import DataGenerator
 # from dataset.datasets import DatasetGenerator
 from network.gnn0851 import get_model
@@ -175,6 +175,7 @@ def train(model, train_loader, epoch, criterion, optimizer, writer):
         iters_per_epoch = len(train_loader)
         lr = adjust_learning_rate(optimizer, epoch, i_iter, iters_per_epoch, method=args.lr_mode)
         # print("\n=>epoch  %d, learning_rate = %f" % (epoch, lr))
+
         image, label, hlabel, flabel, lr_label, _ = batch
         images, labels, hlabel, flabel, lr_labels = image.cuda(), label.long().cuda(), hlabel.cuda(), flabel.cuda(), lr_label.cuda()
         torch.set_grad_enabled(True)
