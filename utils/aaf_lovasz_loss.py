@@ -114,7 +114,7 @@ class LR_AAF_Loss(nn.Module):
         label_relax_loss = self.label_relax_loss(pred0, targets[3])
 
         # return torch.stack([loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn, aaf_loss], dim=0)
-        return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + aaf_loss + 0.04*label_relax_loss
+        return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + aaf_loss + label_relax_loss
 
 
 class abr_aaf_labelrelax2(nn.Module):
@@ -148,7 +148,7 @@ class abr_aaf_labelrelax2(nn.Module):
         # label_relax_loss = self.label_relax_loss(pred0, targets[3])
 
         # loss_final = loss_final+aaf_loss
-        # loss_final = loss_final + 0.05*label_relax_loss
+        # loss_final = loss_final + label_relax_loss
 
         # seg loss
         loss = []
@@ -293,7 +293,7 @@ class abr_aaf_labelrelax(nn.Module):
 
         # loss = sum(loss)+aaf_loss+0.1*label_relax_loss
 
-        loss = sum(loss[:-1])+0.1*label_relax_loss
+        loss = sum(loss[:-1])+label_relax_loss
 
         # half body
         loss_hb = []
