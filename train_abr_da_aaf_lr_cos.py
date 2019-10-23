@@ -198,6 +198,8 @@ def train(model, train_loader, epoch, criterion, optimizer, writer):
 
         # loss = criterion(preds, [labels, hlabel, flabel], dec)  # batch mean
         loss = criterion(preds, [labels, hlabel, flabel])  # batch mean
+        loss = criterion(preds, [labels, hlabel, flabel, lr_labels])  # batch mean
+
         # loss = loss[0]+dec*loss[1]
         # # print(loss)
 
