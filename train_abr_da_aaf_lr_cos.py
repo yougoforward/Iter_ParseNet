@@ -44,7 +44,7 @@ def parse_args():
     parser.add_argument('--epochs', default=301, type=int)
     parser.add_argument('--batch-size', default=4, type=int)
     parser.add_argument('--learning-rate', default=7e-3, type=float)
-    parser.add_argument('--lr-mode', type=str, default='poly')
+    parser.add_argument('--lr-mode', type=str, default='cosine')
     parser.add_argument('--ignore-label', type=int, default=255)
     # Checkpoints
     # parser.add_argument('--restore-from', default='./checkpoints/init/senet154.pth', type=str)
