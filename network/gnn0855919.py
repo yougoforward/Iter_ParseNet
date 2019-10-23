@@ -110,9 +110,12 @@ class Dep_Context(nn.Module):
 
     def forward(self, p_fea, hu, hu_att, p_att_list, dp_node_list):
         n, c, h, w = p_fea.size()
-        dp_att = sum([p_att_list[i+1] for i in dp_node_list]+[hu_att])
+        # dp_att = sum([p_att_list[i+1] for i in dp_node_list]+[hu_att])
+        # context_region_fea = p_fea*dp_att
+        # node_region_fea = p_fea*hu_att
+        dp_att = sum([p_att_list[i+1] for i in dp_node_list])
         context_region_fea = p_fea*dp_att
-        node_region_fea = p_fea*hu_att
+        node_region_fea = p_fea
         # context_fea = self.aspp(context_region_fea)
 
 
@@ -124,8 +127,8 @@ class Dep_Context(nn.Module):
         energy = torch.matmul(query.view(n, -1, h*w).permute(0, 2, 1), key.view(n, -1, h*w))  # n,hw,hidden
         attention = self.softmax(energy)
         co_context = torch.matmul(context_region_fea.view(n, self.in_dim, -1), attention).view(n, self.in_dim, h, w)
-        co_context = self.co_conv(co_context)
-        return co_context
+        # co_context = self.co_conv(co_context)
+        return co_context*hu_att
 
 class Contexture(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, parts=6, part_list_list=None):
@@ -145,7 +148,7 @@ class Part_Dependency(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10):
         super(Part_Dependency, self).__init__()
         self.R_dep = nn.Sequential(
-            nn.Conv2d(2*hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(in_dim+hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
