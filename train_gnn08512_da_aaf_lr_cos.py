@@ -42,7 +42,7 @@ def parse_args():
     parser.add_argument('--epochs', default=151, type=int)
     parser.add_argument('--batch-size', default=8, type=int)
     parser.add_argument('--learning-rate', default=7e-3, type=float)
-    parser.add_argument('--lr-mode', type=str, default='cosine')
+    parser.add_argument('--lr-mode', type=str, default='poly')
     parser.add_argument('--ignore-label', type=int, default=255)
     # Checkpoints
     # parser.add_argument('--restore-from', default='./checkpoints/init/resnet152_stem.pth', type=str)
@@ -65,12 +65,12 @@ def adjust_learning_rate(optimizer, epoch, i_iter, iters_per_epoch, method='poly
         max_step = args.epochs * iters_per_epoch
         # poly
         lr = args.learning_rate * ((1 - current_step / max_step) ** 0.9)
-        if epoch>args.epochs*0.9:
-            lr = 0.1*args.learning_rate
+        # if epoch>args.epochs*0.9:
+        #     lr = 0.1*args.learning_rate
     elif method == 'cosine':
-        lr = cosine_decay(learning_rate=args.learning_rate, global_step=epoch * iters_per_epoch + i_iter, warm_step = 5 * iters_per_epoch, decay_steps = (args.epochs-20) * iters_per_epoch, alpha=0.01)
+        lr = cosine_decay(learning_rate=args.learning_rate, global_step=epoch * iters_per_epoch + i_iter, warm_step = 5 * iters_per_epoch, decay_steps = (args.epochs-20) * iters_per_epoch, alpha=0.1)
     elif method== 'restart_cosine':
-        lr = restart_cosine_decay(learning_rate=args.learning_rate, global_step=epoch * iters_per_epoch + i_iter, warm_step = 5 * iters_per_epoch, decay_steps = (args.epochs-20) * iters_per_epoch, alpha=0.01)
+        lr = restart_cosine_decay(learning_rate=args.learning_rate, global_step=epoch * iters_per_epoch + i_iter, warm_step = 5 * iters_per_epoch, decay_steps = (args.epochs-20) * iters_per_epoch, alpha=0.1)
     else:
         lr = args.learning_rate
     optimizer.param_groups[0]['lr'] = lr
