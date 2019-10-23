@@ -39,7 +39,8 @@ class abr_aaf_labelrelax2(nn.Module):
         aaf_loss = self.aaf_loss(preds, targets)
         label_relax_loss = self.label_relax_loss(pred0, targets[3])
 
-        loss_final = loss_final+aaf_loss+0.05*label_relax_loss
+        loss_final = loss_final+aaf_loss
+        # loss_final = loss_final + 0.05*label_relax_loss
 
         # seg loss
         loss = []
