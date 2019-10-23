@@ -177,13 +177,15 @@ class abr_aaf_labelrelax(nn.Module):
             pred = F.softmax(input=pred0, dim=1)
             loss.append(lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
             if i==len(preds[0])-1:
-                aaf_loss = self.aaf_loss([preds[0][i]], targets)
+                # aaf_loss = self.aaf_loss([preds[0][i]], targets)
                 label_relax_loss = self.label_relax_loss(pred0, targets[3])
 
         # print(sum(aaf_loss))
         # print(sum(label_relax_loss))
 
-        loss = sum(loss)+aaf_loss+0.1*label_relax_loss
+        # loss = sum(loss)+aaf_loss+0.1*label_relax_loss
+
+        loss = sum(loss[:-1])+0.1*label_relax_loss
 
         # half body
         loss_hb = []
