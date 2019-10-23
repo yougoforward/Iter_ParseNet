@@ -197,7 +197,7 @@ def train(model, train_loader, epoch, criterion, optimizer, writer):
         # dec = torch.pow(torch.tensor(1e2, requires_grad=False), -current_step / max_step).cuda()
 
         # loss = criterion(preds, [labels, hlabel, flabel], dec)  # batch mean
-        loss = criterion(preds, [labels, hlabel, flabel])  # batch mean
+        # loss = criterion(preds, [labels, hlabel, flabel])  # batch mean
         loss = criterion(preds, [labels, hlabel, flabel, lr_labels])  # batch mean
 
         # loss = loss[0]+dec*loss[1]
