@@ -443,7 +443,7 @@ class GNN_infer(nn.Module):
         h_seg_new = torch.cat([node_seg_list_new[0]] + node_seg_list_new[2:4], dim=1)
         p_seg_new = torch.cat([node_seg_list_new[0]] + node_seg_list_new[4:], dim=1)
 
-        p_seg_final = self.final_cls(torch.cat([bg_node, node_new], dim=1), xp, xl)
+        p_seg_final = self.final_cls(torch.cat([bg_node]+p_fea_list_new, dim=1), xp, xl)
 
         # p_seg_final = self.final_cls(node_new, xp, xl)
 
@@ -455,7 +455,8 @@ class Final_classifer(nn.Module):
         self.cp = cls_p
         self.ch = cls_h
         self.cf = cls_f
-        self.ch_in = in_dim
+        self.indim = in_dim
+        self.hidden = hidden_dim
 
         # classifier
 
@@ -464,11 +465,13 @@ class Final_classifer(nn.Module):
 
         self.conv3 = nn.Sequential(nn.Conv2d(in_dim + 48, in_dim, kernel_size=1, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(in_dim), nn.ReLU(inplace=False),
-                                   nn.Conv2d(in_dim, in_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+                                   nn.Conv2d(in_dim, hidden_dim*cls_p, kernel_size=1, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(in_dim)
                                    )
         self.relu = nn.ReLU(inplace=False)
-        self.p_cls = nn.Conv2d(in_dim + (cls_p + cls_h + cls_f - 2) * hidden_dim, cls_p, kernel_size=1, padding=0, dilation=1, bias=True)
+        self.p_cls = nn.Sequential(nn.Conv2d(cls_p*hidden_dim, cls_p*hidden_dim, kernel_size=3, padding=1, dilation=1, groups=cls_p, bias=False),
+                                   BatchNorm2d(in_dim), nn.ReLU(inplace=False),
+                                   nn.Conv2d(cls_p * hidden_dim, cls_p, kernel_size=1, padding=0, dilation=1, groups=cls_p, bias=True))
 
         # self.p_cls = nn.Sequential(nn.Conv2d(in_dim * 3 + (cls_p + cls_h + cls_f - 2) * hidden_dim, cls_p, kernel_size=1, padding=0, stride=1, bias=True))
 
@@ -476,12 +479,13 @@ class Final_classifer(nn.Module):
         # classifier
         _, _, th, tw = xl.size()
         xphf = F.interpolate(xphf, size=(th, tw), mode='bilinear', align_corners=True)
+
         xt = F.interpolate(xp, size=(th, tw), mode='bilinear', align_corners=True)
         xl = self.conv2(xl)
         x = torch.cat([xt, xl], dim=1)
         x_fea = self.conv3(x)
 
-        xp_seg = self.p_cls(torch.cat([x_fea, xphf], dim=1))
+        xp_seg = self.p_cls(x_fea+xphf)
         return xp_seg
 
 # class Final_classifer(nn.Module):
