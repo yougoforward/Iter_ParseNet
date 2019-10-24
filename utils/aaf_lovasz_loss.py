@@ -116,6 +116,8 @@ class LR_AAF_Loss(nn.Module):
         # return torch.stack([loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn, aaf_loss], dim=0)
         return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + aaf_loss + label_relax_loss
 
+        # return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + aaf_loss + label_relax_loss
+
 
 class abr_aaf_labelrelax2(nn.Module):
     """Lovasz loss for Alpha process"""
