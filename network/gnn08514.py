@@ -465,13 +465,13 @@ class Final_classifer(nn.Module):
 
         self.conv3 = nn.Sequential(nn.Conv2d(in_dim + 48, in_dim, kernel_size=1, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(in_dim), nn.ReLU(inplace=False),
-                                   nn.Conv2d(in_dim, hidden_dim*cls_p, kernel_size=1, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(hidden_dim*cls_p)
+                                   nn.Conv2d(in_dim, in_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+                                   BatchNorm2d(hidden_dim)
                                    )
         self.relu = nn.ReLU(inplace=False)
-        self.p_cls = nn.Sequential(nn.Conv2d(cls_p*hidden_dim, cls_p*hidden_dim, kernel_size=3, padding=1, dilation=1, groups=cls_p, bias=False),
-                                   BatchNorm2d(cls_p*hidden_dim), nn.ReLU(inplace=False),
-                                   nn.Conv2d(cls_p * hidden_dim, cls_p, kernel_size=1, padding=0, dilation=1, groups=cls_p, bias=True))
+        self.p_cls = nn.ModuleList([nn.Sequential(nn.Conv2d(in_dim+hidden_dim, hidden_dim, kernel_size=3, padding=1, dilation=1, bias=False),
+                                   BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+                                   nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, dilation=1, bias=True)) for i in range(cls_p)])
 
         # self.p_cls = nn.Sequential(nn.Conv2d(in_dim * 3 + (cls_p + cls_h + cls_f - 2) * hidden_dim, cls_p, kernel_size=1, padding=0, stride=1, bias=True))
 
@@ -479,13 +479,14 @@ class Final_classifer(nn.Module):
         # classifier
         _, _, th, tw = xl.size()
         xphf = F.interpolate(xphf, size=(th, tw), mode='bilinear', align_corners=True)
+        xp_list = list(torch.split(xphf, self.hidden, dim=1))
 
         xt = F.interpolate(xp, size=(th, tw), mode='bilinear', align_corners=True)
         xl = self.conv2(xl)
         x = torch.cat([xt, xl], dim=1)
         x_fea = self.conv3(x)
 
-        xp_seg = self.p_cls(x_fea+xphf)
+        xp_seg = [self.p_cls[i](torch.cat([x_fea, xp_list[i]], dim=1)) for i in range(self.cp)]
         return xp_seg
 
 # class Final_classifer(nn.Module):
