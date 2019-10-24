@@ -484,6 +484,7 @@ class Final_classifer(nn.Module):
         x_fea = self.conv3(x)
 
         xp_seg = [self.p_cls[i](torch.cat([x_fea, xp_list[i]], dim=1)) for i in range(self.cp)]
+        xp_seg = torch.cat(xp_seg, dim=1)
         return xp_seg
 
 # class Final_classifer(nn.Module):
