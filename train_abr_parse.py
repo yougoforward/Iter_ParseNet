@@ -37,7 +37,7 @@ def parse_args():
     parser.add_argument('--fbody-cls', type=int, default=2)
     # Optimization options
     parser.add_argument('--epochs', default=151, type=int)
-    parser.add_argument('--batch-size', default=4, type=int)
+    parser.add_argument('--batch-size', default=40, type=int)
     parser.add_argument('--learning-rate', default=7e-3, type=float)
     parser.add_argument('--lr-mode', type=str, default='cosine')
     parser.add_argument('--ignore-label', type=int, default=255)
