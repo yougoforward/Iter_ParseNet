@@ -444,9 +444,6 @@ class GNN_infer(nn.Module):
         p_seg_new = torch.cat([node_seg_list_new[0]] + node_seg_list_new[4:], dim=1)
 
         p_seg_final = self.final_cls(torch.cat([bg_node]+p_fea_list_new, dim=1), xp, xl)
-
-        # p_seg_final = self.final_cls(node_new, xp, xl)
-
         return p_seg_final, [h_seg, h_seg_new], [f_seg, f_seg_new], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map], [p_seg, p_seg_new]
 
 class Final_classifer(nn.Module):
@@ -466,7 +463,7 @@ class Final_classifer(nn.Module):
         self.conv3 = nn.Sequential(nn.Conv2d(in_dim + 48, in_dim, kernel_size=1, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(in_dim), nn.ReLU(inplace=False),
                                    nn.Conv2d(in_dim, in_dim, kernel_size=1, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(hidden_dim)
+                                   BatchNorm2d(in_dim)
                                    )
         self.relu = nn.ReLU(inplace=False)
         self.p_cls = nn.ModuleList([nn.Sequential(nn.Conv2d(in_dim+hidden_dim, hidden_dim, kernel_size=3, padding=1, dilation=1, bias=False),
