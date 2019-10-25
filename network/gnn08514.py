@@ -519,7 +519,7 @@ class Final_classifer(nn.Module):
         x = torch.cat([xt, xl], dim=1)
         x_fea = self.relu(self.conv3(x)+xt)
 
-        p_fea_centers = [torch.sum(x_fea*p_att_list[i], (2,3), keepdim=False)/torch.sum(p_att_list, (2,3), keepdim=False) for i in range(self.cp)]
+        p_fea_centers = [torch.sum(x_fea*p_att_list[i], (2,3), keepdim=False)/torch.sum(p_att_list[i], (2,3), keepdim=False) for i in range(self.cp)]
         center_fea = torch.stack(p_fea_centers, dim=-1) # n x in_dim x cls_p
         cab_fea = torch.bmm(center_fea, p_att.view(n, self.cp, -1)).view(n, self.indim, th, tw)
         xp_seg = self.p_cls(torch.cat([x_fea, cab_fea], dim=1))
