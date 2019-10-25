@@ -444,7 +444,7 @@ class GNN_infer(nn.Module):
         p_seg_new = torch.cat([node_seg_list_new[0]] + node_seg_list_new[4:], dim=1)
 
         # p_seg_final = self.final_cls(torch.cat([bg_node]+p_fea_list_new, dim=1), xp, xl)
-        p_seg_final = self.final_cls([bg_node]+p_fea_list_new, xp, xl)
+        p_seg_final = self.final_cls(p_seg, xp, xl)
 
         return p_seg_final, [h_seg, h_seg_new], [f_seg, f_seg_new], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map], [p_seg, p_seg_new]
 
@@ -509,11 +509,11 @@ class Final_classifer(nn.Module):
 
         # self.p_cls = nn.Sequential(nn.Conv2d(in_dim * 3 + (cls_p + cls_h + cls_f - 2) * hidden_dim, cls_p, kernel_size=1, padding=0, stride=1, bias=True))
 
-    def forward(self, p_att_list, xp, xl):
+    def forward(self, p_seg, xp, xl):
         # classifier
         n, _, th, tw = xl.size()
-        p_att = F.interpolate(torch.cat(p_att_list, dim=1), size=(th, tw), mode='bilinear', align_corners=True)# n x cls_p x th x tw
-        p_att_list = list(torch.split(p_att, 1, dim =1))
+        p_att = F.interpolate(p_seg, size=(th, tw), mode='bilinear', align_corners=True)# n x cls_p x th x tw
+        p_att_list = list(torch.split(torch.softmax(p_att, dim=1), 1, dim =1))
         xt = F.interpolate(xp, size=(th, tw), mode='bilinear', align_corners=True)
         xl = self.conv2(xl)
         x = torch.cat([xt, xl], dim=1)
