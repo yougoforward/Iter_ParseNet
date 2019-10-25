@@ -458,9 +458,9 @@ class Final_classifer(nn.Module):
         self.conv2 = nn.Sequential(nn.Conv2d(in_dim, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(48), nn.ReLU(inplace=False))
         self.cls = nn.ModuleList([nn.Sequential(
-            nn.Conv2d(hidden_dim + 48, 64, kernel_size=3, padding=1, dilation=1, bias=False),
-            BatchNorm2d(64), nn.ReLU(inplace=False),
-            nn.Conv2d(64, hidden_dim, kernel_size=3, padding=1, dilation=1, bias=False),
+            nn.Conv2d(hidden_dim + 48, 128, kernel_size=3, padding=1, dilation=1, bias=False),
+            BatchNorm2d(128), nn.ReLU(inplace=False),
+            nn.Conv2d(128, hidden_dim, kernel_size=3, padding=1, dilation=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         ) for i in range(cls_p)])
         self.node_cls = nn.Conv2d(cls_p*hidden_dim, cls_p, kernel_size=1, padding=0, dilation=1, groups=cls_p, bias=True)
