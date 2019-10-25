@@ -507,6 +507,9 @@ class Final_classifer(nn.Module):
         self.relu = nn.ReLU(inplace=False)
         self.p_cls = nn.Sequential(nn.Conv2d(2*in_dim, cls_p, kernel_size=1, padding=0, dilation=1, bias=True))
 
+        self.fuse_conv = nn.Sequential(nn.Conv2d(in_dim, in_dim, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
+                                   BatchNorm2d(in_dim), nn.ReLU(inplace=False))
+
         # self.p_cls = nn.Sequential(nn.Conv2d(in_dim * 3 + (cls_p + cls_h + cls_f - 2) * hidden_dim, cls_p, kernel_size=1, padding=0, stride=1, bias=True))
 
     def forward(self, p_seg, xp, xl):
@@ -517,12 +520,12 @@ class Final_classifer(nn.Module):
         xt = F.interpolate(xp, size=(th, tw), mode='bilinear', align_corners=True)
         xl = self.conv2(xl)
         x = torch.cat([xt, xl], dim=1)
-        x_fea = self.relu(self.conv3(x)+xt)
+        x_fea = self.relu(self.conv3(x))
 
         p_fea_centers = [torch.sum(x_fea*p_att_list[i], (2,3), keepdim=False)/torch.sum(p_att_list[i], (2,3), keepdim=False) for i in range(self.cp)]
         center_fea = torch.stack(p_fea_centers, dim=-1) # n x in_dim x cls_p
         cab_fea = torch.bmm(center_fea, p_att.view(n, self.cp, -1)).view(n, self.indim, th, tw)
-        xp_seg = self.p_cls(torch.cat([x_fea, cab_fea], dim=1))
+        xp_seg = self.p_cls(torch.cat([x_fea, self.fuse_conv(cab_fea)], dim=1))
         return xp_seg
 
 # class Final_classifer(nn.Module):
