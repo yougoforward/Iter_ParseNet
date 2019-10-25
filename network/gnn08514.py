@@ -513,6 +513,7 @@ class Final_classifer(nn.Module):
         # classifier
         n, _, th, tw = xl.size()
         p_att = F.interpolate(torch.cat(p_att_list, dim=1), size=(th, tw), mode='bilinear', align_corners=True)# n x cls_p x th x tw
+        p_att_list = list(torch.split(p_att, 1, dim =1))
         xt = F.interpolate(xp, size=(th, tw), mode='bilinear', align_corners=True)
         xl = self.conv2(xl)
         x = torch.cat([xt, xl], dim=1)
