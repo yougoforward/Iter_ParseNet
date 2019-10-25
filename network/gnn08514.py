@@ -503,7 +503,7 @@ class Final_classifer(nn.Module):
 #                                    BatchNorm2d(in_dim)
 #                                    )
 #         self.relu = nn.ReLU(inplace=False)
-#         self.p_cls = nn.Sequential(nn.Conv2d(2*in_dim, 1, kernel_size=1, padding=0, dilation=1, bias=True))
+#         self.p_cls = nn.Sequential(nn.Conv2d(2*in_dim, cls_p, kernel_size=1, padding=0, dilation=1, bias=True))
 #
 #         # self.p_cls = nn.Sequential(nn.Conv2d(in_dim * 3 + (cls_p + cls_h + cls_f - 2) * hidden_dim, cls_p, kernel_size=1, padding=0, stride=1, bias=True))
 #
