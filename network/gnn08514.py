@@ -466,7 +466,7 @@ class Final_classifer(nn.Module):
                                    BatchNorm2d(in_dim)
                                    )
         self.relu = nn.ReLU(inplace=False)
-        self.p_cls = nn.Sequential(nn.Conv2d(in_dim, 1, kernel_size=1, padding=0, dilation=1, bias=True))
+        self.p_cls = nn.Conv2d(in_dim, cls_p, kernel_size=1, padding=0, dilation=1, bias=True)
 
         # self.p_cls = nn.Sequential(nn.Conv2d(in_dim * 3 + (cls_p + cls_h + cls_f - 2) * hidden_dim, cls_p, kernel_size=1, padding=0, stride=1, bias=True))
 
@@ -477,9 +477,9 @@ class Final_classifer(nn.Module):
         xt = F.interpolate(xp, size=(th, tw), mode='bilinear', align_corners=True)
         xl = self.conv2(xl)
         x = torch.cat([xt, xphf, xl], dim=1)
-        x_fea = self.conv3(x)
+        x_fea = self.relu(self.conv3(x)+xt)
 
-        xp_seg = self.p_cls(self.relu(x_fea))
+        xp_seg = self.p_cls(x_fea)
         return xp_seg
 
 
