@@ -1606,7 +1606,7 @@ class ABRLovaszLoss_List_att(nn.Module):
             pred = F.interpolate(input=preds[0][i], size=(h, w), mode='bilinear', align_corners=True)
             pred = F.softmax(input=pred, dim=1)
             loss.append(lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
-        loss = sum(loss)
+        loss = sum(loss)/len(preds[0])
 
         # half body
         loss_hb = []
@@ -1615,7 +1615,7 @@ class ABRLovaszLoss_List_att(nn.Module):
             pred_hb = F.softmax(input=pred_hb, dim=1)
             loss_hb.append(lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
                                       only_present=self.only_present))
-        loss_hb = sum(loss_hb)
+        loss_hb = sum(loss_hb)/len(preds[1])
 
         # full body
         loss_fb = []
@@ -1624,7 +1624,7 @@ class ABRLovaszLoss_List_att(nn.Module):
             pred_fb = F.softmax(input=pred_fb, dim=1)
             loss_fb.append(lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
                                       only_present=self.only_present))
-        loss_fb = sum(loss_fb)
+        loss_fb = sum(loss_fb)/len(preds[2])
 
         #decomp fh
         loss_fh_att = []
@@ -1633,7 +1633,7 @@ class ABRLovaszLoss_List_att(nn.Module):
             pred_fh = F.softmax(input=pred_fh, dim=1)
             loss_fh_att.append(lovasz_softmax_flat(*flatten_probas(pred_fh, targets[1], self.ignore_index),
                                                only_present=self.only_present))
-        loss_fh_att = sum(loss_fh_att)
+        loss_fh_att = sum(loss_fh_att)/len(preds[3])
 
         labels_p = targets[0]
         one_label_p = labels_p.clone().long()
@@ -1667,7 +1667,7 @@ class ABRLovaszLoss_List_att(nn.Module):
             pred_up = F.softmax(input=pred_up, dim=1)
             loss_up_att.append(lovasz_softmax_flat(*flatten_probas(pred_up, targets_up, self.ignore_index),
                                                    only_present=self.only_present))
-        loss_up_att = sum(loss_up_att)
+        loss_up_att = sum(loss_up_att)/len(preds[4])
 
         #decomp lp
         lower_bg_node = 1-one_hot_hb_list[2]
@@ -1683,7 +1683,7 @@ class ABRLovaszLoss_List_att(nn.Module):
             pred_lp = F.softmax(input=pred_lp, dim=1)
             loss_lp_att.append(lovasz_softmax_flat(*flatten_probas(pred_lp, targets_lp, self.ignore_index),
                                                    only_present=self.only_present))
-        loss_lp_att = sum(loss_lp_att)
+        loss_lp_att = sum(loss_lp_att)/len(preds[5])
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
