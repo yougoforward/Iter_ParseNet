@@ -259,51 +259,51 @@ class SEASPPModule(nn.Module):
         return output
 
 
-# class MagicModule(nn.Module):
-#     """ASPP based on SE and OC and Context Contrasted """
+class MagicModule(nn.Module):
+    """ASPP based on SE and OC and Context Contrasted """
 
-#     def __init__(self, in_dim, out_dim, scale):
-#         super(MagicModule, self).__init__()
-#         self.atte_branch = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=1, dilation=1, bias=False),
-#                                          InPlaceABNSync(out_dim),
-#                                          SelfAttentionModule(in_dim=out_dim, out_dim=out_dim, key_dim=out_dim // 2,
-#                                                              value_dim=out_dim, scale=scale))
-#         # TODO: change SE Module to Channel Attention Module
-#         self.dilation_x = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=1, padding=0, dilation=1, bias=False),
-#                                         InPlaceABNSync(out_dim), SEModule(out_dim, reduction=16))
+    def __init__(self, in_dim, out_dim, scale):
+        super(MagicModule, self).__init__()
+        self.atte_branch = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=1, dilation=1, bias=False),
+                                         InPlaceABNSync(out_dim),
+                                         SelfAttentionModule(in_dim=out_dim, out_dim=out_dim, key_dim=out_dim // 2,
+                                                             value_dim=out_dim, scale=scale))
+        # TODO: change SE Module to Channel Attention Module
+        self.dilation_x = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+                                        InPlaceABNSync(out_dim), SEModule(out_dim, reduction=16))
 
-#         # self.dilation_x = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=1, padding=0, dilation=1, bias=False),
-#         #                                 InPlaceABNSync(out_dim), ChannelAttentionModule(out_dim))
+        # self.dilation_x = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+        #                                 InPlaceABNSync(out_dim), ChannelAttentionModule(out_dim))
 
-#         self.dilation_0 = nn.Sequential(ContextContrastedModule(in_dim, out_dim, rate=6),
-#                                         SEModule(out_dim, reduction=16))
+        self.dilation_0 = nn.Sequential(ContextContrastedModule(in_dim, out_dim, rate=6),
+                                        SEModule(out_dim, reduction=16))
 
-#         self.dilation_1 = nn.Sequential(ContextContrastedModule(in_dim, out_dim, rate=12),
-#                                         SEModule(out_dim, reduction=16))
+        self.dilation_1 = nn.Sequential(ContextContrastedModule(in_dim, out_dim, rate=12),
+                                        SEModule(out_dim, reduction=16))
 
-#         self.dilation_2 = nn.Sequential(ContextContrastedModule(in_dim, out_dim, rate=18),
-#                                         SEModule(out_dim, reduction=16))
+        self.dilation_2 = nn.Sequential(ContextContrastedModule(in_dim, out_dim, rate=18),
+                                        SEModule(out_dim, reduction=16))
 
-#         self.dilation_3 = nn.Sequential(ContextContrastedModule(in_dim, out_dim, rate=24),
-#                                         SEModule(out_dim, reduction=16))
+        self.dilation_3 = nn.Sequential(ContextContrastedModule(in_dim, out_dim, rate=24),
+                                        SEModule(out_dim, reduction=16))
 
-#         self.head_conv = nn.Sequential(nn.Conv2d(out_dim * 6, out_dim, kernel_size=1, padding=0, bias=False),
-#                                        InPlaceABNSync(out_dim),
-#                                        nn.Conv2d(out_dim, out_dim, kernel_size=3, stride=1, padding=1, bias=False),
-#                                        InPlaceABNSync(out_dim))
+        self.head_conv = nn.Sequential(nn.Conv2d(out_dim * 6, out_dim, kernel_size=1, padding=0, bias=False),
+                                       InPlaceABNSync(out_dim),
+                                       nn.Conv2d(out_dim, out_dim, kernel_size=3, stride=1, padding=1, bias=False),
+                                       InPlaceABNSync(out_dim))
 
-#     def forward(self, x):
-#         # parallel branch
-#         feat0 = self.atte_branch(x)
-#         feat1 = self.dilation_0(x)
-#         feat2 = self.dilation_1(x)
-#         feat3 = self.dilation_2(x)
-#         feat4 = self.dilation_3(x)
-#         featx = self.dilation_x(x)
-#         # fusion branch
-#         concat = torch.cat([feat0, feat1, feat2, feat3, feat4, featx], 1)
-#         output = self.head_conv(concat)
-#         return output
+    def forward(self, x):
+        # parallel branch
+        feat0 = self.atte_branch(x)
+        feat1 = self.dilation_0(x)
+        feat2 = self.dilation_1(x)
+        feat3 = self.dilation_2(x)
+        feat4 = self.dilation_3(x)
+        featx = self.dilation_x(x)
+        # fusion branch
+        concat = torch.cat([feat0, feat1, feat2, feat3, feat4, featx], 1)
+        output = self.head_conv(concat)
+        return output
 
 
 class SE_Module(nn.Module):
@@ -325,11 +325,11 @@ class SE_Module(nn.Module):
         return out
 
 
-class MagicModule(nn.Module):
+class sa_MagicModule(nn.Module):
     """ASPP based on SE and OC and Context Contrasted """
 
     def __init__(self, in_dim, out_dim, scale):
-        super(MagicModule, self).__init__()
+        super(sa_MagicModule, self).__init__()
         self.atte_branch = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=1, dilation=1, bias=False),
                                          InPlaceABNSync(out_dim),
                                          SelfAttentionModule(in_dim=out_dim, out_dim=out_dim, key_dim=out_dim // 2,
