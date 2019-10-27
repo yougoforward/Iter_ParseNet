@@ -259,6 +259,72 @@ class SEASPPModule(nn.Module):
         return output
 
 
+# class MagicModule(nn.Module):
+#     """ASPP based on SE and OC and Context Contrasted """
+
+#     def __init__(self, in_dim, out_dim, scale):
+#         super(MagicModule, self).__init__()
+#         self.atte_branch = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=1, dilation=1, bias=False),
+#                                          InPlaceABNSync(out_dim),
+#                                          SelfAttentionModule(in_dim=out_dim, out_dim=out_dim, key_dim=out_dim // 2,
+#                                                              value_dim=out_dim, scale=scale))
+#         # TODO: change SE Module to Channel Attention Module
+#         self.dilation_x = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+#                                         InPlaceABNSync(out_dim), SEModule(out_dim, reduction=16))
+
+#         # self.dilation_x = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+#         #                                 InPlaceABNSync(out_dim), ChannelAttentionModule(out_dim))
+
+#         self.dilation_0 = nn.Sequential(ContextContrastedModule(in_dim, out_dim, rate=6),
+#                                         SEModule(out_dim, reduction=16))
+
+#         self.dilation_1 = nn.Sequential(ContextContrastedModule(in_dim, out_dim, rate=12),
+#                                         SEModule(out_dim, reduction=16))
+
+#         self.dilation_2 = nn.Sequential(ContextContrastedModule(in_dim, out_dim, rate=18),
+#                                         SEModule(out_dim, reduction=16))
+
+#         self.dilation_3 = nn.Sequential(ContextContrastedModule(in_dim, out_dim, rate=24),
+#                                         SEModule(out_dim, reduction=16))
+
+#         self.head_conv = nn.Sequential(nn.Conv2d(out_dim * 6, out_dim, kernel_size=1, padding=0, bias=False),
+#                                        InPlaceABNSync(out_dim),
+#                                        nn.Conv2d(out_dim, out_dim, kernel_size=3, stride=1, padding=1, bias=False),
+#                                        InPlaceABNSync(out_dim))
+
+#     def forward(self, x):
+#         # parallel branch
+#         feat0 = self.atte_branch(x)
+#         feat1 = self.dilation_0(x)
+#         feat2 = self.dilation_1(x)
+#         feat3 = self.dilation_2(x)
+#         feat4 = self.dilation_3(x)
+#         featx = self.dilation_x(x)
+#         # fusion branch
+#         concat = torch.cat([feat0, feat1, feat2, feat3, feat4, featx], 1)
+#         output = self.head_conv(concat)
+#         return output
+
+
+class SE_Module(nn.Module):
+    """ Channel attention module"""
+
+    def __init__(self, in_dim, out_dim):
+        super(SE_Module, self).__init__()
+        self.se = nn.Sequential(nn.AdaptiveAvgPool2d((1, 1)),
+                                nn.Conv2d(in_dim, in_dim // 16, kernel_size=1, padding=0, dilation=1,
+                                          bias=True),
+                                nn.ReLU(False),
+                                nn.Conv2d(in_dim // 16, out_dim, kernel_size=1, padding=0, dilation=1,
+                                          bias=True),
+                                nn.Sigmoid()
+                                )
+
+    def forward(self, x):
+        out = self.se(x)
+        return out
+
+
 class MagicModule(nn.Module):
     """ASPP based on SE and OC and Context Contrasted """
 
@@ -288,9 +354,12 @@ class MagicModule(nn.Module):
                                         SEModule(out_dim, reduction=16))
 
         self.head_conv = nn.Sequential(nn.Conv2d(out_dim * 6, out_dim, kernel_size=1, padding=0, bias=False),
-                                       InPlaceABNSync(out_dim),
-                                       nn.Conv2d(out_dim, out_dim, kernel_size=3, stride=1, padding=1, bias=False),
+                                       InPlaceABNSync(out_dim)
+                                       )
+        self.refine = nn.Sequential(nn.Conv2d(out_dim, out_dim, kernel_size=3, stride=1, padding=1, bias=False),
                                        InPlaceABNSync(out_dim))
+        self.project = nn.Conv2d(6 * out_dim, 6, kernel_size=1, padding=0, bias=True)
+                               
 
     def forward(self, x):
         # parallel branch
@@ -300,148 +369,20 @@ class MagicModule(nn.Module):
         feat3 = self.dilation_2(x)
         feat4 = self.dilation_3(x)
         featx = self.dilation_x(x)
+
+        n, c, h, w = feat0.size()
+
         # fusion branch
         concat = torch.cat([feat0, feat1, feat2, feat3, feat4, featx], 1)
         output = self.head_conv(concat)
+
+        # scale adaptie
+        energy = self.project(concat)
+        attention = self.softmax(energy)
+        y = torch.stack([feat0, feat1, feat2, feat3, feat4, featx], dim=-1)
+        out = torch.matmul(y.view(n, c, h*w, 6).permute(0,2,1,3), attention.view(n, 5, h*w).permute(0,2,1).unsqueeze(dim=3))
+        out = out.squeeze(dim=3).permute(0,2,1).view(n,c,h,w)
+
+        # refine 
+        output = self.refine(out+output)
         return output
-
-
-class gsecMagicModule(nn.Module):
-    """ASPP based on SE and OC and Context Contrasted """
-
-    def __init__(self, in_dim, out_dim, scale):
-        super(gsecMagicModule, self).__init__()
-        self.atte_branch = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=1, dilation=1, bias=False),
-                                         InPlaceABNSync(out_dim),
-                                         SelfAttentionModule(in_dim=out_dim, out_dim=out_dim, key_dim=out_dim // 2,
-                                                             value_dim=out_dim, scale=scale))
-        # TODO: change SE Module to Channel Attention Module
-        self.dilation_x = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=1, padding=0, dilation=1, bias=False),
-                                        InPlaceABNSync(out_dim), SEModule(out_dim, reduction=16))
-
-        # self.dilation_x = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=1, padding=0, dilation=1, bias=False),
-        #                                 InPlaceABNSync(out_dim), ChannelAttentionModule(out_dim))
-
-        self.dilation_0 = nn.Sequential(ContextContrastedModule(in_dim, out_dim, rate=6),
-                                        SEModule(out_dim, reduction=16))
-
-        self.dilation_1 = nn.Sequential(ContextContrastedModule(in_dim, out_dim, rate=12),
-                                        SEModule(out_dim, reduction=16))
-
-        self.dilation_2 = nn.Sequential(ContextContrastedModule(in_dim, out_dim, rate=18),
-                                        SEModule(out_dim, reduction=16))
-
-        self.dilation_3 = nn.Sequential(ContextContrastedModule(in_dim, out_dim, rate=24),
-                                        SEModule(out_dim, reduction=16))
-
-        # self.head_conv = nn.Sequential(nn.Conv2d(out_dim * 6, 512, kernel_size=1, padding=0, bias=False),
-        #                                InPlaceABNSync(512),
-        #                                nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1, bias=False),
-        #                                InPlaceABNSync(512))
-        self.head_conv = guided_SE_CAM_Module(out_dim * 6, 512, 512, BatchNorm2d)
-
-    def forward(self, x):
-        # parallel branch
-        feat0 = self.atte_branch(x)
-        feat1 = self.dilation_0(x)
-        feat2 = self.dilation_1(x)
-        feat3 = self.dilation_2(x)
-        feat4 = self.dilation_3(x)
-        featx = self.dilation_x(x)
-        # fusion branch
-        concat = torch.cat([feat0, feat1, feat2, feat3, feat4, featx], 1)
-        output = self.head_conv(concat)
-        return output
-
-
-class guided_CAM_Module(nn.Module):
-    """ Position attention module"""
-
-    # Ref from SAGAN
-    def __init__(self, in_dim, query_dim, norm_layer):
-        super(guided_CAM_Module, self).__init__()
-        self.chanel_in = in_dim
-        self.query_dim = query_dim
-
-        self.gamma = nn.Parameter(torch.zeros(1))
-        self.softmax = nn.Softmax(dim=-1)
-        self.query_conv_c = nn.Sequential(
-            nn.Conv2d(in_channels=in_dim, out_channels=query_dim, kernel_size=1, bias=False),
-            norm_layer(query_dim), nn.ReLU(False)
-        )
-
-    def forward(self, x):
-        """
-            inputs :
-                x=[x1,x2]
-                x1 : input feature maps( B X C*5 X H X W)
-                x2 : input deature maps (BxCxHxW)
-            returns :
-                out : output feature maps( B X C X H X W)
-        """
-
-        m_batchsize, C, height, width = x.size()
-        proj_c_query = self.query_conv_c(x)
-
-        proj_c_key = x.view(m_batchsize, C, -1).permute(0, 2, 1)
-        energy = torch.bmm(proj_c_query.view(m_batchsize, self.query_dim, -1), proj_c_key)
-        energy_new = torch.max(energy, -1, keepdim=True)[0].expand_as(energy) - energy
-        attention = self.softmax(energy_new)
-
-        out_c = torch.bmm(attention, x.view(m_batchsize, -1, width * height))
-        out_c = out_c.view(m_batchsize, -1, height, width)
-        out_c = self.gamma * out_c + proj_c_query
-        return out_c
-
-
-class SE_Module(nn.Module):
-    """ Channel attention module"""
-
-    def __init__(self, in_dim, out_dim):
-        super(SE_Module, self).__init__()
-        self.se = nn.Sequential(nn.AdaptiveAvgPool2d((1, 1)),
-                                nn.Conv2d(in_dim, in_dim // 16, kernel_size=1, padding=0, dilation=1,
-                                          bias=True),
-                                nn.ReLU(False),
-                                nn.Conv2d(in_dim // 16, out_dim, kernel_size=1, padding=0, dilation=1,
-                                          bias=True),
-                                nn.Sigmoid()
-                                )
-
-    def forward(self, x):
-        out = self.se(x)
-        return out
-
-
-class guided_SE_CAM_Module(nn.Module):
-    """ Channel attention module"""
-
-    def __init__(self, in_dim, query_dim, out_dim, norm_layer):
-        super(guided_SE_CAM_Module, self).__init__()
-        self.guided_cam = guided_CAM_Module(in_dim, query_dim, norm_layer)
-        self.project = nn.Sequential(
-            nn.Conv2d(in_dim, query_dim, kernel_size=1, padding=0, dilation=1, bias=False),
-            norm_layer(query_dim), nn.ReLU(False)
-        )
-        self.se = SE_Module(in_dim, query_dim)
-
-        self.fuse = nn.Sequential(
-            nn.Conv2d(2*query_dim, out_dim, kernel_size=1, padding=0, dilation=1, bias=False),
-            norm_layer(out_dim), nn.ReLU(False)
-        )
-    def forward(self, x):
-        """
-            inputs :
-                x : input feature maps( B X C X H X W)
-            returns :
-                out : attention value + input feature
-                attention: B X C X C
-        """
-        gcam = self.guided_cam(x)
-
-        bottle = self.project(x)
-        se_x = self.se(x)
-        se_bottle = se_x * bottle + bottle
-        out = torch.cat([gcam, se_bottle], dim=1)
-        out = self.fuse(out)
-        return out
