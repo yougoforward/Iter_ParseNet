@@ -404,7 +404,7 @@ class GNN_infer(nn.Module):
             decomp_up_att_map.append(decomp_up_att_map_new)
             decomp_lp_att_map.append(decomp_lp_att_map_new)
            
-        return [p_seg, p_seg_new], [h_seg, h_seg_new], [f_seg, f_seg_new], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map]
+        return p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map
 
 
 class Decoder(nn.Module):
