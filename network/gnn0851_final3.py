@@ -97,10 +97,12 @@ class DecoderModule(nn.Module):
 
     def __init__(self, num_classes):
         super(DecoderModule, self).__init__()
-        self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=1, padding=0, dilation=1, bias=False),
+        self.conv0 = nn.Sequential(nn.Conv2d(512, 512, kernel_size=3, padding=1, dilation=1, bias=False),
+                                   BatchNorm2d(512), nn.ReLU(inplace=False))
+        self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, dilation=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
 
-        self.conv2 = nn.Sequential(nn.Conv2d(256, 48, kernel_size=1, padding=0, dilation=1, bias=False),
+        self.conv2 = nn.Sequential(nn.Conv2d(256, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(48), nn.ReLU(inplace=False))
 
         self.conv3 = nn.Sequential(nn.Conv2d(304, 256, kernel_size=3, padding=1, dilation=1, bias=False),
@@ -108,11 +110,12 @@ class DecoderModule(nn.Module):
                                    nn.Conv2d(256, 256, kernel_size=3, padding=1, dilation=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
 
+        # self.conv4 = nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True)
         self.alpha = nn.Parameter(torch.ones(1))
 
     def forward(self, xt, xm, xl):
         _, _, h, w = xm.size()
-        # xt = self.conv0(F.interpolate(xt, size=(h, w), mode='bilinear', align_corners=True) + self.alpha * xm)
+        xt = self.conv0(F.interpolate(xt, size=(h, w), mode='bilinear', align_corners=True) + self.alpha * xm)
         _, _, th, tw = xl.size()
         xt_fea = self.conv1(xt)
         xt = F.interpolate(xt_fea, size=(th, tw), mode='bilinear', align_corners=True)
@@ -125,23 +128,19 @@ class DecoderModule(nn.Module):
 class AlphaHBDecoder(nn.Module):
     def __init__(self, hbody_cls):
         super(AlphaHBDecoder, self).__init__()
-        self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=1, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False))
-
-        self.conv2 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=1, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False))
-
-        self.conv3 = nn.Sequential(nn.Conv2d(256, 256, kernel_size=3, padding=0, dilation=1, bias=False),
+        self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   nn.Conv2d(256, 256, kernel_size=1, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False))
+                                   nn.Conv2d(256, 256, kernel_size=3, padding=1, stride=1, bias=False),
+                                   BatchNorm2d(256), nn.ReLU(inplace=False), SEModule(256, reduction=16))
+
+        self.alpha_hb = nn.Parameter(torch.ones(1))
 
     def forward(self, x, skip):
         _, _, h, w = skip.size()
 
-        xup = F.interpolate(self.conv1(x), size=(h, w), mode='bilinear', align_corners=True)
-        xfuse = xup + self.conv2(skip)
-        xfuse = self.conv3(xfuse)
+        xup = F.interpolate(x, size=(h, w), mode='bilinear', align_corners=True)
+        xfuse = xup + self.alpha_hb * skip
+        xfuse = self.conv1(xfuse)
 
         return xfuse
 
@@ -149,24 +148,18 @@ class AlphaHBDecoder(nn.Module):
 class AlphaFBDecoder(nn.Module):
     def __init__(self, fbody_cls):
         super(AlphaFBDecoder, self).__init__()
-        self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=1, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False))
-
-        self.conv2 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=1, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False))
-
-        self.conv3 = nn.Sequential(nn.Conv2d(256, 256, kernel_size=3, padding=0, dilation=1, bias=False),
+        self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   nn.Conv2d(256, 256, kernel_size=1, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False))
+                                   nn.Conv2d(256, 256, kernel_size=3, padding=1, stride=1, bias=False),
+                                   BatchNorm2d(256), nn.ReLU(inplace=False), SEModule(256, reduction=16))
+        self.alpha_fb = nn.Parameter(torch.ones(1))
 
     def forward(self, x, skip):
         _, _, h, w = skip.size()
 
-        xup = F.interpolate(self.conv1(x), size=(h, w), mode='bilinear', align_corners=True)
-        xfuse = xup + self.conv2(skip)
-        xfuse = self.conv3(xfuse)
-
+        xup = F.interpolate(x, size=(h, w), mode='bilinear', align_corners=True)
+        xfuse = xup + self.alpha_fb * skip
+        xfuse = self.conv1(xfuse)
         return xfuse
 
 
@@ -317,7 +310,7 @@ class GNN_infer(nn.Module):
             nn.Conv2d(in_dim, hidden_dim * (cls_f - 1), kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim * (cls_f - 1)), nn.ReLU(inplace=False))
         self.bg_conv = nn.Sequential(
-            nn.Conv2d(3 * in_dim, hidden_dim, kernel_size=1, padding=0, stride=1,
+            nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1,
                       bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
 
@@ -353,17 +346,18 @@ class GNN_infer(nn.Module):
         p_node_list = list(torch.split(p_conv, self.hidden_dim, dim=1))
         h_conv = self.h_conv(xh)
         h_node_list = list(torch.split(h_conv, self.hidden_dim, dim=1))
-        bg_node = self.bg_conv(torch.cat([xp, xh, xf], dim=1))
+        bg_node = self.bg_conv(xp)
 
         # node supervision
         bg_cls = self.bg_cls(bg_node)
-
         p_cls = self.p_cls(p_conv)
         h_cls = self.h_cls(h_conv)
         f_cls = self.f_cls(f_node)
+
         f_seg = torch.cat([bg_cls, f_cls], dim=1)
         h_seg = torch.cat([bg_cls, h_cls], dim=1)
         p_seg = torch.cat([bg_cls, p_cls], dim=1)
+
         f_att_list = list(torch.split(self.softmax(f_seg), 1, dim=1))
         h_att_list = list(torch.split(self.softmax(h_seg), 1, dim=1))
         p_att_list = list(torch.split(self.softmax(p_seg), 1, dim=1))
