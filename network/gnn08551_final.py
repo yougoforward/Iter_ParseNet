@@ -340,6 +340,10 @@ class GNN_infer(nn.Module):
                                         groups=1)
 
         self.softmax = nn.Softmax(dim=1)
+
+        self.final_node = nn.ModuleList([nn.Sequential(nn.Conv2d(in_dim+hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
+                                   BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+                                   nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True)) for i in range(cls_p-1)])
     def forward(self, xp, xh, xf, xl):
         # _, _, th, tw = xp.size()
         # _, _, h, w = xh.size()
@@ -404,6 +408,10 @@ class GNN_infer(nn.Module):
             p_seg.append(p_seg_new)
             h_seg.append(h_seg_new)
             f_seg.append(f_seg_new)
+
+
+        p_seg_final = [bg_cls]+[self.final_node[i](torch.cat([xp, p_fea_list_new[i]], dim=1)) for i in range(self.cls_p-1)]
+        p_seg.append(torch.cat(p_seg_final, dim=1))
 
         return p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, com_map, com_u_map, com_l_map
 
