@@ -309,10 +309,6 @@ class GNN_infer(nn.Module):
         self.f_conv = nn.Sequential(
             nn.Conv2d(in_dim, hidden_dim * (cls_f - 1), kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim * (cls_f - 1)), nn.ReLU(inplace=False))
-        self.bg_conv = nn.Sequential(
-            nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1,
-                      bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
 
         # gnn infer
         self.gnn = GNN(adj_matrix, upper_half_node, lower_half_node, self.in_dim, self.hidden_dim, self.cls_p,
@@ -329,7 +325,7 @@ class GNN_infer(nn.Module):
         self.f_cls = nn.Conv2d(hidden_dim * (cls_f-1), (cls_f -1),
                                         kernel_size=1, padding=0, stride=1, bias=True,
                                         groups=(cls_f-1))
-        self.bg_cls = nn.Conv2d(hidden_dim, 1,
+        self.bg_cls = nn.Conv2d(3*in_dim, 1,
                                         kernel_size=1, padding=0, stride=1, bias=True,
                                         groups=1)
 
@@ -346,10 +342,10 @@ class GNN_infer(nn.Module):
         p_node_list = list(torch.split(p_conv, self.hidden_dim, dim=1))
         h_conv = self.h_conv(xh)
         h_node_list = list(torch.split(h_conv, self.hidden_dim, dim=1))
-        bg_node = self.bg_conv(xp)
 
         # node supervision
-        bg_cls = self.bg_cls(bg_node)
+        bg_cls = self.bg_cls(torch.cat([xp, xh, xf], dim=1))
+
         p_cls = self.p_cls(p_conv)
         h_cls = self.h_cls(h_conv)
         f_cls = self.f_cls(f_node)
