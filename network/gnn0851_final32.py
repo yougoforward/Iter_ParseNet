@@ -287,7 +287,7 @@ class GNN(nn.Module):
         # for half body node
         xh_list_new = self.half_infer(xf, xh_list, xp_list, f_att_list, h_att_list, p_att_list)
         # for part node
-        xp_list_new = self.part_infer(xf, xh_list, xp_list, xp)
+        xp_list_new = self.part_infer(xf, xh_list, xp_list, xp, p_att_list)
 
         return xp_list_new, xh_list_new, xf_new
 
