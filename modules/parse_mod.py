@@ -287,10 +287,13 @@ class MagicModule(nn.Module):
         self.dilation_3 = nn.Sequential(ContextContrastedModule(in_dim, out_dim, rate=24),
                                         SEModule(out_dim, reduction=16))
 
+        # self.head_conv = nn.Sequential(nn.Conv2d(out_dim * 6, out_dim, kernel_size=1, padding=0, bias=False),
+        #                                InPlaceABNSync(out_dim),
+        #                                nn.Conv2d(out_dim, out_dim, kernel_size=3, stride=1, padding=1, bias=False),
+        #                                InPlaceABNSync(out_dim))
         self.head_conv = nn.Sequential(nn.Conv2d(out_dim * 6, out_dim, kernel_size=1, padding=0, bias=False),
-                                       InPlaceABNSync(out_dim),
-                                       nn.Conv2d(out_dim, out_dim, kernel_size=3, stride=1, padding=1, bias=False),
-                                       InPlaceABNSync(out_dim))
+                                       InPlaceABNSync(out_dim)
+                                       )
 
     def forward(self, x):
         # parallel branch
