@@ -14,7 +14,7 @@ from torch.utils import data
 
 from dataset.dataloader import DataGenerator
 # from dataset.datasets import DatasetGenerator
-from network.gnn08551_final_iter import get_model
+from network.gnn08551_final import get_model
 # from network.abrnet import get_model
 from progress.bar import Bar
 # from utils.aaf_lovasz_loss import gnn_ABRLovaszLoss as ABRLovaszLoss
