@@ -340,6 +340,20 @@ class GNN_infer(nn.Module):
                                         groups=1)
 
         self.softmax = nn.Softmax(dim=1)
+
+        self.p_node_refine = nn.ModuleList([nn.Sequential(nn.Conv2d(in_dim+hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
+                                   BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+                                   nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
+                                   BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)) for i in range(cls_p-1)])
+        self.h_node_refine = nn.ModuleList(
+            [nn.Sequential(nn.Conv2d(in_dim + hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
+                           BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+                           nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
+                           BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)) for i in range(cls_h - 1)])
+        self.f_node_refine = nn.Sequential(nn.Conv2d(in_dim + hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
+                           BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+                           nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
+                           BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
     def forward(self, xp, xh, xf, xl):
         # _, _, th, tw = xp.size()
         # _, _, h, w = xh.size()
@@ -382,6 +396,10 @@ class GNN_infer(nn.Module):
             p_fea_list_new, h_fea_list_new, f_fea_new, decomp_fh_att_map_new, decomp_up_att_map_new, \
             decomp_lp_att_map_new, com_map_new, com_u_map_new, com_l_map_new = self.gnn(
                 p_node_list[iter], h_node_list[iter], f_node[iter], xp)
+
+            p_fea_list_new = [self.p_node_refine[i](torch.cat([xp, p_fea_list_new[i]], dim=1)) for i in range(self.cls_p-1)]
+            h_fea_list_new = [self.h_node_refine[i](torch.cat([xp, h_fea_list_new[i]], dim=1)) for i in range(self.cls_h-1)]
+            f_fea_new = self.f_node_refine(torch.cat([xp, f_fea_new], dim=1))
 
             p_node_list.append(p_fea_list_new)
             h_node_list.append(h_fea_list_new)
