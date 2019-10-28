@@ -99,7 +99,7 @@ class DecoderModule(nn.Module):
         super(DecoderModule, self).__init__()
         self.conv0 = nn.Sequential(nn.Conv2d(512, 512, kernel_size=3, padding=1, dilation=1, bias=False),
                                    BatchNorm2d(512), nn.ReLU(inplace=False))
-        self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, dilation=1, bias=False),
+        self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=1, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
 
         self.conv2 = nn.Sequential(nn.Conv2d(256, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
@@ -107,7 +107,7 @@ class DecoderModule(nn.Module):
 
         self.conv3 = nn.Sequential(nn.Conv2d(304, 256, kernel_size=3, padding=1, dilation=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   nn.Conv2d(256, 256, kernel_size=3, padding=1, dilation=1, bias=False),
+                                   nn.Conv2d(256, 256, kernel_size=1, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
 
         # self.conv4 = nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True)
@@ -130,7 +130,7 @@ class AlphaHBDecoder(nn.Module):
         super(AlphaHBDecoder, self).__init__()
         self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   nn.Conv2d(256, 256, kernel_size=3, padding=1, stride=1, bias=False),
+                                   nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False), SEModule(256, reduction=16))
 
         self.alpha_hb = nn.Parameter(torch.ones(1))
@@ -150,7 +150,7 @@ class AlphaFBDecoder(nn.Module):
         super(AlphaFBDecoder, self).__init__()
         self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   nn.Conv2d(256, 256, kernel_size=3, padding=1, stride=1, bias=False),
+                                   nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False), SEModule(256, reduction=16))
         self.alpha_fb = nn.Parameter(torch.ones(1))
 
@@ -310,7 +310,7 @@ class GNN_infer(nn.Module):
             nn.Conv2d(in_dim, hidden_dim * (cls_f - 1), kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim * (cls_f - 1)), nn.ReLU(inplace=False))
         self.bg_conv = nn.Sequential(
-            nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1,
+            nn.Conv2d(3 * in_dim, hidden_dim, kernel_size=1, padding=0, stride=1,
                       bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
 
@@ -346,7 +346,7 @@ class GNN_infer(nn.Module):
         p_node_list = list(torch.split(p_conv, self.hidden_dim, dim=1))
         h_conv = self.h_conv(xh)
         h_node_list = list(torch.split(h_conv, self.hidden_dim, dim=1))
-        bg_node = self.bg_conv(xp)
+        bg_node = self.bg_conv(torch.cat([xp, xh, xf], dim=1))
 
         # node supervision
         bg_cls = self.bg_cls(bg_node)
