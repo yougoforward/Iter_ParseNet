@@ -112,13 +112,13 @@ class DecoderModule(nn.Module):
         self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, dilation=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
 
-        # self.conv2 = nn.Sequential(nn.Conv2d(256, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
-        #                            BatchNorm2d(48), nn.ReLU(inplace=False))
-        #
-        # self.conv3 = nn.Sequential(nn.Conv2d(304, 256, kernel_size=1, padding=0, dilation=1, bias=False),
-        #                            BatchNorm2d(256), nn.ReLU(inplace=False),
-        #                            nn.Conv2d(256, 256, kernel_size=1, padding=0, dilation=1, bias=False),
-        #                            BatchNorm2d(256), nn.ReLU(inplace=False))
+        self.conv2 = nn.Sequential(nn.Conv2d(256, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
+                                   BatchNorm2d(48), nn.ReLU(inplace=False))
+
+        self.conv3 = nn.Sequential(nn.Conv2d(304, 256, kernel_size=1, padding=0, dilation=1, bias=False),
+                                   BatchNorm2d(256), nn.ReLU(inplace=False),
+                                   nn.Conv2d(256, 256, kernel_size=1, padding=0, dilation=1, bias=False),
+                                   BatchNorm2d(256), nn.ReLU(inplace=False))
 
         # self.conv4 = nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True)
         self.alpha = nn.Parameter(torch.ones(1))
@@ -128,12 +128,12 @@ class DecoderModule(nn.Module):
         xt = self.conv0(F.interpolate(xt, size=(h, w), mode='bilinear', align_corners=True) + self.alpha * xm)
         _, _, th, tw = xl.size()
         xt_fea = self.conv1(xt)
-        # xt = F.interpolate(xt_fea, size=(th, tw), mode='bilinear', align_corners=True)
-        # xl = self.conv2(xl)
-        # x = torch.cat([xt, xl], dim=1)
-        # x_fea = self.conv3(x)
+        xt = F.interpolate(xt_fea, size=(th, tw), mode='bilinear', align_corners=True)
+        xl = self.conv2(xl)
+        x = torch.cat([xt, xl], dim=1)
+        x_fea = self.conv3(x)
         # x_seg = self.conv4(x_fea)
-        return xt_fea
+        return x_fea
 
 
 class AlphaHBDecoder(nn.Module):
@@ -362,11 +362,11 @@ class GNN_infer(nn.Module):
         #                              padding=0, stride=1, bias=True)
         #                    )
     def forward(self, xp, xh, xf, xl):
-        # _, _, th, tw = xp.size()
-        # _, _, h, w = xh.size()
-        #
-        # xh = F.interpolate(xh, (th, tw), mode='bilinear', align_corners=True)
-        # xf = F.interpolate(xf, (th, tw), mode='bilinear', align_corners=True)
+        _, _, th, tw = xp.size()
+        _, _, h, w = xh.size()
+
+        xh = F.interpolate(xh, (th, tw), mode='bilinear', align_corners=True)
+        xf = F.interpolate(xf, (th, tw), mode='bilinear', align_corners=True)
         # feature transform
         f_node = self.f_conv(xf)
         p_conv = self.p_conv(xp)
