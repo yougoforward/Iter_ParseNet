@@ -326,8 +326,9 @@ class GNN_infer(nn.Module):
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
 
         # gnn infer
-        self.gnn = GNN(adj_matrix, upper_half_node, lower_half_node, self.in_dim, self.hidden_dim, self.cls_p,
+        self.gnn0 = GNN(adj_matrix, upper_half_node, lower_half_node, self.in_dim, self.hidden_dim, self.cls_p,
                        self.cls_h, self.cls_f)
+        self.gnn = nn.ModuleList([self.gnn0 for i in range(3)])
 
         # node supervision
         self.p_cls = nn.Conv2d(hidden_dim * (cls_p-1), (cls_p -1),
@@ -401,7 +402,7 @@ class GNN_infer(nn.Module):
 
         for iter in range(3):
             p_fea_list_new, h_fea_list_new, f_fea_new, decomp_fh_att_map_new, decomp_up_att_map_new, \
-            decomp_lp_att_map_new, com_map_new, com_u_map_new, com_l_map_new = self.gnn(
+            decomp_lp_att_map_new, com_map_new, com_u_map_new, com_l_map_new = self.gnn[iter](
                 p_node_list[iter], h_node_list[iter], f_node[iter], xp)
 
             p_node_list.append(p_fea_list_new)
