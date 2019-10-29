@@ -23,13 +23,13 @@ class Composition(nn.Module):
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
         self.com_att = nn.Sequential(
-            nn.Conv2d(parts * hidden_dim+hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(parts * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
             nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
             nn.Sigmoid()
         )
     def forward(self, xh, xp_list):
-        com_att = self.com_att(torch.cat([xh]+xp_list, dim=1))
+        com_att = self.com_att(torch.cat(xp_list, dim=1))
         xph_message = sum([self.conv_ch(torch.cat([xh, xp * com_att], dim=1)) for xp in xp_list])
         return xph_message, com_att
 
@@ -378,7 +378,7 @@ class GNN_infer(nn.Module):
         h_node_list = [h_node_list]
         f_node = [f_node]
 
-        for iter in range(2):
+        for iter in range(1):
             p_fea_list_new, h_fea_list_new, f_fea_new, decomp_fh_att_map_new, decomp_up_att_map_new, \
             decomp_lp_att_map_new, com_map_new, com_u_map_new, com_l_map_new = self.gnn(
                 p_node_list[iter], h_node_list[iter], f_node[iter], xp)
@@ -393,16 +393,17 @@ class GNN_infer(nn.Module):
             com_map.append(com_map_new)
             com_u_map.append(com_u_map_new)
             com_l_map.append(com_l_map_new)
-        # node supervision
-        p_cls_new = self.p_cls(torch.cat(p_fea_list_new, dim=1))
-        h_cls_new = self.h_cls(torch.cat(h_fea_list_new, dim=1))
-        f_cls_new = self.f_cls(f_fea_new)
-        f_seg_new = torch.cat([bg_cls, f_cls_new], dim=1)
-        h_seg_new = torch.cat([bg_cls, h_cls_new], dim=1)
-        p_seg_new = torch.cat([bg_cls, p_cls_new], dim=1)
-        p_seg.append(p_seg_new)
-        h_seg.append(h_seg_new)
-        f_seg.append(f_seg_new)
+
+            # node supervision
+            p_cls_new = self.p_cls(torch.cat(p_fea_list_new, dim=1))
+            h_cls_new = self.h_cls(torch.cat(h_fea_list_new, dim=1))
+            f_cls_new = self.f_cls(f_fea_new)
+            f_seg_new = torch.cat([bg_cls, f_cls_new], dim=1)
+            h_seg_new = torch.cat([bg_cls, h_cls_new], dim=1)
+            p_seg_new = torch.cat([bg_cls, p_cls_new], dim=1)
+            p_seg.append(p_seg_new)
+            h_seg.append(h_seg_new)
+            f_seg.append(f_seg_new)
 
         return p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, com_map, com_u_map, com_l_map
 
