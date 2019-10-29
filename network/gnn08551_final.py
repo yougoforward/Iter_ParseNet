@@ -343,13 +343,19 @@ class GNN_infer(nn.Module):
 
         self.p_node_refine = nn.ModuleList([nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
                                    BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+                                   nn.Conv2d(hidden_dim, 1, kernel_size=1,
+                                                                    padding=0, stride=1, bias=True)
                                    ) for i in range(cls_p-1)])
         self.h_node_refine = nn.ModuleList(
             [nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
                            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+                           nn.Conv2d(hidden_dim, 1, kernel_size=1,
+                                     padding=0, stride=1, bias=True)
                            ) for i in range(cls_h - 1)])
         self.f_node_refine = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
                            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+                           nn.Conv2d(hidden_dim, 1, kernel_size=1,
+                                     padding=0, stride=1, bias=True)
                            )
     def forward(self, xp, xh, xf, xl):
         # _, _, th, tw = xp.size()
@@ -419,9 +425,9 @@ class GNN_infer(nn.Module):
         p_fea_list_final = [self.p_node_refine[i](torch.cat([p_node_list[0][i], p_fea_list_new[i]], dim=1)) for i in range(self.cls_p-1)]
         h_fea_list_final = [self.h_node_refine[i](torch.cat([h_node_list[0][i], h_fea_list_new[i]], dim=1)) for i in range(self.cls_h-1)]
         f_fea_final = self.f_node_refine(torch.cat([f_node[0], f_fea_new], dim=1))
-        p_cls_new = self.p_cls(torch.cat(p_fea_list_final, dim=1))
-        h_cls_new = self.h_cls(torch.cat(h_fea_list_final, dim=1))
-        f_cls_new = self.f_cls(f_fea_final)
+        p_cls_new = torch.cat(p_fea_list_final, dim=1)
+        h_cls_new = torch.cat(h_fea_list_final, dim=1)
+        f_cls_new = f_fea_final
         f_seg_new = torch.cat([bg_cls, f_cls_new], dim=1)
         h_seg_new = torch.cat([bg_cls, h_cls_new], dim=1)
         p_seg_new = torch.cat([bg_cls, p_cls_new], dim=1)
