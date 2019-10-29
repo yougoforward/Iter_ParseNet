@@ -1483,8 +1483,8 @@ class ABRLovaszLoss_List_att_final(nn.Module):
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
-        return loss + 0.4 * loss_hb + 0.4 * loss_fb + \
-               0.4*(loss_fh_att+loss_up_att+loss_lp_att + loss_com_att) + 0.4 * loss_dsn
+        return loss + loss_hb + loss_fb + \
+               0.1*(loss_fh_att+loss_up_att+loss_lp_att + loss_com_att) + 0.4 * loss_dsn
 
 class ABRLovaszLoss_List_att2(nn.Module):
     """Lovasz loss for Alpha process"""
