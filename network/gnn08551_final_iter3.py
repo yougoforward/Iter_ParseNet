@@ -22,19 +22,18 @@ class Composition(nn.Module):
             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
+        self.com_att = nn.Sequential(
+            nn.Conv2d(parts * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+            nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
+        )
         # self.com_att = nn.Sequential(
-        #     nn.Conv2d(parts * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-        #     BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-        #     nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
+        #     nn.Conv2d(parts * hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
         #     nn.Sigmoid()
         # )
-        self.com_att = nn.Sequential(
-            nn.Conv2d(parts * hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
-            nn.Sigmoid()
-        )
     def forward(self, xh, xp_list):
         com_att = self.com_att(torch.cat(xp_list, dim=1))
-        xph_message = sum([self.conv_ch(torch.cat([xh, xp * com_att], dim=1)) for xp in xp_list])
+        xph_message = sum([self.conv_ch(torch.cat([xh, xp * torch.sigmoid(com_att)], dim=1)) for xp in xp_list])
         return xph_message, com_att
 
 
@@ -454,7 +453,7 @@ class Decoder(nn.Module):
             [[0, 1, 0, 0, 0, 0], [1, 0, 1, 0, 1, 0], [0, 1, 0, 1, 0, 0], [0, 0, 1, 0, 0, 0], [0, 1, 0, 0, 0, 1],
              [0, 0, 0, 0, 1, 0]], requires_grad=False)
         self.gnn_infer = GNN_infer(adj_matrix=self.adj_matrix, upper_half_node=[1, 2, 3, 4], lower_half_node=[5, 6],
-                                   in_dim=256, hidden_dim=10, cls_p=7, cls_h=3, cls_f=2)
+                                   in_dim=256, hidden_dim=128, cls_p=7, cls_h=3, cls_f=2)
         #
         self.layer_dsn = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
                                        BatchNorm2d(512), nn.ReLU(inplace=False),
