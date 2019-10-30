@@ -389,10 +389,6 @@ class GNN_infer(nn.Module):
             nn.Conv2d(3 * in_dim, hidden_dim, kernel_size=1, padding=0, stride=1,
                       bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
-        # self.bg_conv_new = nn.Sequential(
-        #     nn.Conv2d((cls_p + cls_h + cls_f - 2) * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1,
-        #               bias=False),
-        #     BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
 
         # gnn infer
         self.gnn = GNN(adj_matrix, upper_half_node, lower_half_node, self.in_dim, self.hidden_dim, self.cls_p,
