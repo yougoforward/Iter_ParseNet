@@ -114,8 +114,8 @@ class Dep_Context(nn.Module):
         coord_fea = self.coord_fea.to(p_fea.device).repeat((n, 1, 1, 1)).permute(0,3,1,2)
         query = self.img_conv(torch.cat([p_fea, coord_fea], dim=1))
         # print(query.shape)
-        project1 = torch.matmul(query.view(n, self.in_dim, -1).permute(0, 2, 1), self.W)  # n,hw,hidden
-        Affine = torch.matmul(project1, self.node_conv(torch.cat([hu, coord_fea], dim=1)).view(n, self.hidden_dim, -1))  # n,hw,hw
+        project1 = torch.matmul(query.view(n, self.in_dim+8, -1).permute(0, 2, 1), self.W)  # n,hw,hidden
+        Affine = torch.matmul(project1, self.node_conv(torch.cat([hu, coord_fea], dim=1)).view(n, self.hidden_dim+8, -1))  # n,hw,hw
         # attention = self.softmax(energy)
         co_context = torch.bmm(p_fea.view(n, self.in_dim, -1), Affine).view(n, self.in_dim, h, w)
         co_context = self.project(co_context)
