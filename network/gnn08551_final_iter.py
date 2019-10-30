@@ -371,15 +371,15 @@ class GNN_infer(nn.Module):
 
         self.p_node_refine = nn.ModuleList(
             [nn.Sequential(nn.Conv2d(in_dim + hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-                           BatchNorm2d(in_dim), nn.ReLU(inplace=False),
+                           BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
                            ) for i in range(cls_p - 1)])
         self.h_node_refine = nn.ModuleList(
             [nn.Sequential(nn.Conv2d(in_dim + hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-                           BatchNorm2d(in_dim), nn.ReLU(inplace=False),
+                           BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
                            ) for i in range(cls_h - 1)])
         self.f_node_refine = nn.Sequential(
             nn.Conv2d(in_dim + hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(in_dim), nn.ReLU(inplace=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
             )
     def forward(self, xp, xh, xf, xl):
         # _, _, th, tw = xp.size()
