@@ -117,13 +117,13 @@ class DecoderModule(nn.Module):
         self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, dilation=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
 
-        self.conv2 = nn.Sequential(nn.Conv2d(256, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(48), nn.ReLU(inplace=False))
-
-        self.conv3 = nn.Sequential(nn.Conv2d(304, 256, kernel_size=1, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   nn.Conv2d(256, 256, kernel_size=1, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False))
+        # self.conv2 = nn.Sequential(nn.Conv2d(256, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
+        #                            BatchNorm2d(48), nn.ReLU(inplace=False))
+        #
+        # self.conv3 = nn.Sequential(nn.Conv2d(304, 256, kernel_size=1, padding=0, dilation=1, bias=False),
+        #                            BatchNorm2d(256), nn.ReLU(inplace=False),
+        #                            nn.Conv2d(256, 256, kernel_size=1, padding=0, dilation=1, bias=False),
+        #                            BatchNorm2d(256), nn.ReLU(inplace=False))
 
         # self.conv4 = nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True)
         self.alpha = nn.Parameter(torch.ones(1))
@@ -133,12 +133,13 @@ class DecoderModule(nn.Module):
         xt = self.conv0(F.interpolate(xt, size=(h, w), mode='bilinear', align_corners=True) + self.alpha * xm)
         _, _, th, tw = xl.size()
         xt_fea = self.conv1(xt)
-        xt = F.interpolate(xt_fea, size=(th, tw), mode='bilinear', align_corners=True)
-        xl = self.conv2(xl)
-        x = torch.cat([xt, xl], dim=1)
-        x_fea = self.conv3(x)
+        # xt = F.interpolate(xt_fea, size=(th, tw), mode='bilinear', align_corners=True)
+        # xl = self.conv2(xl)
+        # x = torch.cat([xt, xl], dim=1)
+        # x_fea = self.conv3(x)
         # x_seg = self.conv4(x_fea)
-        return x_fea
+        return xt_fea
+
 
 class AlphaHBDecoder(nn.Module):
     def __init__(self, hbody_cls):
@@ -347,15 +348,25 @@ class GNN_infer(nn.Module):
                                         kernel_size=1, padding=0, stride=1, bias=True,
                                         groups=1)
 
+        self.p_cls_new = nn.Conv2d(hidden_dim * (cls_p - 1), (cls_p - 1),
+                               kernel_size=1, padding=0, stride=1, bias=True,
+                               groups=(cls_p - 1))
+        self.h_cls_new = nn.Conv2d(hidden_dim * (cls_h - 1), (cls_h - 1),
+                               kernel_size=1, padding=0, stride=1, bias=True,
+                               groups=(cls_h - 1))
+        self.f_cls_new = nn.Conv2d(hidden_dim * (cls_f - 1), (cls_f - 1),
+                               kernel_size=1, padding=0, stride=1, bias=True,
+                               groups=(cls_f - 1))
+
         self.softmax = nn.Softmax(dim=1)
         # self.final_cls = Final_classifer(in_dim, hidden_dim, cls_p, cls_h, cls_f)
 
     def forward(self, xp, xh, xf, xl):
-        _, _, th, tw = xp.size()
-        _, _, h, w = xh.size()
+        # _, _, th, tw = xp.size()
+        # _, _, h, w = xh.size()
         #
-        xh = F.interpolate(xh, (th, tw), mode='bilinear', align_corners=True)
-        xf = F.interpolate(xf, (th, tw), mode='bilinear', align_corners=True)
+        # xh = F.interpolate(xh, (th, tw), mode='bilinear', align_corners=True)
+        # xf = F.interpolate(xf, (th, tw), mode='bilinear', align_corners=True)
         # feature transform
         f_node = self.f_conv(xf)
         p_conv = self.p_conv(xp)
@@ -382,9 +393,9 @@ class GNN_infer(nn.Module):
         p_fea_list_new, h_fea_list_new, f_fea_new, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map = self.gnn(p_node_list, h_node_list, f_node, xp, f_att_list, h_att_list, p_att_list)
 
         # node supervision
-        p_cls_new = self.p_cls(torch.cat(p_fea_list_new, dim=1))
-        h_cls_new = self.h_cls(torch.cat(h_fea_list_new, dim=1))
-        f_cls_new = self.f_cls(f_fea_new)
+        p_cls_new = self.p_cls_new(torch.cat(p_fea_list_new, dim=1))
+        h_cls_new = self.h_cls_new(torch.cat(h_fea_list_new, dim=1))
+        f_cls_new = self.f_cls_new(f_fea_new)
         f_seg_new = torch.cat([bg_cls, f_cls_new], dim=1)
         h_seg_new = torch.cat([bg_cls, h_cls_new], dim=1)
         p_seg_new = torch.cat([bg_cls, p_cls_new], dim=1)
