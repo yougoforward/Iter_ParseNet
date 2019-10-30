@@ -92,7 +92,7 @@ class Dep_Context(nn.Module):
         super(Dep_Context, self).__init__()
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
-        self.W = nn.Parameter(torch.ones(in_dim, hidden_dim))
+        self.W = nn.Parameter(torch.ones(in_dim+8, hidden_dim+8))
         # self.att = node_att()
         self.sigmoid = nn.Sigmoid()
         self.coord_fea = torch.from_numpy(generate_spatial_batch(60, 60))
@@ -104,10 +104,8 @@ class Dep_Context(nn.Module):
                                      nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
                                      BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
                                      )
-        self.img_conv = nn.Sequential(nn.Conv2d(in_dim+8, in_dim, kernel_size=1, stride=1, padding=0, bias=False),
-                                      BatchNorm2d(in_dim), nn.ReLU())
-        self.node_conv = nn.Sequential(nn.Conv2d(hidden_dim + 8, hidden_dim, kernel_size=1, stride=1, padding=0, bias=False),
-                                      BatchNorm2d(hidden_dim), nn.ReLU())
+        self.img_conv = nn.Sequential(nn.Conv2d(in_dim+8, in_dim+8, kernel_size=1, stride=1, padding=0, bias=True))
+        self.node_conv = nn.Sequential(nn.Conv2d(hidden_dim + 8, hidden_dim+8, kernel_size=1, stride=1, padding=0, bias=True))
     def forward(self, p_fea, hu):
         n, c, h, w = p_fea.size()
         # att_hu = self.att(hu)
@@ -117,9 +115,9 @@ class Dep_Context(nn.Module):
         query = self.img_conv(torch.cat([p_fea, coord_fea], dim=1))
         # print(query.shape)
         project1 = torch.matmul(query.view(n, self.in_dim, -1).permute(0, 2, 1), self.W)  # n,hw,hidden
-        energy = torch.matmul(project1, self.node_conv(torch.cat([hu, coord_fea], dim=1)).view(n, self.hidden_dim, -1))  # n,hw,hw
-        attention = self.softmax(energy)
-        co_context = torch.bmm(p_fea.view(n, self.in_dim, -1), attention).view(n, self.in_dim, h, w)
+        Affine = torch.matmul(project1, self.node_conv(torch.cat([hu, coord_fea], dim=1)).view(n, self.hidden_dim, -1))  # n,hw,hw
+        # attention = self.softmax(energy)
+        co_context = torch.bmm(p_fea.view(n, self.in_dim, -1), Affine).view(n, self.in_dim, h, w)
         co_context = self.project(co_context)
         return co_context
 
@@ -184,7 +182,7 @@ class DecoderModule(nn.Module):
         self.conv0 = nn.Sequential(nn.Conv2d(512, 512, kernel_size=3, padding=1, dilation=1, bias=False),
                                    BatchNorm2d(512), nn.ReLU(inplace=False))
         self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, dilation=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False))
+                                   BatchNorm2d(256), nn.ReLU(inplace=False),SEModule(256, reduction=16))
 
         # self.conv2 = nn.Sequential(nn.Conv2d(256, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
         #                            BatchNorm2d(48), nn.ReLU(inplace=False))
@@ -344,13 +342,13 @@ class Part_Graph(nn.Module):
         xp_list_new = []
         for i in range(self.cls_p - 1):
             if i + 1 in self.upper_part_list:
-                # message = decomp_pu_list[self.upper_part_list.index(i + 1)] + sum(xpp_list_list[i])
+                message = decomp_pu_list[self.upper_part_list.index(i + 1)] + sum(xpp_list_list[i])
                 #
-                message = decomp_pu_list[self.upper_part_list.index(i + 1)] + torch.max(torch.stack(xpp_list_list[i], dim=1), dim=1, keepdim=False)[0]
+                # message = decomp_pu_list[self.upper_part_list.index(i + 1)] + torch.max(torch.stack(xpp_list_list[i], dim=1), dim=1, keepdim=False)[0]
             elif i + 1 in self.lower_part_list:
-                # message = decomp_pl_list[self.lower_part_list.index(i + 1)] + sum(xpp_list_list[i])
+                message = decomp_pl_list[self.lower_part_list.index(i + 1)] + sum(xpp_list_list[i])
                 #
-                message = decomp_pl_list[self.lower_part_list.index(i + 1)] + torch.max(torch.stack(xpp_list_list[i], dim=1), dim=1, keepdim=False)[0]
+                # message = decomp_pl_list[self.lower_part_list.index(i + 1)] + torch.max(torch.stack(xpp_list_list[i], dim=1), dim=1, keepdim=False)[0]
             xp_list_new.append(self.node_update_list[i](xp_list[i], message))
         return xp_list_new, decomp_pu_att_map, decomp_pl_att_map, Fdep_att_list
 
@@ -482,7 +480,7 @@ class Decoder(nn.Module):
             [[0, 1, 0, 0, 0, 0], [1, 0, 1, 0, 1, 0], [0, 1, 0, 1, 0, 0], [0, 0, 1, 0, 0, 0], [0, 1, 0, 0, 0, 1],
              [0, 0, 0, 0, 1, 0]], requires_grad=False)
         self.gnn_infer = GNN_infer(adj_matrix=self.adj_matrix, upper_half_node=[1, 2, 3, 4], lower_half_node=[5, 6],
-                                   in_dim=256, hidden_dim=10, cls_p=7, cls_h=3, cls_f=2)
+                                   in_dim=256, hidden_dim=32, cls_p=7, cls_h=3, cls_f=2)
         #
         self.layer_dsn = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
                                        BatchNorm2d(512), nn.ReLU(inplace=False),
