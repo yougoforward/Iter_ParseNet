@@ -118,9 +118,9 @@ class DecoderModule(nn.Module):
         # self.conv2 = nn.Sequential(nn.Conv2d(256, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
         #                            BatchNorm2d(48), nn.ReLU(inplace=False))
         #
-        # self.conv3 = nn.Sequential(nn.Conv2d(304, 256, kernel_size=1, padding=0, dilation=1, bias=False),
+        # self.conv3 = nn.Sequential(nn.Conv2d(304, 256, kernel_size=3, padding=1, dilation=1, bias=False),
         #                            BatchNorm2d(256), nn.ReLU(inplace=False),
-        #                            nn.Conv2d(256, 256, kernel_size=1, padding=0, dilation=1, bias=False),
+        #                            nn.Conv2d(256, 256, kernel_size=3, padding=1, dilation=1, bias=False),
         #                            BatchNorm2d(256), nn.ReLU(inplace=False))
 
         # self.conv4 = nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True)
@@ -245,8 +245,8 @@ class Part_Graph(nn.Module):
         for i in range(self.edge_index_num):
             self.part_list_list[self.edge_index[i, 1]].append(self.edge_index[i, 0])
 
-        self.decomp_hpu_list = Decomposition(hidden_dim, parts=len(upper_part_list))
-        self.decomp_hpl_list = Decomposition(hidden_dim, parts=len(lower_part_list))
+        self.decomp_hpu_list = Decomposition(in_dim, hidden_dim, parts=len(upper_part_list))
+        self.decomp_hpl_list = Decomposition(in_dim, hidden_dim, parts=len(lower_part_list))
         self.part_dp = Part_Dependency(in_dim, hidden_dim)
         self.node_update_list = nn.ModuleList([conv_Update(hidden_dim) for i in range(self.cls_p - 1)])
 
@@ -259,8 +259,8 @@ class Part_Graph(nn.Module):
         lower_parts = []
         for part in self.lower_part_list:
             lower_parts.append(xp_list[part - 1])
-        decomp_pu_list, decomp_pu_att_list, decomp_pu_att_map = self.decomp_hpu_list(xh_list[0], upper_parts)
-        decomp_pl_list, decomp_pl_att_list, decomp_pl_att_map = self.decomp_hpl_list(xh_list[1], lower_parts)
+        decomp_pu_list, decomp_pu_att_list, decomp_pu_att_map = self.decomp_hpu_list(xh_list[0], upper_parts, xp)
+        decomp_pl_list, decomp_pl_att_list, decomp_pl_att_map = self.decomp_hpl_list(xh_list[1], lower_parts, xp)
 
         xp_list_new = []
         for i in range(self.cls_p - 1):
@@ -292,13 +292,13 @@ class GNN(nn.Module):
         self.part_infer = Part_Graph(adj_matrix, self.upper_half_node, self.lower_half_node, in_dim, hidden_dim, cls_p,
                                      cls_h, cls_f)
 
-    def forward(self, xp_list, xh_list, xf, xp):
+    def forward(self, xp_list, xh_list, xf, p_fea, h_fea):
         # for full body node
         xf_new, com_map = self.full_infer(xf, xh_list, xp_list)
         # for half body node
-        xh_list_new, decomp_fh_att_map, com_u_map, com_l_map = self.half_infer(xf, xh_list, xp_list)
+        xh_list_new, decomp_fh_att_map, com_u_map, com_l_map = self.half_infer(xf, xh_list, xp_list, h_fea)
         # for part node
-        xp_list_new, decomp_up_att_map, decomp_lp_att_map = self.part_infer(xf, xh_list, xp_list, xp)
+        xp_list_new, decomp_up_att_map, decomp_lp_att_map = self.part_infer(xf, xh_list, xp_list, p_fea)
 
         return xp_list_new, xh_list_new, xf_new, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, com_map, com_u_map, com_l_map
 
@@ -422,7 +422,7 @@ class GNN_infer(nn.Module):
         for iter in range(2):
             p_fea_list_new, h_fea_list_new, f_fea_new, decomp_fh_att_map_new, decomp_up_att_map_new, \
             decomp_lp_att_map_new, com_map_new, com_u_map_new, com_l_map_new = self.gnn(
-                p_node_list[iter], h_node_list[iter], f_node[iter], xp)
+                p_node_list[iter], h_node_list[iter], f_node[iter], xp, xh)
 
             p_fea_list_new = [self.p_node_refine[i](torch.cat([xp, p_fea_list_new[i]], dim=1)) for i in range(self.cls_p-1)]
             h_fea_list_new = [self.h_node_refine[i](torch.cat([xh, h_fea_list_new[i]], dim=1)) for i in range(self.cls_h-1)]
