@@ -51,7 +51,7 @@ class Decomposition(nn.Module):
 
     def forward(self, xf, xh_list, h_fea):
 
-        decomp_map = self.conv_fh(torch.cat([h_fea, xf], dim=1))
+        decomp_map = self.decomp_conv(torch.cat([h_fea, xf], dim=1))
         decomp_att = torch.softmax(decomp_map, dim=1)
         decomp_att_list = list(torch.split(decomp_att, 1, dim=1))
 
