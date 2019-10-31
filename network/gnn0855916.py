@@ -164,7 +164,7 @@ class Contexture(nn.Module):
         # p_fea2 = self.img_conv(p_fea)
         F_dep_list =[self.F_cont[i](p_fea, xp_list[i], p_att_list[i]) for i in range(len(xp_list))]
         # print(node_center.shape)
-        F_dep_list = [torch.matmul(torch.stack([F_dep_list[j] for j in part_list_list[i]],dim=1).permute(0,2,1), torch.stack([p_att_list[j] for j in part_list_list[i]], dim=1).view(n, len(xp_list),-1)).view(n,c,h,w)
+        F_dep_list = [torch.matmul(torch.stack([F_dep_list[j] for j in part_list_list[i]],dim=1).permute(0,2,1), torch.cat([p_att_list[j] for j in part_list_list[i]], dim=1).view(n, len(xp_list),-1)).view(n,c,h,w)
                       for i in range(len(xp_list))]
         att_list = [self.att_list[i](F_dep_list[i]) for i in range(len(xp_list))]
         att_list_list = [list(torch.split(self.softmax(att_list[i]), 1, dim=1)) for i in range(len(xp_list))]
