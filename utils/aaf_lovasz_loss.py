@@ -1306,7 +1306,7 @@ class ABRLovaszLoss_List_att_final2(nn.Module):
             # loss_context = sum(loss_context)
             # loss_context_att.append(loss_context)
         # loss_context_att = sum(loss_context_att)
-        loss_dp_att = sum(loss_dp_att)/self.num_classes
+        loss_dp_att = sum(loss_dp_att)/2
 
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
