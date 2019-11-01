@@ -1147,7 +1147,7 @@ class ABRLovaszLoss_List_att_final2(nn.Module):
         super(ABRLovaszLoss_List_att_final2, self).__init__()
         self.edge_index = torch.nonzero(adj_matrix)
         self.edge_index_num = self.edge_index.shape[0]
-        self.part_list_list = [[] for i in range(cls_p - 1)]
+        self.part_list_list = [[i] for i in range(cls_p - 1)]
         for i in range(self.edge_index_num):
             self.part_list_list[self.edge_index[i, 1]].append(self.edge_index[i, 0])
 
@@ -1273,10 +1273,10 @@ class ABRLovaszLoss_List_att_final2(nn.Module):
         # loss_com_att = sum(loss_com_att)
 
         # dependency decomposition
-        loss_context_att =[]
+        # loss_context_att =[]
         loss_dp_att = []
         for i in range(len(preds[-2])):
-            loss_context = []
+            # loss_context = []
             loss_dp = []
             for j in range(self.num_classes-1):
                 part_list = self.part_list_list[j]
