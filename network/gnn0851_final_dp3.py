@@ -427,7 +427,7 @@ class Part_Graph(nn.Module):
         self.decomp_hpl_list = Decomposition(hidden_dim, parts=len(lower_part_list))
 
         self.F_dep_list = Contexture(in_dim=in_dim, hidden_dim=hidden_dim, parts=self.cls_p - 1, part_list_list=self.part_list_list)
-        self.part_dp = Part_Dependency(in_dim, hidden_dim)
+        self.part_dp = nn.ModuleList([Part_Dependency(in_dim, hidden_dim) for i in range(self.edge_index_num)])
 
         self.node_update_list = nn.ModuleList([conv_Update(2*hidden_dim, hidden_dim) for i in range(self.cls_p - 1)])
         # self.node_update_list2 = nn.ModuleList([conv_Update(hidden_dim) for i in range(self.cls_p - 1)])
