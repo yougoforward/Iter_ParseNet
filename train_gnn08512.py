@@ -18,7 +18,7 @@ from network.gnn08512 import get_model
 # from network.abrnet import get_model
 from progress.bar import Bar
 # from utils.aaf_lovasz_loss import gnn_ABRLovaszLoss as ABRLovaszLoss
-from utils.aaf_lovasz_loss import ABRLovaszLoss_List_att2 as ABRLovaszLoss
+from utils.aaf_lovasz_loss import ABRLovaszLoss_List_att as ABRLovaszLoss
 from utils.metric import *
 from utils.parallel import DataParallelModel, DataParallelCriterion
 from utils.visualize import inv_preprocess, decode_predictions
@@ -38,7 +38,7 @@ def parse_args():
     parser.add_argument('--fbody-cls', type=int, default=2)
     # Optimization options
     parser.add_argument('--epochs', default=151, type=int)
-    parser.add_argument('--batch-size', default=40, type=int)
+    parser.add_argument('--batch-size', default=8, type=int)
     parser.add_argument('--learning-rate', default=7e-3, type=float)
     parser.add_argument('--lr-mode', type=str, default='poly')
     parser.add_argument('--ignore-label', type=int, default=255)
@@ -225,7 +225,7 @@ def validation(model, val_loader, epoch, writer):
             h, w = target.size(1), target.size(2)
             outputs = model(image)
             outputs = gather(outputs, 0, dim=0)
-            preds = F.interpolate(input=outputs[0], size=(h, w), mode='bilinear', align_corners=True)
+            preds = F.interpolate(input=outputs[0][-1], size=(h, w), mode='bilinear', align_corners=True)
             preds_hb = F.interpolate(input=outputs[1][-1], size=(h, w), mode='bilinear', align_corners=True)
             preds_fb = F.interpolate(input=outputs[2][-1], size=(h, w), mode='bilinear', align_corners=True)
             if idx % 50 == 0:
