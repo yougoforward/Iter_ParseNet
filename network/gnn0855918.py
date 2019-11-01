@@ -110,7 +110,7 @@ class Dep_Context(nn.Module):
     def forward(self, p_fea, hu, p_att_list, dp_node_list):
         n, c, h, w = p_fea.size()
         dp_att = sum([p_att_list[i+1] for i in dp_node_list])
-        context_region_fea = p_fea*dp_att
+        context_region_fea = p_fea*dp_att.detach()
         context_fea = self.aspp(context_region_fea)
 
         # coord_fea = torch.from_numpy(generate_spatial_batch(n,h,w)).to(p_fea.device).view(n,-1,8) #n,hw,8
@@ -345,7 +345,7 @@ class Part_Graph(nn.Module):
         xp_list_new = []
         for i in range(self.cls_p - 1):
             if i + 1 in self.upper_part_list:
-                message = decomp_pu_list[self.upper_part_list.index(i + 1)] + self.part_dp(F_dep_list[i]*p_att_list[i+1], xp_list[i])
+                message = decomp_pu_list[self.upper_part_list.index(i + 1)] s
                 # message = decomp_pu_list[self.upper_part_list.index(i + 1)] + F_dep_list[i]
 
 

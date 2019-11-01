@@ -129,7 +129,7 @@ class Dep_Context(nn.Module):
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
 
-        self.aspp = ASPPModule(hidden_dim*, hidden_dim)
+        self.aspp = ASPPModule(hidden_dim, hidden_dim)
 
     def forward(self, xp_list, dp_node_list):
         context_node_list = torch.cat([xp_list[i] for i in dp_node_list], dim=1)
@@ -157,37 +157,37 @@ class Contexture(nn.Module):
         # return F_dep_list, att_list_list, att_list
         return F_dep_list
 
-# class conv_Update(nn.Module):
-#     def __init__(self, hidden_dim=10):
-#         super(conv_Update, self).__init__()
-#         self.hidden_dim = hidden_dim
-#         dtype = torch.cuda.FloatTensor
-#         self.update = ConvGRU(input_dim=hidden_dim,
-#                               hidden_dim=hidden_dim,
-#                               kernel_size=(1, 1),
-#                               num_layers=1,
-#                               dtype=dtype,
-#                               batch_first=True,
-#                               bias=True,
-#                               return_all_layers=False)
-#
-#     def forward(self, x, message):
-#         _, out = self.update(message.unsqueeze(1), [x])
-#         return out[0][0]
+class conv_Update(nn.Module):
+    def __init__(self, hidden_dim=10):
+        super(conv_Update, self).__init__()
+        self.hidden_dim = hidden_dim
+        dtype = torch.cuda.FloatTensor
+        self.update = ConvGRU(input_dim=hidden_dim,
+                              hidden_dim=hidden_dim,
+                              kernel_size=(1, 1),
+                              num_layers=1,
+                              dtype=dtype,
+                              batch_first=True,
+                              bias=True,
+                              return_all_layers=False)
 
-class Part_Dependency(nn.Module):
-    def __init__(self, in_dim=256, hidden_dim=10):
-        super(Part_Dependency, self).__init__()
-        self.R_dep = nn.Sequential(
-            nn.Conv2d(in_dim+hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
-        )
+    def forward(self, x, message):
+        _, out = self.update(message.unsqueeze(1), [x])
+        return out[0][0]
 
-    def forward(self, F_dep_hu, hv):
-        huv = self.R_dep(torch.cat([F_dep_hu, hv], dim=1))
-        return huv
+# class Part_Dependency(nn.Module):
+#     def __init__(self, in_dim=256, hidden_dim=10):
+#         super(Part_Dependency, self).__init__()
+#         self.R_dep = nn.Sequential(
+#             nn.Conv2d(in_dim+hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+#             BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
+#             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+#             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
+#         )
+
+#     def forward(self, F_dep_hu, hv):
+#         huv = self.R_dep(torch.cat([F_dep_hu, hv], dim=1))
+#         return huv
 
 class conv_Update(nn.Module):
     def __init__(self, hidden_dim=10):
