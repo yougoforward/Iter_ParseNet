@@ -131,7 +131,7 @@ class Dep_Context(nn.Module):
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
 
-        self.aspp = ASPPModule(hidden_dim, hidden_dim)
+        self.aspp = ASPPModule(parts*hidden_dim, hidden_dim)
 
     def forward(self, xp_list, dp_node_list):
         context_node_list = torch.cat([xp_list[i] for i in dp_node_list], dim=1)
