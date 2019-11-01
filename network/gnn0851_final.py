@@ -23,10 +23,10 @@ class Composition(nn.Module):
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
     def forward(self, xh, xp_list, xp_att_list):
-        xp = torch.max(torch.stack(xp_list, dim=1), dim=1, keepdim=False)[0]
+        # xp = torch.max(torch.stack(xp_list, dim=1), dim=1, keepdim=False)[0]
         com_att = sum(xp_att_list)
-        # xph_message = sum([self.conv_ch(torch.cat([xh, xp * com_att], dim=1)) for xp in xp_list])
-        xph_message = self.conv_ch(torch.cat([xh, xp * com_att], dim=1))
+        xph_message = sum([self.conv_ch(torch.cat([xh, xp * com_att.detach()], dim=1)) for xp in xp_list])
+        # xph_message = self.conv_ch(torch.cat([xh, xp * com_att], dim=1))
         return xph_message
 
 
@@ -48,15 +48,30 @@ class Decomposition(nn.Module):
         return decomp_fh_list, decomp_att_list, maps
 
 
+# class Decomp_att(nn.Module):
+#     def __init__(self, hidden_dim=10, parts=2):
+#         super(Decomp_att, self).__init__()
+#         self.conv_fh = nn.Conv2d(hidden_dim, parts+1, kernel_size=1, padding=0, stride=1, bias=True)
+#         self.softmax= nn.Softmax(dim=1)
+#
+#     def forward(self, xf, xh_list):
+#         decomp_map = self.conv_fh(xf)
+#         decomp_att = self.softmax(decomp_map)
+#         decomp_att_list = list(torch.split(decomp_att, 1, dim=1))
+#         return decomp_att_list, decomp_map
 class Decomp_att(nn.Module):
     def __init__(self, hidden_dim=10, parts=2):
         super(Decomp_att, self).__init__()
-        self.conv_fh = nn.Conv2d(hidden_dim, parts+1, kernel_size=1, padding=0, stride=1, bias=True)
+        self.conv_fh = nn.Sequential(
+            nn.Conv2d((parts+1)*hidden_dim, (parts+1)*hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d((parts+1)*hidden_dim), nn.ReLU(),
+            nn.Conv2d((parts+1)*hidden_dim, parts+1, groups=parts+1, kernel_size=1, padding=0, stride=1, bias=True),
+            )
         self.softmax= nn.Softmax(dim=1)
 
     def forward(self, xf, xh_list):
-        decomp_map = self.conv_fh(xf)
-        decomp_att = self.softmax(decomp_map)
+        decomp_map = self.conv_fh(torch.cat([xf]+ xh_list, dim=1))
+        decomp_att = self.softmax(decomp_map.detach())
         decomp_att_list = list(torch.split(decomp_att, 1, dim=1))
         return decomp_att_list, decomp_map
 
