@@ -60,7 +60,7 @@ class Composition(nn.Module):
         com_att = sum(xp_att_list)
         # xph_message = sum([self.conv_ch(torch.cat([xh, xp * com_att.detach()], dim=1)) for xp in xp_list])
         # xph_message = self.conv_ch(torch.cat([xh, xp * com_att], dim=1))
-        xph_message = self.conv_ch(torch.cat([xh, sum(xp_list)], dim=1)))* com_att.detach()
+        xph_message = self.conv_ch(torch.cat([xh, sum(xp_list)], dim=1))* com_att.detach()
         return xph_message
 
 
