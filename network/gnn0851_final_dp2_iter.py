@@ -12,6 +12,38 @@ from modules.senet import se_resnext50_32x4d, se_resnet101, senet154
 BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
 from modules.convGRU import ConvGRU
 from modules.dcn import DFConv2d
+# class ASPPModule(nn.Module):
+#     """ASPP with OC module: aspp + oc context"""
+
+#     def __init__(self, in_dim, out_dim):
+#         super(ASPPModule, self).__init__()
+
+#         self.dilation_0 = nn.Sequential(DFConv2d(in_dim, out_dim, with_modulated_dcn=True, kernel_size=3, dilation=1, deformable_groups=1, bias=False),
+#                                         InPlaceABNSync(out_dim))
+
+#         self.dilation_1 = nn.Sequential(DFConv2d(in_dim, out_dim, with_modulated_dcn=True, kernel_size=3, dilation=2, deformable_groups=1, bias=False),
+#                                         InPlaceABNSync(out_dim))
+
+#         self.dilation_2 = nn.Sequential(DFConv2d(in_dim, out_dim, with_modulated_dcn=True, kernel_size=3, dilation=4, deformable_groups=1, bias=False),
+#                                         InPlaceABNSync(out_dim))
+
+#         self.dilation_3 = nn.Sequential(DFConv2d(in_dim, out_dim, with_modulated_dcn=True, kernel_size=3, dilation=8, deformable_groups=1, bias=False),
+#                                         InPlaceABNSync(out_dim))
+
+#         self.head_conv = nn.Sequential(nn.Conv2d(out_dim * 4, out_dim, kernel_size=1, padding=0, bias=False),
+#                                        InPlaceABNSync(out_dim))
+
+#     def forward(self, x):
+#         # parallel branch
+#         _,_,h,w = x.size()
+#         feat1 = self.dilation_0(x)
+#         feat2 = self.dilation_1(x)
+#         feat3 = self.dilation_2(x)
+#         feat4 = self.dilation_3(x)
+#         # fusion branch
+#         concat = torch.cat([feat1, feat2, feat3, feat4], 1)
+#         output = self.head_conv(concat)
+#         return output
 
 class ASPPModule(nn.Module):
     """ASPP with OC module: aspp + oc context"""
@@ -19,18 +51,14 @@ class ASPPModule(nn.Module):
     def __init__(self, in_dim, out_dim):
         super(ASPPModule, self).__init__()
 
-        self.dilation_0 = nn.Sequential(DFConv2d(in_dim, out_dim, with_modulated_dcn=True, kernel_size=3, dilation=1, deformable_groups=1, bias=False),
+        self.dilation_0 = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=1, dilation=1, bias=False),
                                         InPlaceABNSync(out_dim))
-
-        self.dilation_1 = nn.Sequential(DFConv2d(in_dim, out_dim, with_modulated_dcn=True, kernel_size=3, dilation=2, deformable_groups=1, bias=False),
+        self.dilation_1 = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=1, dilation=2, bias=False),
                                         InPlaceABNSync(out_dim))
-
-        self.dilation_2 = nn.Sequential(DFConv2d(in_dim, out_dim, with_modulated_dcn=True, kernel_size=3, dilation=4, deformable_groups=1, bias=False),
+        self.dilation_2 = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=1, dilation=4, bias=False),
                                         InPlaceABNSync(out_dim))
-
-        self.dilation_3 = nn.Sequential(DFConv2d(in_dim, out_dim, with_modulated_dcn=True, kernel_size=3, dilation=8, deformable_groups=1, bias=False),
+        self.dilation_3 = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=1, dilation=8, bias=False),
                                         InPlaceABNSync(out_dim))
-
         self.head_conv = nn.Sequential(nn.Conv2d(out_dim * 4, out_dim, kernel_size=1, padding=0, bias=False),
                                        InPlaceABNSync(out_dim))
 
