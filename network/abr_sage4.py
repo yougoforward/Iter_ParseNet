@@ -220,7 +220,7 @@ class Full_Graph(nn.Module):
         comp_h = self.comp_h(xf, xh_list)
         comp_p = self.comp_p(xf, xp_list)
         # xf = self.conv_Update(xf, xh_list+xp_list)
-        xf = torch.mean(torch.stack([xf, comp_h, comp_p], dim=1), dim=1, keepdim=False)
+        xf = sum([xf, comp_h, comp_p])
         return xf
 
 
@@ -249,7 +249,7 @@ class Half_Graph(nn.Module):
 
         decomp_u, att_fhu = self.decomp_u(xf, xh_list[0])
         comp_u = self.comp_u(xh_list[0], upper_parts)
-        xh_u = torch.mean(torch.stack([xh_list[0], decomp_u, comp_u], dim=1), dim=1, keepdim=False)
+        xh_u = sum([xh_list[0], decomp_u, comp_u])
 
 
         # lower half
@@ -258,7 +258,7 @@ class Half_Graph(nn.Module):
             lower_parts.append(xp_list[part - 1])
         decomp_l, att_fhl = self.decomp_l(xf, xh_list[1])
         comp_l = self.comp_l(xh_list[1], lower_parts)
-        xh_l = torch.mean(torch.stack([xh_list[1], decomp_l, comp_l], dim=1), dim=1, keepdim=False)
+        xh_l = sum([xh_list[1], decomp_l, comp_l])
 
         att_fh_list = [att_fhu, att_fhl]
         xh_list_new = [xh_u, xh_l]
@@ -289,11 +289,11 @@ class Part_Graph(nn.Module):
             if i+1 in self.upper_part_list:
                 decomp_fp, att_fp = self.decomp_fp_list[i](xf, xp_list[i])
                 decomp_hp, att_hp = self.decomp_hp_list[i](xh_list[0], xp_list[i])
-                xp_list_new.append(torch.mean(torch.stack([xp_list[i], decomp_fp, decomp_hp], dim=1), dim=1, keepdim=False))
+                xp_list_new.append(sum([xp_list[i], decomp_fp, decomp_hp]))
             elif i+1 in self.lower_part_list:
                 decomp_fp, att_fp = self.decomp_fp_list[i](xf, xp_list[i])
                 decomp_hp, att_hp = self.decomp_hp_list[i](xh_list[1], xp_list[i])
-                xp_list_new.append(torch.mean(torch.stack([xp_list[i], decomp_fp, decomp_hp], dim=1), dim=1, keepdim=False))
+                xp_list_new.append(sum([xp_list[i], decomp_fp, decomp_hp]))
             att_fp_list.append(att_fp)
             att_hp_list.append(att_hp)
         return xp_list_new, att_fp_list, att_hp_list
@@ -372,7 +372,7 @@ class GNN_infer(nn.Module):
         self.node_cls_new = nn.Conv2d(hidden_dim*(cls_p+cls_h+cls_f-2), (cls_p+cls_h+cls_f-2), kernel_size=1, padding=0, stride=1, bias=True, groups=(cls_p+cls_h+cls_f-2))
         # self.node_cls_new2 = nn.Conv2d(self.hidden*(cls_p+cls_h+cls_f-2), (cls_p+cls_h+cls_f-2), kernel_size=1, padding=0, stride=1, bias=True, groups=(cls_p+cls_h+cls_f-2))
 
-        self.final_cls = Final_classifer(in_dim, hidden_dim, cls_p, cls_h, cls_f)
+        # self.final_cls = Final_classifer(in_dim, hidden_dim, cls_p, cls_h, cls_f)
 
 
     def forward(self, xp, xh, xf, xl):
@@ -400,16 +400,21 @@ class GNN_infer(nn.Module):
         node_seg_final = self.node_cls_new(node_new)
         # node_seg_new2 = self.node_cls_new2(torch.cat([bg_node_new2, f_fea_new2] + h_fea_list_new2 + p_fea_list_new2, dim=1))
 
-        node_seg = sum([node_seg, node_seg_final]) / 2.0
+        # node_seg = sum([node_seg, node_seg_final]) / 2.0
 
         node_seg_list = list(torch.split(node_seg, 1, dim=1))
         f_seg = torch.cat(node_seg_list[0:2], dim=1)
         h_seg = torch.cat([node_seg_list[0]] + node_seg_list[2:4], dim=1)
         p_seg = torch.cat([node_seg_list[0]] + node_seg_list[4:], dim=1)
 
+        node_seg_list = list(torch.split(node_seg_final, 1, dim=1))
+        f_seg_final = torch.cat(node_seg_list[0:2], dim=1)
+        h_seg_final = torch.cat([node_seg_list[0]] + node_seg_list[2:4], dim=1)
+        p_seg_final = torch.cat([node_seg_list[0]] + node_seg_list[4:], dim=1)
+
         # xphf_infer =torch.cat([node, node_new], dim=1)
-        xphf_infer = node_new
-        p_seg_final, h_seg_final, f_seg_final = self.final_cls(xphf_infer, xp, xh, xf, xl)
+        # xphf_infer = node_new
+        # p_seg_final, h_seg_final, f_seg_final = self.final_cls(xphf_infer, xp, xh, xf, xl)
 
         return p_seg_final, h_seg_final, f_seg_final, p_seg, h_seg, f_seg, att_decomp
 
