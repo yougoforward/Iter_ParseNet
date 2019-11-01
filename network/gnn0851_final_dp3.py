@@ -161,7 +161,7 @@ def generate_spatial_batch(featmap_H, featmap_W):
             spatial_batch_val[:, h, w, :] = \
                 [xmin, ymin, xmax, ymax, xctr, yctr, 1 / featmap_W, 1 / featmap_H]
     return spatial_batch_val
-    
+
 class Dep_Context(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10,):
         super(Dep_Context, self).__init__()
@@ -703,7 +703,7 @@ class Decoder(nn.Module):
 
         # gnn infer
         p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, Fdep_att_list = self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, x[0])
-        return p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, x_dsn
+        return p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, Fdep_att_list, x_dsn
 
 
 class OCNet(nn.Module):
