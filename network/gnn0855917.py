@@ -521,7 +521,7 @@ class Decoder(nn.Module):
 
         # gnn infer
         p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, \
-        Fdep_att_list = self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, x[0])
+         = self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, x[0])
 
         return p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, x_dsn
 
