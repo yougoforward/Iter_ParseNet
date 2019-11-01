@@ -235,7 +235,7 @@ class Contexture(nn.Module):
 
 class conv_Update(nn.Module):
     def __init__(self, in_dim, hidden_dim=10):
-        super(conv_U,pdate, self).__init__()
+        super(conv_Update, self).__init__()
         self.hidden_dim = hidden_dim
         dtype = torch.cuda.FloatTensor
         self.update = ConvGRU(input_dim=in_dim,
