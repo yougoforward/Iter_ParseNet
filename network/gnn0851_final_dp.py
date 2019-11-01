@@ -364,7 +364,7 @@ class Part_Graph(nn.Module):
         decomp_pu_list, decomp_pu_att_list, decomp_pu_att_map  = self.decomp_hpu_list(xh_list[0], upper_parts)
         decomp_pl_list, decomp_pl_att_list, decomp_pl_att_map = self.decomp_hpl_list(xh_list[1], lower_parts)
 
-        F_dep_list = self.F_dep_list(xp_list, xp, self.part_list_list, p_att_list)
+        F_dep_list = self.F_dep_list(xp_list, xp, self.part_list_list)
 
 
         xp_list_new = []
