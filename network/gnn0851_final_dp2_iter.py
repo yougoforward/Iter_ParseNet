@@ -100,7 +100,7 @@ class Decomp_att(nn.Module):
 
     def forward(self, xf, xh_list):
         bg_att = self.bg_cls(torch.cat([xf]+ xh_list, dim=1))
-        node_att = [self.node_cls(torch.cat([xf, h_node, dim=1)) for h_node in xh_list]
+        node_att = [self.node_cls(torch.cat([xf, h_node], dim=1)) for h_node in xh_list]
 
         decomp_map = torch.cat([bg_att]+node_att, dim=1)
         decomp_att = self.softmax(decomp_map.detach())
