@@ -429,8 +429,8 @@ class Part_Graph(nn.Module):
         self.F_dep_list = Contexture(in_dim=in_dim, hidden_dim=hidden_dim, parts=self.cls_p - 1, part_list_list=self.part_list_list)
         self.part_dp = nn.ModuleList([Part_Dependency(in_dim, hidden_dim) for i in range(self.edge_index_num)])
 
-        self.node_update_list = nn.ModuleList([conv_Update(2*hidden_dim, hidden_dim) for i in range(self.cls_p - 1)])
-        # self.node_update_list2 = nn.ModuleList([conv_Update(hidden_dim) for i in range(self.cls_p - 1)])
+        # self.node_update_list = nn.ModuleList([conv_Update(2*hidden_dim, hidden_dim) for i in range(self.cls_p - 1)])
+        self.node_update_list2 = nn.ModuleList([conv_Update(hidden_dim, hidden_dim) for i in range(self.cls_p - 1)])
 
 
 
@@ -459,15 +459,15 @@ class Part_Graph(nn.Module):
                 decomp = decomp_pu_list[self.upper_part_list.index(i + 1)] 
                 # dp = self.part_dp(F_dep_list[i], xp)
                 dp = sum(xpp_list_list[i])
-                xp_new = self.node_update_list[i](xp_list[i], torch.cat([decomp, dp], dim=1))
-                # xp_new = self.node_update_list2[i](xp_new, dp)
+                # xp_new = self.node_update_list[i](xp_list[i], torch.cat([decomp, dp], dim=1))
+                xp_new = self.node_update_list2[i](xp_new, decomp)
 
             elif i + 1 in self.lower_part_list:
                 decomp = decomp_pl_list[self.lower_part_list.index(i + 1)]
                 # dp = self.part_dp(F_dep_list[i], xp)
                 dp = sum(xpp_list_list[i])
-                xp_new = self.node_update_list[i](xp_list[i], torch.cat([decomp, dp], dim=1))
-                # xp_new = self.node_update_list2[i](xp_new, dp)
+                # xp_new = self.node_update_list[i](xp_list[i], torch.cat([decomp, dp], dim=1))
+                xp_new = self.node_update_list2[i](xp_new, decomp)
             xp_list_new.append(xp_new)
         return xp_list_new, decomp_pu_att_map, decomp_pl_att_map, Fdep_att_list
 
