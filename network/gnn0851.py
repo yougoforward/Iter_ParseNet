@@ -31,7 +31,7 @@ class Composition(nn.Module):
     def forward(self, xh, xp_list, xp_att_list):
         # com_att = self.com_att(torch.cat(xp_list, dim=1))
 
-        com_att = sum(xp_att_list)
+        com_att = sum(xp_att_list).detach()
         xph_message = sum([self.conv_ch(torch.cat([xh, xp * com_att], dim=1)) for xp in xp_list])
         return xph_message
 
@@ -67,7 +67,7 @@ class Decomp_att(nn.Module):
 
     def forward(self, xf, xh_list):
         decomp_map = self.conv_fh(xf)
-        decomp_att = self.softmax(decomp_map)
+        decomp_att = self.softmax(decomp_map).detach()
         decomp_att_list = list(torch.split(decomp_att, 1, dim=1))
         return decomp_att_list, decomp_map
 # class Decomp_att(nn.Module):
