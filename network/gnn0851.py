@@ -184,7 +184,7 @@ class ConvGRU(nn.Module):
         gates_list = torch.split(torch.sigmoid(combined_conv), 1, dim=1)
         update_gate = gates_list[-1]
 
-        cnm = h_cur*(1-gates_list[-2])+sum([input_list[i]*gates_list[i]*self.gammas[i] for i in range(self.inputs_num)])
+        cc_cnm = h_cur*(1-gates_list[-2])+sum([input_list[i]*gates_list[i]*self.gammas[i] for i in range(self.inputs_num)])
         cnm = torch.tanh(cc_cnm)
         h_next = (1 - update_gate) * h_cur + update_gate * cnm
         return h_next
