@@ -460,14 +460,14 @@ class Part_Graph(nn.Module):
                 # dp = self.part_dp(F_dep_list[i], xp)
                 dp = sum(xpp_list_list[i])
                 # xp_new = self.node_update_list[i](xp_list[i], torch.cat([decomp, dp], dim=1))
-                xp_new = self.node_update_list2[i](xp_new, decomp)
+                xp_new = self.node_update_list2[i](decomp, xp_list[i])
 
             elif i + 1 in self.lower_part_list:
                 decomp = decomp_pl_list[self.lower_part_list.index(i + 1)]
                 # dp = self.part_dp(F_dep_list[i], xp)
                 dp = sum(xpp_list_list[i])
                 # xp_new = self.node_update_list[i](xp_list[i], torch.cat([decomp, dp], dim=1))
-                xp_new = self.node_update_list2[i](xp_new, decomp)
+                xp_new = self.node_update_list2[i](decomp, xp_list[i])
             xp_list_new.append(xp_new)
         return xp_list_new, decomp_pu_att_map, decomp_pl_att_map, Fdep_att_list
 
