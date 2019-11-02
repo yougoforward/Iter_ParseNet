@@ -377,11 +377,8 @@ class Half_Graph(nn.Module):
         self.comp_u = Composition(hidden_dim)
         self.comp_l = Composition(hidden_dim)
 
-        self.update_u = conv_Update(2*hidden_dim, hidden_dim)
-        # self.update_u2 = conv_Update(hidden_dim)
-
-        self.update_l = conv_Update(2*hidden_dim, hidden_dim)
-        # self.update_l2 = conv_Update(hidden_dim)
+        self.update_u = conv_Update(hidden_dim, hidden_dim)
+        self.update_l = conv_Update(hidden_dim, hidden_dim)
 
     def forward(self, xf, xh_list, xp_list, f_att_list, h_att_list, p_att_list):
         decomp_list, decomp_att_list, decomp_att_map = self.decomp_fh_list(xf, xh_list)
@@ -392,9 +389,7 @@ class Half_Graph(nn.Module):
 
         comp_u = self.comp_u(xh_list[0], upper_parts, [p_att_list[i] for i in self.upper_part_list])
         message_u = decomp_list[0] + comp_u
-        xh_u = self.update_u(xh_list[0], torch.cat([decomp_list[0], comp_u], dim=1))
-        # xh_u = self.update_u2(xh_u, comp_u)
-
+        xh_u = self.update_u(xh_list[0], message_u)
 
         # lower half
         lower_parts = []
@@ -403,9 +398,7 @@ class Half_Graph(nn.Module):
 
         comp_l = self.comp_l(xh_list[1], lower_parts, [p_att_list[i] for i in self.lower_part_list])
         message_l = decomp_list[1] + comp_l
-        xh_l = self.update_l(xh_list[1], torch.cat([decomp_list[1], comp_u], dim=1))
-        # xh_l = self.update_l2(xh_l, comp_l)
-
+        xh_l = self.update_l(xh_list[1], message_l)
         xh_list_new = [xh_u, xh_l]
         return xh_list_new, decomp_att_map
 
