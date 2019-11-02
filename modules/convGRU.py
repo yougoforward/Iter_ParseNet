@@ -6,6 +6,8 @@ import functools
 from inplace_abn.bn import InPlaceABNSync
 BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
 from modules.dcn import DFConv2d
+
+
 class ConvGRUCell(nn.Module):
     def __init__(self, input_size, input_dim, hidden_dim, kernel_size, bias, dtype):
         """
