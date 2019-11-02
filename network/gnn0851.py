@@ -167,39 +167,39 @@ class Part_Dependency(nn.Module):
         return huv
 
 
-# class conv_Update(nn.Module):
-#     def __init__(self, hidden_dim=10):
-#         super(conv_Update, self).__init__()
-#         self.hidden_dim = hidden_dim
-#         dtype = torch.cuda.FloatTensor
-#         self.update = ConvGRU(input_dim=hidden_dim,
-#                               hidden_dim=hidden_dim,
-#                               kernel_size=(1, 1),
-#                               num_layers=1,
-#                               dtype=dtype,
-#                               batch_first=True,
-#                               bias=True,
-#                               return_all_layers=False)
-#
-#     def forward(self, x, message):
-#         _, out = self.update(message.unsqueeze(1), [x])
-#         return out[0][0]
-
 class conv_Update(nn.Module):
-    def __init__(self, hidden_dim=10, paths_len=3):
+    def __init__(self, hidden_dim=10):
         super(conv_Update, self).__init__()
         self.hidden_dim = hidden_dim
-        self.conv_update = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(hidden_dim),
-        )
-        self.relu = nn.ReLU(inplace=False)
-    def forward(self, xp, message):
-        out = self.conv_update(torch.cat([xp, message], dim=1))
-        out = self.relu(xp+out)
-        return out
+        dtype = torch.cuda.FloatTensor
+        self.update = ConvGRU(input_dim=hidden_dim,
+                              hidden_dim=hidden_dim,
+                              kernel_size=(1, 1),
+                              num_layers=1,
+                              dtype=dtype,
+                              batch_first=True,
+                              bias=True,
+                              return_all_layers=False)
+
+    def forward(self, x, message):
+        _, out = self.update(message.unsqueeze(1), [x])
+        return out[0][0]
+
+# class conv_Update(nn.Module):
+#     def __init__(self, hidden_dim=10, paths_len=3):
+#         super(conv_Update, self).__init__()
+#         self.hidden_dim = hidden_dim
+#         self.conv_update = nn.Sequential(
+#             nn.Conv2d(2 * hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+#             BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
+#             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+#             BatchNorm2d(hidden_dim),
+#         )
+#         self.relu = nn.ReLU(inplace=False)
+#     def forward(self, xp, message):
+#         out = self.conv_update(torch.cat([xp, message], dim=1))
+#         out = self.relu(xp+out)
+#         return out
 
 class DecoderModule(nn.Module):
 
