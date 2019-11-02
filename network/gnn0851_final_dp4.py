@@ -169,11 +169,11 @@ def generate_spatial_batch(featmap_H, featmap_W):
     return spatial_batch_val
 
 class Dep_Context(nn.Module):
-    def __init__(self, in_dim=256, hidden_dim=10,):
+    def __init__(self, in_dim=256, hidden_dim=10, parts=6):
         super(Dep_Context, self).__init__()
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
-        self.W = nn.Parameter(torch.ones(in_dim+8, hidden_dim+8))
+        self.W = nn.Parameter(torch.ones(in_dim, in_dim))
         # self.att = node_att()
         self.sigmoid = nn.Sigmoid()
         self.coord_fea = torch.from_numpy(generate_spatial_batch(60, 60))
@@ -185,25 +185,25 @@ class Dep_Context(nn.Module):
                                      nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
                                      BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
                                      )
-        self.img_conv = nn.Sequential(nn.Conv2d(in_dim+8, in_dim+8, kernel_size=1, stride=1, padding=0, bias=True))
-        self.node_conv = nn.Sequential(nn.Conv2d(hidden_dim + 8, hidden_dim+8, kernel_size=1, stride=1, padding=0, bias=True))
-    def forward(self, p_fea, hu, dp_node_list, p_att_list):
+        self.img_conv = nn.Sequential(nn.Conv2d(in_dim + parts*hidden_dim + 8, in_dim, kernel_size=1, stride=1, padding=0, bias=True))
+        self.node_conv = nn.Sequential(nn.Conv2d(in_dim + parts*hidden_dim + 8, in_dim, kernel_size=1, stride=1, padding=0, bias=True))
+    def forward(self, p_fea, xp_list):
         n, c, h, w = p_fea.size()
         # att_hu = self.att(hu)
         # hu = att_hu * hu
         # coord_fea = torch.from_numpy(generate_spatial_batch(n,h,w)).to(p_fea.device).view(n,-1,8) #n,hw,8
         coord_fea = self.coord_fea.to(p_fea.device).repeat((n, 1, 1, 1)).permute(0,3,1,2)
-        query = self.img_conv(torch.cat([p_fea, coord_fea], dim=1))
+        query = self.img_conv(torch.cat(xp_list+[p_fea, coord_fea], dim=1))
         # print(query.shape)
-        project1 = torch.matmul(query.view(n, self.in_dim+8, -1).permute(0, 2, 1), self.W)  # n,hw,hidden
-        Affine = torch.matmul(project1, self.node_conv(torch.cat([hu, coord_fea], dim=1)).view(n, self.hidden_dim+8, -1))  # n,hw,hw
+        project1 = torch.matmul(query.view(n, -1, h*w).permute(0, 2, 1), self.W)  # n,hw,hidden
+        Affine = torch.matmul(project1, self.node_conv(torch.cat(xp_list+[p_fea, coord_fea], dim=1)).view(n, -1, h*w))  # n,hw,hw
         # attention = self.softmax(energy)
-        co_context = torch.bmm(p_fea.view(n, self.in_dim, -1), Affine).view(n, self.in_dim, h, w)
+        co_context = torch.bmm(p_fea.view(n, -1, h*w), Affine).view(n, self.in_dim, h, w)
         # co_context = self.project(co_context)
 
-        dp_node_att_list = [p_att_list[i+1] for i in dp_node_list]
-        # co_context = sum(dp_node_att_list).detach()*p_fea+co_context
-        co_context = sum(dp_node_att_list).detach()*p_fea
+        # dp_node_att_list = [p_att_list[i+1] for i in dp_node_list]
+        # # co_context = sum(dp_node_att_list).detach()*p_fea+co_context
+        # co_context = sum(dp_node_att_list).detach()*p_fea
         return co_context
 
 # class Dep_Context(nn.Module):
@@ -224,8 +224,13 @@ class Contexture(nn.Module):
         super(Contexture, self).__init__()
         self.part_list_list = part_list_list
         self.hidden_dim =hidden_dim
-        self.F_cont = nn.ModuleList(
-            [Dep_Context(in_dim, hidden_dim) for i in range(len(part_list_list))])
+        self.project = nn.Sequential(nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+                                     BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
+                                     )
+        self.F_cont = nn.ModuleList([self.project for i in range(parts)])
+        # self.F_cont = nn.ModuleList(
+        #     [Dep_Context(in_dim, hidden_dim) for i in range(len(part_list_list))])
+        self.cont = Dep_Context(in_dim, hidden_dim, parts)
         self.att_list = nn.ModuleList(
             [nn.Conv2d(in_dim, len(part_list_list[i]) + 1, kernel_size=1, padding=0, stride=1, bias=True)
              for i in range(len(part_list_list))])
@@ -233,7 +238,9 @@ class Contexture(nn.Module):
 
 
     def forward(self, xp_list, p_fea, part_list_list, p_att_list):
-        F_dep_list =[self.F_cont[i](p_fea, xp_list[i], part_list_list[i], p_att_list) for i in range(len(xp_list))]
+        contexture = self.cont(p_fea, xp_list)
+        F_dep_list =[self.F_cont[i](contexture) for i in range(len(xp_list))]
+
         att_list = [self.att_list[i](F_dep_list[i]) for i in range(len(xp_list))]
         att_list_list = [list(torch.split(self.softmax(att_list[i]), 1, dim=1)) for i in range(len(xp_list))]
 
@@ -262,7 +269,7 @@ class Part_Dependency(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10):
         super(Part_Dependency, self).__init__()
         self.R_dep = nn.Sequential(
-            nn.Conv2d(in_dim+hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2*hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
@@ -461,14 +468,14 @@ class Part_Graph(nn.Module):
                 # dp = self.part_dp(F_dep_list[i], xp)
                 dp = sum(xpp_list_list[i])/len(xpp_list_list[i])
                 # xp_new = self.node_update_list[i](xp_list[i], torch.cat([decomp, dp], dim=1))
-                xp_new = self.node_update_list2[i](decomp, xp_list[i]+dp)
+                xp_new = self.node_update_list2[i](decomp+dp, xp_list[i])
 
             elif i + 1 in self.lower_part_list:
                 decomp = decomp_pl_list[self.lower_part_list.index(i + 1)]
                 # dp = self.part_dp(F_dep_list[i], xp)
                 dp = sum(xpp_list_list[i])/len(xpp_list_list[i])                
                 # xp_new = self.node_update_list[i](xp_list[i], torch.cat([decomp, dp], dim=1))
-                xp_new = self.node_update_list2[i](decomp, xp_list[i]+dp)
+                xp_new = self.node_update_list2[i](decomp+dp, xp_list[i])
             xp_list_new.append(xp_new)
         return xp_list_new, decomp_pu_att_map, decomp_pl_att_map, Fdep_att_list
 
