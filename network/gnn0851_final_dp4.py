@@ -146,8 +146,8 @@ class Dep_Context(nn.Module):
         # dp_node_att_list = [p_att_list[i+1] for i in dp_node_list]
         # # co_context = sum(dp_node_att_list).detach()*p_fea+co_context
         # co_context = sum(dp_node_att_list).detach()*p_fea
-        return co_context
-        
+        return co_context+p_fea
+
 class Contexture(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, parts=6, part_list_list=None):
         super(Contexture, self).__init__()
