@@ -127,8 +127,8 @@ class Dep_Context(nn.Module):
                                      nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
                                      BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
                                      )
-        self.img_conv = nn.Sequential(nn.Conv2d(in_dim + parts*hidden_dim + 8, in_dim, kernel_size=1, stride=1, padding=0, bias=True))
-        self.node_conv = nn.Sequential(nn.Conv2d(in_dim + parts*hidden_dim + 8, in_dim, kernel_size=1, stride=1, padding=0, bias=True))
+        self.img_conv = nn.Sequential(nn.Conv2d(in_dim + parts*hidden_dim + 8, in_dim//2, kernel_size=1, stride=1, padding=0, bias=True))
+        self.node_conv = nn.Sequential(nn.Conv2d(in_dim + parts*hidden_dim + 8, in_dim//2, kernel_size=1, stride=1, padding=0, bias=True))
         self.value_conv = nn.Sequential(nn.Conv2d(in_dim + parts*hidden_dim, in_dim, kernel_size=1, stride=1, padding=0, bias=True))
         self.gamma = nn.Parameter(torch.ones(1))
     def forward(self, p_fea, xp_list):
