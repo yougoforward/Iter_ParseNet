@@ -146,7 +146,7 @@ class Dep_Context(nn.Module):
         # project1 = torch.matmul(query.view(n, -1, h*w).permute(0, 2, 1), self.W)  # n,hw,hidden
         # energy = torch.matmul(project1, self.node_conv(torch.cat(xp_list+[p_fea, coord_fea], dim=1)).view(n, -1, h*w))  # n,hw,hw
         attention = torch.softmax(energy, dim=1)
-        co_context = torch.bmm(self.value_conv(torch.cat(xp_list+[p_fea], dim=1).view(n, -1, h*w), attention).view(n, self.in_dim, h, w)
+        co_context = torch.bmm(self.value_conv(torch.cat(xp_list+[p_fea], dim=1)).view(n, -1, h*w), attention).view(n, self.in_dim, h, w)
         # co_context = self.project(co_context)
 
         # dp_node_att_list = [p_att_list[i+1] for i in dp_node_list]
