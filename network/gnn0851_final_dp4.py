@@ -117,7 +117,7 @@ class Dep_Context(nn.Module):
         super(Dep_Context, self).__init__()
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
-        self.W = nn.Parameter(torch.ones(in_dim, in_dim))
+        # self.W = nn.Parameter(torch.ones(in_dim, in_dim))
         # self.att = node_att()
         self.sigmoid = nn.Sigmoid()
         self.coord_fea = torch.from_numpy(generate_spatial_batch(60, 60))
@@ -127,8 +127,10 @@ class Dep_Context(nn.Module):
                                      nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
                                      BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
                                      )
-        self.img_conv = nn.Sequential(nn.Conv2d(in_dim + parts*hidden_dim + 8, in_dim, kernel_size=1, stride=1, padding=0, bias=True))
-        self.node_conv = nn.Sequential(nn.Conv2d(in_dim + parts*hidden_dim + 8, in_dim, kernel_size=1, stride=1, padding=0, bias=True))
+        self.img_conv = nn.Sequential(nn.Conv2d(in_dim + parts*hidden_dim + 8, in_dim, kernel_size=1, stride=1, padding=0, bias=False),
+        BatchNorm2d(in_dim), nn.ReLU(inplace=False))
+        self.node_conv = nn.Sequential(nn.Conv2d(in_dim + parts*hidden_dim + 8, in_dim, kernel_size=1, stride=1, padding=0, bias=False),
+        BatchNorm2d(in_dim), nn.ReLU(inplace=False))
         self.value_conv = nn.Sequential(nn.Conv2d(in_dim + parts*hidden_dim, in_dim, kernel_size=1, stride=1, padding=0, bias=True))
         self.gamma = nn.Parameter(torch.ones(1))
     def forward(self, p_fea, xp_list):
@@ -142,10 +144,10 @@ class Dep_Context(nn.Module):
         key = self.node_conv(cross_model_fea)
         value = self.value_conv(torch.cat(xp_list+[p_fea], dim=1))
         # print(query.shape)
-        # energy = torch.matmul(query.view(n, -1, h*w).permute(0, 2, 1), key.view(n, -1, h*w))  # n,hw,hw
+        energy = torch.matmul(query.view(n, -1, h*w).permute(0, 2, 1), key.view(n, -1, h*w))  # n,hw,hw
 
-        project1 = torch.matmul(query.view(n, -1, h*w).permute(0, 2, 1), self.W)  # n,hw,hidden
-        energy = torch.matmul(project1, key.view(n, -1, h*w))  # n,hw,hw
+        # project1 = torch.matmul(query.view(n, -1, h*w).permute(0, 2, 1), self.W)  # n,hw,hidden
+        # energy = torch.matmul(project1, key.view(n, -1, h*w))  # n,hw,hw
         attention = torch.softmax(energy, dim=1)
         co_context = torch.bmm(value.view(n, -1, h*w), attention).view(n, self.in_dim, h, w)
         # co_context = self.project(co_context)
@@ -153,7 +155,7 @@ class Dep_Context(nn.Module):
         # dp_node_att_list = [p_att_list[i+1] for i in dp_node_list]
         # # co_context = sum(dp_node_att_list).detach()*p_fea+co_context
         # co_context = sum(dp_node_att_list).detach()*p_fea
-        return co_context
+        return self.gamma*co_context+p_fea
 
 class Contexture(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, parts=6, part_list_list=None):
