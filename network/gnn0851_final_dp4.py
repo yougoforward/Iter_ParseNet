@@ -129,6 +129,7 @@ class Dep_Context(nn.Module):
                                      )
         self.img_conv = nn.Sequential(nn.Conv2d(in_dim + parts*hidden_dim + 8, in_dim, kernel_size=1, stride=1, padding=0, bias=True))
         self.node_conv = nn.Sequential(nn.Conv2d(in_dim + parts*hidden_dim + 8, in_dim, kernel_size=1, stride=1, padding=0, bias=True))
+        self.gamma = nn.Parameter(torch.ones(1))
     def forward(self, p_fea, xp_list):
         n, c, h, w = p_fea.size()
         # att_hu = self.att(hu)
@@ -146,7 +147,7 @@ class Dep_Context(nn.Module):
         # dp_node_att_list = [p_att_list[i+1] for i in dp_node_list]
         # # co_context = sum(dp_node_att_list).detach()*p_fea+co_context
         # co_context = sum(dp_node_att_list).detach()*p_fea
-        return co_context+p_fea
+        return self.gamma*co_context+p_fea
 
 class Contexture(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, parts=6, part_list_list=None):
