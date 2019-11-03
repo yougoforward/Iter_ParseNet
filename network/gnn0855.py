@@ -93,19 +93,18 @@ class Dep_Context(nn.Module):
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
         self.W = nn.Parameter(torch.ones(in_dim+8, hidden_dim+8))
+        self.gamma = nn.Parameter(torch.ones(1))
         # self.att = node_att()
         self.sigmoid = nn.Sigmoid()
         self.coord_fea = torch.from_numpy(generate_spatial_batch(60, 60))
         self.maxpool = nn.AdaptiveMaxPool2d(1)
-        self.softmax = nn.Softmax(dim=-1)
-
-        self.project = nn.Sequential(nn.Conv2d(in_dim, 2*hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-                                     BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False),
-                                     nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+        self.project = nn.Sequential(nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
                                      BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
                                      )
-        self.img_conv = nn.Sequential(nn.Conv2d(in_dim+8, in_dim+8, kernel_size=1, stride=1, padding=0, bias=True))
-        self.node_conv = nn.Sequential(nn.Conv2d(hidden_dim + 8, hidden_dim+8, kernel_size=1, stride=1, padding=0, bias=True))
+        self.img_conv = nn.Sequential(nn.Conv2d(in_dim+8, in_dim+8, kernel_size=1, stride=1, padding=0, bias=True),
+        BatchNorm2d(in_dim+8), nn.ReLU(inplace=False))
+        self.node_conv = nn.Sequential(nn.Conv2d(hidden_dim + 8, hidden_dim+8, kernel_size=1, stride=1, padding=0, bias=True),
+        BatchNorm2d(hidden_dim+8), nn.ReLU(inplace=False))
     def forward(self, p_fea, hu):
         n, c, h, w = p_fea.size()
         # att_hu = self.att(hu)
@@ -114,10 +113,10 @@ class Dep_Context(nn.Module):
         coord_fea = self.coord_fea.to(p_fea.device).repeat((n, 1, 1, 1)).permute(0,3,1,2)
         query = self.img_conv(torch.cat([p_fea, coord_fea], dim=1))
         # print(query.shape)
-        project1 = torch.matmul(query.view(n, self.in_dim+8, -1).permute(0, 2, 1), self.W)  # n,hw,hidden
-        Affine = torch.matmul(project1, self.node_conv(torch.cat([hu, coord_fea], dim=1)).view(n, self.hidden_dim+8, -1))  # n,hw,hw
-        # attention = self.softmax(energy)
-        co_context = torch.bmm(p_fea.view(n, self.in_dim, -1), Affine).view(n, self.in_dim, h, w)
+        project1 = torch.matmul(query.view(n, -1, h*w).permute(0, 2, 1), self.W)  # n,hw,hidden
+        energy = torch.matmul(project1, self.node_conv(torch.cat([hu, coord_fea], dim=1)).view(n, -1, h*w))  # n,hw,hw
+        attention = torch.softmax(energy, dim=1)
+        co_context = self.gamma*torch.bmm(p_fea.view(n, -1, h*w), attention).view(n, -1, h, w) + p_fea
         co_context = self.project(co_context)
         return co_context
 
