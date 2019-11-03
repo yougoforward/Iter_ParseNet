@@ -10,69 +10,8 @@ from modules.parse_mod import MagicModule
 from modules.senet import se_resnext50_32x4d, se_resnet101, senet154
 
 BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
-from modules.convGRU import ConvGRU
+# from modules.convGRU import ConvGRU
 from modules.dcn import DFConv2d
-class ASPPModule(nn.Module):
-    """ASPP with OC module: aspp + oc context"""
-
-    def __init__(self, in_dim, out_dim):
-        super(ASPPModule, self).__init__()
-
-        self.dilation_0 = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=1, dilation=1, bias=False),
-                                        InPlaceABNSync(out_dim))
-        self.dilation_1 = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=2, dilation=2, bias=False),
-                                        InPlaceABNSync(out_dim))
-        self.dilation_2 = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=4, dilation=4, bias=False),
-                                        InPlaceABNSync(out_dim))
-        self.dilation_3 = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=8, dilation=8, bias=False),
-                                        InPlaceABNSync(out_dim))
-        self.head_conv = nn.Sequential(nn.Conv2d(out_dim * 4, out_dim, kernel_size=1, padding=0, bias=False),
-                                       InPlaceABNSync(out_dim))
-
-    def forward(self, x):
-        # parallel branch
-        _,_,h,w = x.size()
-        feat1 = self.dilation_0(x)
-        feat2 = self.dilation_1(x)
-        feat3 = self.dilation_2(x)
-        feat4 = self.dilation_3(x)
-        # fusion branch
-        concat = torch.cat([feat1, feat2, feat3, feat4], 1)
-        output = self.head_conv(concat)
-        return output
-# class ASPPModule(nn.Module):
-#     """ASPP with OC module: aspp + oc context"""
-
-#     def __init__(self, in_dim, out_dim):
-#         super(ASPPModule, self).__init__()
-
-#         self.dilation_0 = nn.Sequential(DFConv2d(in_dim, out_dim, with_modulated_dcn=True, kernel_size=3, dilation=1, deformable_groups=1, bias=False),
-#                                         InPlaceABNSync(out_dim))
-
-#         self.dilation_1 = nn.Sequential(DFConv2d(in_dim, out_dim, with_modulated_dcn=True, kernel_size=3, dilation=2, deformable_groups=1, bias=False),
-#                                         InPlaceABNSync(out_dim))
-
-#         self.dilation_2 = nn.Sequential(DFConv2d(in_dim, out_dim, with_modulated_dcn=True, kernel_size=3, dilation=4, deformable_groups=1, bias=False),
-#                                         InPlaceABNSync(out_dim))
-
-#         self.dilation_3 = nn.Sequential(DFConv2d(in_dim, out_dim, with_modulated_dcn=True, kernel_size=3, dilation=8, deformable_groups=1, bias=False),
-#                                         InPlaceABNSync(out_dim))
-
-#         self.head_conv = nn.Sequential(nn.Conv2d(out_dim * 4, out_dim, kernel_size=1, padding=0, bias=False),
-#                                        InPlaceABNSync(out_dim))
-
-#     def forward(self, x):
-#         # parallel branch
-#         _,_,h,w = x.size()
-#         feat1 = self.dilation_0(x)
-#         feat2 = self.dilation_1(x)
-#         feat3 = self.dilation_2(x)
-#         feat4 = self.dilation_3(x)
-#         # fusion branch
-#         concat = torch.cat([feat1, feat2, feat3, feat4], 1)
-#         output = self.head_conv(concat)
-#         return output
-
 class Composition(nn.Module):
     def __init__(self, hidden_dim, parts=2):
         super(Composition, self).__init__()
@@ -114,44 +53,49 @@ class Decomposition(nn.Module):
 class Decomp_att(nn.Module):
     def __init__(self, hidden_dim=10, parts=2):
         super(Decomp_att, self).__init__()
-        self.bg_cls = nn.Sequential(
-            nn.Conv2d((parts+1)*hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(),
-            nn.Conv2d(hidden_dim, 1, groups=1, kernel_size=1, padding=0, stride=1, bias=True),
-            )
-        self.node_cls = nn.Sequential(
-            nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(),
-            nn.Conv2d(hidden_dim, 1, groups=1, kernel_size=1, padding=0, stride=1, bias=True),
-            )
-        self.parts = parts
-        self.decomp_att = nn.ModuleList([self.node_cls for i in range(parts)])
-
+        self.conv_fh = nn.Conv2d(hidden_dim, parts+1, kernel_size=1, padding=0, stride=1, bias=True)
         self.softmax= nn.Softmax(dim=1)
 
     def forward(self, xf, xh_list):
-        bg_att = self.bg_cls(torch.cat([xf]+ xh_list, dim=1))
-        node_att = [self.decomp_att[i](torch.cat([xf, xh_list[i]], dim=1)) for i in range(self.parts)]
-
-        decomp_map = torch.cat([bg_att]+node_att, dim=1)
-        decomp_att = self.softmax(decomp_map.detach())
+        decomp_map = self.conv_fh(xf)
+        decomp_att = self.softmax(decomp_map).detach()
         decomp_att_list = list(torch.split(decomp_att, 1, dim=1))
         return decomp_att_list, decomp_map
+class ConvGRU(nn.Module):
+    def __init__(self, input_dim, hidden_dim, inputs_num):
+        super(ConvGRU, self).__init__()
+        self.hidden_dim = hidden_dim
+        self.inputs_num = inputs_num
 
+        self.conv_gates = nn.Conv2d(input_dim*inputs_num + hidden_dim, inputs_num+2, kernel_size=1, padding=0, stride=1, bias=True)
+        self.gammas = nn.Parameter(torch.ones(inputs_num))
+        nn.init.orthogonal_(self.conv_gates.weight)
+        nn.init.constant_(self.conv_gates.bias, 0.)
 
-class Part_Dependency(nn.Module):
-    def __init__(self, in_dim=256, hidden_dim=10):
-        super(Part_Dependency, self).__init__()
-        self.R_dep = nn.Sequential(
-            nn.Conv2d(in_dim + hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
-        )
+    def forward(self, input_list, h_cur):
+        combined = torch.cat(input_list + [h_cur], dim=1)
+        combined_conv = self.conv_gates(combined)
 
-    def forward(self, F_dep_hu, hv):
-        huv = self.R_dep(torch.cat([F_dep_hu, hv], dim=1))
-        return huv
+        gates_list = torch.split(torch.sigmoid(combined_conv), 1, dim=1)
+        update_gate = gates_list[-1]
+
+        cc_cnm = h_cur*(1-gates_list[-2])+sum([input_list[i]*gates_list[i]*self.gammas[i] for i in range(self.inputs_num)])
+        cnm = torch.tanh(cc_cnm)
+        h_next = (1 - update_gate) * h_cur + update_gate * cnm
+        return h_next
+
+class conv_Update(nn.Module):
+    def __init__(self, in_dim, hidden_dim=10, inputs_num=1):
+        super(conv_Update, self).__init__()
+        self.hidden_dim = hidden_dim
+        self.update = ConvGRU(input_dim=in_dim,
+                              hidden_dim=hidden_dim,
+                              inputs_num=inputs_num)
+
+    def forward(self, x, message_list):
+        out = self.update(message_list, x)
+        return out
+
 
 def generate_spatial_batch(featmap_H, featmap_W):
     import numpy as np
@@ -178,8 +122,6 @@ class Dep_Context(nn.Module):
         self.sigmoid = nn.Sigmoid()
         self.coord_fea = torch.from_numpy(generate_spatial_batch(60, 60))
         self.maxpool = nn.AdaptiveMaxPool2d(1)
-        self.softmax = nn.Softmax(dim=-1)
-
         self.project = nn.Sequential(nn.Conv2d(in_dim, 2*hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
                                      BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False),
                                      nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
@@ -196,29 +138,16 @@ class Dep_Context(nn.Module):
         query = self.img_conv(torch.cat(xp_list+[p_fea, coord_fea], dim=1))
         # print(query.shape)
         project1 = torch.matmul(query.view(n, -1, h*w).permute(0, 2, 1), self.W)  # n,hw,hidden
-        Affine = torch.matmul(project1, self.node_conv(torch.cat(xp_list+[p_fea, coord_fea], dim=1)).view(n, -1, h*w))  # n,hw,hw
-        # attention = self.softmax(energy)
-        co_context = torch.bmm(p_fea.view(n, -1, h*w), Affine).view(n, self.in_dim, h, w)
+        energy = torch.matmul(project1, self.node_conv(torch.cat(xp_list+[p_fea, coord_fea], dim=1)).view(n, -1, h*w))  # n,hw,hw
+        attention = torch.softmax(energy, dim=1)
+        co_context = torch.bmm(p_fea.view(n, -1, h*w), attention).view(n, self.in_dim, h, w)
         # co_context = self.project(co_context)
 
         # dp_node_att_list = [p_att_list[i+1] for i in dp_node_list]
         # # co_context = sum(dp_node_att_list).detach()*p_fea+co_context
         # co_context = sum(dp_node_att_list).detach()*p_fea
         return co_context
-
-# class Dep_Context(nn.Module):
-#     def __init__(self, in_dim=256, hidden_dim=10, parts=1):
-#         super(Dep_Context, self).__init__()
-#         self.in_dim = in_dim
-#         self.hidden_dim = hidden_dim
-
-#         self.aspp = ASPPModule(parts*hidden_dim, hidden_dim)
-
-#     def forward(self, xp_list, dp_node_list):
-#         context_node_list = torch.cat([xp_list[i] for i in dp_node_list], dim=1)
-#         context_fea = self.aspp(context_node_list)
-#         return context_fea
-
+        
 class Contexture(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, parts=6, part_list_list=None):
         super(Contexture, self).__init__()
@@ -245,25 +174,6 @@ class Contexture(nn.Module):
         att_list_list = [list(torch.split(self.softmax(att_list[i]), 1, dim=1)) for i in range(len(xp_list))]
 
         return F_dep_list, att_list_list, att_list
-        # return F_dep_list
-
-class conv_Update(nn.Module):
-    def __init__(self, in_dim, hidden_dim=10):
-        super(conv_Update, self).__init__()
-        self.hidden_dim = hidden_dim
-        dtype = torch.cuda.FloatTensor
-        self.update = ConvGRU(input_dim=in_dim,
-                              hidden_dim=hidden_dim,
-                              kernel_size=(1, 1),
-                              num_layers=1,
-                              dtype=dtype,
-                              batch_first=True,
-                              bias=True,
-                              return_all_layers=False)
-
-    def forward(self, x, message):
-        _, out = self.update(message.unsqueeze(1), [x])
-        return out[0][0]
 
 class Part_Dependency(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10):
@@ -279,19 +189,6 @@ class Part_Dependency(nn.Module):
         huv = self.R_dep(torch.cat([F_dep_hu, hv], dim=1))
         return huv
 
-# class conv_Update(nn.Module):
-#     def __init__(self, hidden_dim=10):
-#         super(conv_Update, self).__init__()
-#         self.hidden_dim = hidden_dim
-#         self.conv_update = nn.Sequential(
-#             nn.Conv2d(2 * hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-#             BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
-#             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-#             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
-#         )
-#     def forward(self, xp, message):
-#         out = self.conv_update(torch.cat([xp, message], dim=1))
-#         return out
 
 class DecoderModule(nn.Module):
 
