@@ -89,73 +89,45 @@ def generate_spatial_batch(featmap_H, featmap_W):
 
 
 class Dep_Context(nn.Module):
-    def __init__(self, in_dim=256, hidden_dim=10):
+    def __init__(self, in_dim=256, hidden_dim=10, parts=2):
         super(Dep_Context, self).__init__()
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
-        self.W = nn.Parameter(torch.ones(in_dim, hidden_dim))
-        self.sigmoid = nn.Sigmoid()
-        self.coord_fea = torch.from_numpy(generate_spatial_batch(60, 60))
-        self.maxpool = nn.AdaptiveMaxPool2d(1)
-        self.softmax = nn.Softmax(dim=-1)
+        self.parts =parts
 
-        self.project = nn.Sequential(nn.Conv2d(in_dim, in_dim, kernel_size=1, padding=0, stride=1, bias=False),
-                                     BatchNorm2d(in_dim), nn.ReLU(inplace=False),
-                                     nn.Conv2d(in_dim, 2*hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-                                     BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False)
-                                     )
-        self.img_conv = nn.Sequential(nn.Conv2d(in_dim+8, in_dim, kernel_size=1, stride=1, padding=0, bias=False),
-                                      BatchNorm2d(in_dim), nn.ReLU())
-        self.node_conv = nn.Sequential(nn.Conv2d(hidden_dim + 8, hidden_dim, kernel_size=1, stride=1, padding=0, bias=False),
-                                      BatchNorm2d(hidden_dim), nn.ReLU())
-        self.alpha = nn.Parameter(torch.ones(1))
-
-    def forward(self, p_fea, hu):
-        n, c, h, w = p_fea.size()
-        # coord_fea = torch.from_numpy(generate_spatial_batch(n,h,w)).to(p_fea.device).view(n,-1,8) #n,hw,8
-        coord_fea = self.coord_fea.to(p_fea.device).repeat((n, 1, 1, 1)).permute(0,3,1,2)
-        query = self.img_conv(torch.cat([p_fea, coord_fea], dim=1))
-        project1 = torch.matmul(query.view(n, self.in_dim, -1).permute(0, 2, 1), self.W)  # n,hw,hidden
-        energy = torch.matmul(project1, self.node_conv(torch.cat([hu, coord_fea], dim=1)).view(n, self.hidden_dim, -1))  # n,hw,hw
-        attention = self.softmax(energy)
-
-        co_context = torch.bmm(p_fea.view(n, self.in_dim, -1), attention).view(n, self.in_dim, h, w)
-        # co_context = self.alpha*co_context+p_fea
-        co_context = p_fea
-        co_context = self.project(co_context)
+        self.project = nn.Sequential(nn.Conv2d(in_dim+parts*hidden_dim, in_dim, kernel_size=1, padding=0, stride=1, bias=False),
+                                 BatchNorm2d(in_dim), nn.ReLU(inplace=False)
+                                 )
+    def forward(self, p_fea, hu, dp_node_list, p_att_list, xp_list):
+        dp_node_fea_list = [xp_list[i] for i in dp_node_list]
+        dp_node_att_list = [p_att_list[i] for i in dp_node_list]
+        co_context = self.project(torch.cat([p_fea*sum(dp_node_att_list)] + dp_node_fea_list, dim=1))
         return co_context
-        # co_bg, co_context = torch.split(co_context, self.hidden_dim, dim=1)
-        # return co_bg, co_context
+
 
 class Contexture(nn.Module):
-    def __init__(self, in_dim=256, hidden_dim=10, parts=6, part_list_list=None):
+    def __init__(self, in_dim=256, hidden_dim=10, parts=6, node_pairs=None):
         super(Contexture, self).__init__()
         self.hidden_dim =hidden_dim
         self.F_cont = nn.ModuleList(
-            [Dep_Context(in_dim, hidden_dim) for i in range(len(part_list_list))])
+            [Dep_Context(in_dim, hidden_dim, parts=len(node_pairs[i])) for i in range(len(node_pairs))])
 
         self.parts = parts
-        self.att_list = nn.ModuleList([nn.Conv2d(hidden_dim, len(part_list_list[i])+ 1, kernel_size=1, padding=0, stride=1, bias=True)
-                                       for i in range(len(part_list_list))])
+        self.att_list = nn.ModuleList([nn.Conv2d(in_dim, len(node_pairs[i])+ 1, kernel_size=1, padding=0, stride=1, bias=True)
+                                       for i in range(len(node_pairs))])
 
         self.context_att_list = nn.ModuleList([nn.Sequential(
-            nn.Conv2d(2*hidden_dim, 2, kernel_size=1, padding=0, stride=1, groups=2, bias=True)
-        ) for i in range(len(part_list_list))])
+            nn.Conv2d(in_dim, 2, kernel_size=1, padding=0, stride=1, groups=1, bias=True)
+        ) for i in range(len(node_pairs))])
 
         self.softmax = nn.Softmax(dim=1)
 
-    def forward(self, xp_list, p_fea, part_list_list):
-        context_list = []
-        F_dep_list =[]
-        for i in range(len(xp_list)):
-            context = self.F_cont[i](p_fea, xp_list[i])
-            co_bg, co_context = torch.split(context, self.hidden_dim, dim=1)
-            F_dep_list.append(co_context)
-            context_list.append(context)
+    def forward(self, xp_list, p_fea, node_pairs, p_att_list):
+        F_dep_list =[self.F_cont[i](p_fea, xp_list[i], node_pairs[i], p_att_list, xp_list) for i in range(len(node_pairs))]
 
-        att_list = [self.att_list[i](F_dep_list[i]) for i in range(len(xp_list))]
-        context_att_list = [self.context_att_list[i](context_list[i]) for i in range(len(xp_list))]
-        att_list_list = [list(torch.split(self.softmax(att_list[i]), 1, dim=1)) for i in range(len(xp_list))]
+        att_list = [self.att_list[i](F_dep_list[i]) for i in range(len(node_pairs))]
+        context_att_list = [self.context_att_list[i](F_dep_list[i]) for i in range(len(node_pairs))]
+        att_list_list = [list(torch.split(self.softmax(att_list[i]), 1, dim=1)) for i in range(len(node_pairs))]
         return F_dep_list, att_list_list, att_list, context_att_list
 
 
@@ -163,7 +135,7 @@ class Part_Dependency(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10):
         super(Part_Dependency, self).__init__()
         self.R_dep = nn.Sequential(
-            nn.Conv2d(2*hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(in_dim + hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
@@ -328,18 +300,18 @@ class Part_Graph(nn.Module):
         self.lower_part_list = lower_part_list
         self.edge_index = torch.nonzero(adj_matrix)
         self.edge_index_num = self.edge_index.shape[0]
-        self.part_pairs = []
+        self.node_pairs = []
         for i in range(self.edge_index_num):
             if self.edge_index[i, 0]<self.edge_index[i, 1]:
-                self.part_pairs.append([self.edge_index[i, 0], self.edge_index[i, 1]])
+                self.node_pairs.append([self.edge_index[i, 0], self.edge_index[i, 1]])
 
         self.decomp_hpu_list = Decomposition(hidden_dim, parts=len(upper_part_list))
         self.decomp_hpl_list = Decomposition(hidden_dim, parts=len(lower_part_list))
         self.F_dep_list = Contexture(in_dim=in_dim, hidden_dim=hidden_dim, parts=self.cls_p - 1, part_list_list=self.part_list_list)
-        self.part_dp = Part_Dependency(in_dim, hidden_dim)
+        self.part_dp = nn.ModuleList([Part_Dependency(in_dim, hidden_dim) for i in range(self.edge_index_num)])
         self.node_update_list = nn.ModuleList([conv_Update(hidden_dim) for i in range(self.cls_p - 1)])
 
-    def forward(self, xf, xh_list, xp_list, xp):
+    def forward(self, xf, xh_list, xp_list, xp, p_att_list):
         # upper half
         upper_parts = []
         for part in self.upper_part_list:
@@ -351,13 +323,15 @@ class Part_Graph(nn.Module):
         decomp_pu_list, decomp_pu_att_list, decomp_pu_att_map = self.decomp_hpu_list(xh_list[0], upper_parts)
         decomp_pl_list, decomp_pl_att_list, decomp_pl_att_map = self.decomp_hpl_list(xh_list[1], lower_parts)
 
-        F_dep_list, att_list_list, Fdep_att_list, context_att_list = self.F_dep_list(xp_list, xp, self.part_list_list)
+        F_dep_list, att_list_list, Fdep_att_list, context_att_list = self.F_dep_list(xp_list, xp, self.node_pairs, p_att_list)
 
         xpp_list_list = [[] for i in range(self.cls_p - 1)]
-        for i in range(self.edge_index_num):
-            xpp_list_list[self.edge_index[i, 1]].append(
-                self.part_dp(att_list_list[self.edge_index[i, 0]][1+self.part_list_list[self.edge_index[i, 0]].index(self.edge_index[i, 1])] *
-                    F_dep_list[self.edge_index[i, 0]], xp_list[self.edge_index[i, 1]]))
+        for i in range(len(self.node_pairs)):
+            xpp_list_list[self.node_pairs[i][0]].append(
+                self.part_dp[2 * i](att_list_list[i][1] * F_dep_list[i], xp_list[self.node_pairs[i][0]]))
+            xpp_list_list[self.node_pairs[i][1]].append(
+                self.part_dp[2 * i+1](att_list_list[i][2] * F_dep_list[i], xp_list[self.node_pairs[i][1]]))
+
         xp_list_new = []
         for i in range(self.cls_p - 1):
             if i + 1 in self.upper_part_list:
@@ -398,7 +372,7 @@ class GNN(nn.Module):
         # for half body node
         xh_list_new, decomp_fh_att_map = self.half_infer(xf, xh_list, xp_list, f_att_list, h_att_list, p_att_list)
         # for part node
-        xp_list_new, decomp_up_att_map, decomp_lp_att_map, Fdep_att_list, context_att_list = self.part_infer(xf, xh_list, xp_list, xp)
+        xp_list_new, decomp_up_att_map, decomp_lp_att_map, Fdep_att_list, context_att_list = self.part_infer(xf, xh_list, xp_list, xp, p_att_list)
 
         return xp_list_new, xh_list_new, xf_new, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, Fdep_att_list, context_att_list
 

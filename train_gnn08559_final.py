@@ -14,11 +14,11 @@ from torch.utils import data
 
 from dataset.dataloader import DataGenerator
 # from dataset.datasets import DatasetGenerator
-from network.gnn08559_final2 import get_model
+from network.gnn08559_final import get_model
 # from network.abrnet import get_model
 from progress.bar import Bar
 # from utils.aaf_lovasz_loss import gnn_ABRLovaszLoss as ABRLovaszLoss
-from utils.aaf_lovasz_loss import ABRLovaszLoss_List_att_final4 as ABRLovaszLoss
+from utils.aaf_lovasz_loss import ABRLovaszLoss_List_att_final3 as ABRLovaszLoss
 from utils.metric import *
 from utils.parallel import DataParallelModel, DataParallelCriterion
 from utils.visualize import inv_preprocess, decode_predictions
