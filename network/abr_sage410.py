@@ -46,44 +46,44 @@ class Decomposition(nn.Module):
         decomp_fh = self.conv_fh2(conv_fh)*att
         return decomp_fh, att
 
-# class conv_Update(nn.Module):
-#     def __init__(self, hidden_dim=10, paths_len=3):
-#         super(conv_Update, self).__init__()
-#         self.hidden_dim = hidden_dim
-#         self.conv_update = nn.Sequential(
-#             DFConv2d(
-#                 (paths_len+1) * hidden_dim,
-#                 2 * hidden_dim,
-#                 with_modulated_dcn=True,
-#                 kernel_size=3,
-#                 stride=1,
-#                 groups=1,
-#                 dilation=1,
-#                 deformable_groups=1,
-#                 bias=False
-#             ), BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
-#             DFConv2d(
-#                 2 * hidden_dim,
-#                 hidden_dim,
-#                 with_modulated_dcn=True,
-#                 kernel_size=3,
-#                 stride=1,
-#                 groups=1,
-#                 dilation=1,
-#                 deformable_groups=1,
-#                 bias=False
-#             ), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
-#         )
+class conv_Update(nn.Module):
+    def __init__(self, hidden_dim=10, paths_len=3):
+        super(conv_Update, self).__init__()
+        self.hidden_dim = hidden_dim
+        self.conv_update = nn.Sequential(
+            DFConv2d(
+                (paths_len+1) * hidden_dim,
+                2 * hidden_dim,
+                with_modulated_dcn=True,
+                kernel_size=3,
+                stride=1,
+                groups=1,
+                dilation=1,
+                deformable_groups=1,
+                bias=False
+            ), BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
+            DFConv2d(
+                2 * hidden_dim,
+                hidden_dim,
+                with_modulated_dcn=True,
+                kernel_size=3,
+                stride=1,
+                groups=1,
+                dilation=1,
+                deformable_groups=1,
+                bias=False
+            ), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
+        )
 
-#         self.gamma = nn.Parameter(torch.zeros(1))
-#         self.relu = nn.ReLU()
+        self.gamma = nn.Parameter(torch.zeros(1))
+        self.relu = nn.ReLU()
 
-#     def forward(self, x, message_list):
-#         if len(message_list)>1:
-#             out = self.conv_update(torch.cat([x]+message_list, dim=1))
-#         else:
-#             out = self.conv_update(torch.cat([x, message_list[0]], dim=1))
-#         return self.relu(self.gamma*x+out)
+    def forward(self, x, message_list):
+        if len(message_list)>1:
+            out = self.conv_update(torch.cat([x]+message_list, dim=1))
+        else:
+            out = self.conv_update(torch.cat([x, message_list[0]], dim=1))
+        return self.relu(self.gamma*x+out)
 
 class Part_Dependency(nn.Module):
     def __init__(self, hidden_dim=10):
@@ -123,40 +123,40 @@ class Part_Dependency(nn.Module):
         A_diffuse_att = (2 - A_att) * A_diffuse
         return A_diffuse_att
 
-class ConvGRU(nn.Module):
-    def __init__(self, input_dim, hidden_dim, inputs_num):
-        super(ConvGRU, self).__init__()
-        self.hidden_dim = hidden_dim
-        self.inputs_num = inputs_num
-
-        self.conv_gates = nn.Conv2d(input_dim*inputs_num + hidden_dim, inputs_num+2, kernel_size=1, padding=0, stride=1, bias=True)
-        self.gammas = nn.Parameter(torch.ones(inputs_num))
-        nn.init.orthogonal_(self.conv_gates.weight)
-        nn.init.constant_(self.conv_gates.bias, 0.)
-
-    def forward(self, input_list, h_cur):
-        combined = torch.cat(input_list + [h_cur], dim=1)
-        combined_conv = self.conv_gates(combined)
-
-        gates_list = torch.split(torch.sigmoid(combined_conv), 1, dim=1)
-        update_gate = gates_list[-1]
-
-        cc_cnm = h_cur*(1-gates_list[-2])+sum([input_list[i]*gates_list[i]*self.gammas[i] for i in range(self.inputs_num)])
-        cnm = torch.tanh(cc_cnm)
-        h_next = (1 - update_gate) * h_cur + update_gate * cnm
-        return h_next
-
-class conv_Update(nn.Module):
-    def __init__(self, in_dim, hidden_dim=10, inputs_num=1):
-        super(conv_Update, self).__init__()
-        self.hidden_dim = hidden_dim
-        self.update = ConvGRU(input_dim=in_dim,
-                              hidden_dim=hidden_dim,
-                              inputs_num=inputs_num)
-
-    def forward(self, x, message_list):
-        out = self.update(message_list, x)
-        return out
+# class ConvGRU(nn.Module):
+#     def __init__(self, input_dim, hidden_dim, inputs_num):
+#         super(ConvGRU, self).__init__()
+#         self.hidden_dim = hidden_dim
+#         self.inputs_num = inputs_num
+#
+#         self.conv_gates = nn.Conv2d(input_dim*inputs_num + hidden_dim, inputs_num+2, kernel_size=1, padding=0, stride=1, bias=True)
+#         self.gammas = nn.Parameter(torch.ones(inputs_num))
+#         nn.init.orthogonal_(self.conv_gates.weight)
+#         nn.init.constant_(self.conv_gates.bias, 0.)
+#
+#     def forward(self, input_list, h_cur):
+#         combined = torch.cat(input_list + [h_cur], dim=1)
+#         combined_conv = self.conv_gates(combined)
+#
+#         gates_list = torch.split(torch.sigmoid(combined_conv), 1, dim=1)
+#         update_gate = gates_list[-1]
+#
+#         cc_cnm = h_cur*(1-gates_list[-2])+sum([input_list[i]*gates_list[i]*self.gammas[i] for i in range(self.inputs_num)])
+#         cnm = torch.tanh(cc_cnm)
+#         h_next = (1 - update_gate) * h_cur + update_gate * cnm
+#         return h_next
+#
+# class conv_Update(nn.Module):
+#     def __init__(self, in_dim, hidden_dim=10, inputs_num=1):
+#         super(conv_Update, self).__init__()
+#         self.hidden_dim = hidden_dim
+#         self.update = ConvGRU(input_dim=in_dim,
+#                               hidden_dim=hidden_dim,
+#                               inputs_num=inputs_num)
+#
+#     def forward(self, x, message_list):
+#         out = self.update(message_list, x)
+#         return out
 class DecoderModule(nn.Module):
 
     def __init__(self, num_classes):
