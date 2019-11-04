@@ -92,7 +92,7 @@ class Dep_Context(nn.Module):
         super(Dep_Context, self).__init__()
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
-        self.W = nn.Parameter(torch.ones(hidden_dim, hidden_dim))
+        self.W = nn.Parameter(torch.ones(in_dim, hidden_dim))
         self.gamma = nn.Parameter(torch.ones(1))
         # self.att = node_att()
         self.sigmoid = nn.Sigmoid()
@@ -101,19 +101,19 @@ class Dep_Context(nn.Module):
         self.project = nn.Sequential(nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
                                      BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
                                      )
-        self.img_conv = nn.Sequential(nn.Conv2d(parts*hidden_dim + 8, hidden_dim, kernel_size=1, stride=1, padding=0, bias=True))
-        self.node_conv = nn.Sequential(nn.Conv2d(hidden_dim + 8, hidden_dim, kernel_size=1, stride=1, padding=0, bias=True))
-    def forward(self, p_fea, hu, xp_list):
+        self.img_conv = nn.Sequential(nn.Conv2d(in_dim + 8, in_dim, kernel_size=1, stride=1, padding=0, bias=True))
+        self.node_conv = nn.Sequential(nn.Conv2d(parts*hidden_dim + 8, hidden_dim, kernel_size=1, stride=1, padding=0, bias=True))
+    def forward(self, p_fea, hu, dp_list):
         n, c, h, w = p_fea.size()
         # att_hu = self.att(hu)
         # hu = att_hu * hu
         # coord_fea = torch.from_numpy(generate_spatial_batch(n,h,w)).to(p_fea.device).view(n,-1,8) #n,hw,8
         coord_fea = self.coord_fea.to(p_fea.device).repeat((n, 1, 1, 1)).permute(0,3,1,2)
-        cross_model_fea = torch.cat(xp_list+[coord_fea], dim=1)
+        cross_model_fea = torch.cat([p_fea, coord_fea], dim=1)
         query = self.img_conv(cross_model_fea)
         # print(query.shape)
         project1 = torch.matmul(query.view(n, -1, h*w).permute(0, 2, 1), self.W)  # n,hw,hidden
-        energy = torch.matmul(project1, self.node_conv(torch.cat([hu, coord_fea], dim=1)).view(n, -1, h*w))  # n,hw,hw
+        energy = torch.matmul(project1, self.node_conv(torch.cat(dp_list+[coord_fea], dim=1)).view(n, -1, h*w))  # n,hw,hw
         attention = torch.softmax(energy, dim=1)
         co_context = torch.bmm(self.project(p_fea).view(n, -1, h*w), attention).view(n, -1, h, w)
 
@@ -126,7 +126,7 @@ class Contexture(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, parts=6, part_list_list=None):
         super(Contexture, self).__init__()
 
-        self.F_cont = nn.ModuleList([Dep_Context(in_dim, hidden_dim) for i in range(len(part_list_list))])
+        self.F_cont = nn.ModuleList([Dep_Context(in_dim, hidden_dim, parts=len(part_list_list[i])) for i in range(len(part_list_list))])
         self.parts = parts
         self.att_list = nn.ModuleList([nn.Sequential(
             nn.Conv2d(hidden_dim, len(part_list_list[i])+ 1, kernel_size=1, padding=0, stride=1, bias=True),
@@ -135,7 +135,8 @@ class Contexture(nn.Module):
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, xp_list, p_fea, part_list_list):
-        F_dep_list = [self.F_cont[i](p_fea, xp_list[i], xp_list) for i in range(len(xp_list))]
+        dp_list_list = [[xp_list[j] for j in part_list_list[i]] for i in range(len(xp_list))]
+        F_dep_list = [self.F_cont[i](p_fea, xp_list[i], dp_list_list[i]) for i in range(len(xp_list))]
         att_list = [self.att_list[i](F_dep_list[i]) for i in range(len(xp_list))]
         att_list_list = [list(torch.split(self.softmax(att_list[i]), 1, dim=1)) for i in range(len(xp_list))]
         return F_dep_list, att_list_list, att_list
