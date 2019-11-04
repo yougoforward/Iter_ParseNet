@@ -92,7 +92,7 @@ class Dep_Context(nn.Module):
         super(Dep_Context, self).__init__()
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
-        self.W = nn.Parameter(torch.ones(in_dim, hidden_dim))
+        self.W = nn.Parameter(torch.ones(in_dim, parts*hidden_dim))
         self.gamma = nn.Parameter(torch.ones(1))
         # self.att = node_att()
         self.sigmoid = nn.Sigmoid()
@@ -100,10 +100,10 @@ class Dep_Context(nn.Module):
         self.coord_fea = torch.from_numpy(generate_spatial_batch(60, 60))
         self.maxpool = nn.AdaptiveMaxPool2d(1)
         self.project = nn.Sequential(nn.Conv2d(in_dim, parts*hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-                                     BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
+                                     BatchNorm2d(parts*hidden_dim), nn.ReLU(inplace=False)
                                      )
         self.img_conv = nn.Sequential(nn.Conv2d(in_dim + 8, in_dim, kernel_size=1, stride=1, padding=0, bias=True))
-        self.node_conv = nn.Sequential(nn.Conv2d(parts*hidden_dim + 8, hidden_dim, kernel_size=1, stride=1, padding=0, bias=True))
+        self.node_conv = nn.Sequential(nn.Conv2d(parts*hidden_dim + 8, parts*hidden_dim, kernel_size=1, stride=1, padding=0, bias=True))
     def forward(self, p_fea, hu, dp_list):
         n, c, h, w = p_fea.size()
         # att_hu = self.att(hu)
