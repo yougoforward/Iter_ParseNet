@@ -335,7 +335,7 @@ class Part_Graph(nn.Module):
                 # message = decomp_pl_list[self.lower_part_list.index(i + 1)] + sum(xpp_list_list[i])
                 #
                 message = decomp_pl_list[self.lower_part_list.index(i + 1)]
-            xp_list_new.append(self.node_update_list[i](xp_list[i], [message]))
+            xp_list_new.append(self.node_update_list[i](xp_list[i], message))
         return xp_list_new, decomp_pu_att_map, decomp_pl_att_map
 
 
