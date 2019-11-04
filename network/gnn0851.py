@@ -407,6 +407,8 @@ class GNN_infer(nn.Module):
                       bias=True)
 
         self.softmax = nn.Softmax(dim=1)
+        self.final_cls = Final_classifer(in_dim, hidden_dim, cls_p, cls_h, cls_f)
+
     def forward(self, xp, xh, xf, xl):
         # _, _, th, tw = xp.size()
         # _, _, h, w = xh.size()
@@ -440,7 +442,10 @@ class GNN_infer(nn.Module):
         h_seg_new = torch.cat([node_seg_list_new[0]] + node_seg_list_new[2:4], dim=1)
         p_seg_new = torch.cat([node_seg_list_new[0]] + node_seg_list_new[4:], dim=1)
 
-        return [p_seg, p_seg_new], [h_seg, h_seg_new], [f_seg, f_seg_new], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map]
+        # xphf_infer =torch.cat([node, node_new], dim=1)
+        xphf_infer = node_new
+        p_seg_final, h_seg_final, f_seg_final = self.final_cls(xphf_infer, xp, xh, xf, xl)
+        return [p_seg, p_seg_new, p_seg_final], [h_seg, h_seg_new, h_seg_final], [f_seg, f_seg_new, f_seg_final], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map]
 
 
 class Decoder(nn.Module):
@@ -497,3 +502,65 @@ def get_model(num_classes=20):
     model = OCNet(Bottleneck, [3, 4, 23, 3], num_classes)  # 101
     # model = OCNet(Bottleneck, [3, 8, 36, 3], num_classes)  #152
     return model
+
+class Final_classifer(nn.Module):
+    def __init__(self, in_dim=256, hidden_dim=20,  cls_p=7, cls_h=3, cls_f=2):
+        super(Final_classifer, self).__init__()
+        self.cp = cls_p
+        self.ch = cls_h
+        self.cf = cls_f
+        self.ch_in = in_dim
+
+        # classifier
+        self.conv0 = nn.Sequential(DFConv2d(
+                in_dim+(cls_p + cls_h + cls_f - 2) * hidden_dim,
+                in_dim,
+                with_modulated_dcn=True,
+                kernel_size=3,
+                stride=1,
+                groups=1,
+                dilation=1,
+                deformable_groups=1,
+                bias=False
+            ), BatchNorm2d(in_dim), nn.ReLU(inplace=False),
+            DFConv2d(
+                in_dim,
+                in_dim,
+                with_modulated_dcn=True,
+                kernel_size=3,
+                stride=1,
+                groups=1,
+                dilation=1,
+                deformable_groups=1,
+                bias=False
+            ), BatchNorm2d(in_dim), nn.ReLU(inplace=False)
+        )
+
+        self.conv2 = nn.Sequential(nn.Conv2d(in_dim, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
+                                   BatchNorm2d(48), nn.ReLU(inplace=False))
+
+        self.conv3 = nn.Sequential(nn.Conv2d(in_dim + 48, in_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+                                   BatchNorm2d(in_dim), nn.ReLU(inplace=False),
+                                   nn.Conv2d(in_dim, in_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+                                   BatchNorm2d(in_dim)
+                                   )
+        self.relu = nn.ReLU(inplace=False)
+        self.p_cls = nn.Conv2d(in_dim, cls_p, kernel_size=1, padding=0, dilation=1, bias=True)
+
+        # self.p_cls = nn.Sequential(nn.Conv2d(in_dim * 3 + (cls_p + cls_h + cls_f - 2) * hidden_dim, cls_p, kernel_size=1, padding=0, stride=1, bias=True))
+        self.h_cls = nn.Sequential(nn.Conv2d(in_dim+(cls_p + cls_h + cls_f - 2) * hidden_dim, cls_h, kernel_size=1, padding=0, stride=1, bias=True))
+        self.f_cls = nn.Sequential(nn.Conv2d(in_dim+(cls_p + cls_h + cls_f - 2) * hidden_dim, cls_f, kernel_size=1, padding=0, stride=1, bias=True))
+
+    def forward(self, xphf, xp, xh, xf, xl):
+        # classifier
+        _, _, th, tw = xl.size()
+        xt = F.interpolate(self.conv0(torch.cat([xphf, xp], dim=1)), size=(th, tw), mode='bilinear', align_corners=True)
+        xl = self.conv2(xl)
+        x = torch.cat([xt, xl], dim=1)
+        x_fea = self.relu(self.conv3(x)+xt)
+
+        xp_seg = self.p_cls(x_fea)
+        xh_seg = self.h_cls(torch.cat([xphf, xh], dim=1))
+        xf_seg = self.f_cls(torch.cat([xphf, xf], dim=1))
+
+        return xp_seg, xh_seg, xf_seg
