@@ -88,7 +88,7 @@ def generate_spatial_batch(featmap_H, featmap_W):
 
 
 class Dep_Context(nn.Module):
-    def __init__(self, in_dim=256, hidden_dim=10):
+    def __init__(self, in_dim=256, hidden_dim=10, parts=6):
         super(Dep_Context, self).__init__()
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
@@ -101,17 +101,16 @@ class Dep_Context(nn.Module):
         self.project = nn.Sequential(nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
                                      BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
                                      )
-        self.img_conv = nn.Sequential(nn.Conv2d(in_dim+8, in_dim+8, kernel_size=1, stride=1, padding=0, bias=True),
-        BatchNorm2d(in_dim+8), nn.ReLU(inplace=False))
-        self.node_conv = nn.Sequential(nn.Conv2d(hidden_dim + 8, hidden_dim+8, kernel_size=1, stride=1, padding=0, bias=True),
-        BatchNorm2d(hidden_dim+8), nn.ReLU(inplace=False))
-    def forward(self, p_fea, hu):
+        self.img_conv = nn.Sequential(nn.Conv2d(in_dim + parts*hidden_dim + 8, in_dim+8, kernel_size=1, stride=1, padding=0, bias=True))
+        self.node_conv = nn.Sequential(nn.Conv2d(hidden_dim + 8, hidden_dim+8, kernel_size=1, stride=1, padding=0, bias=True))
+    def forward(self, p_fea, hu, xp_list):
         n, c, h, w = p_fea.size()
         # att_hu = self.att(hu)
         # hu = att_hu * hu
         # coord_fea = torch.from_numpy(generate_spatial_batch(n,h,w)).to(p_fea.device).view(n,-1,8) #n,hw,8
         coord_fea = self.coord_fea.to(p_fea.device).repeat((n, 1, 1, 1)).permute(0,3,1,2)
-        query = self.img_conv(torch.cat([p_fea, coord_fea], dim=1))
+        cross_model_fea = torch.cat(xp_list+[p_fea, coord_fea], dim=1)
+        query = self.img_conv(cross_model_fea)
         # print(query.shape)
         project1 = torch.matmul(query.view(n, -1, h*w).permute(0, 2, 1), self.W)  # n,hw,hidden
         energy = torch.matmul(project1, self.node_conv(torch.cat([hu, coord_fea], dim=1)).view(n, -1, h*w))  # n,hw,hw
