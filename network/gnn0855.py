@@ -101,7 +101,7 @@ class Dep_Context(nn.Module):
         self.project = nn.Sequential(nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
                                      BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
                                      )
-        self.img_conv = nn.Sequential(nn.Conv2d(parts*hidden_dim + 8, in_dim+8, kernel_size=1, stride=1, padding=0, bias=True))
+        self.img_conv = nn.Sequential(nn.Conv2d(parts*hidden_dim + 8, parts*hidden_dim+8, kernel_size=1, stride=1, padding=0, bias=True))
         self.node_conv = nn.Sequential(nn.Conv2d(hidden_dim + 8, hidden_dim+8, kernel_size=1, stride=1, padding=0, bias=True))
     def forward(self, p_fea, hu, xp_list):
         n, c, h, w = p_fea.size()
