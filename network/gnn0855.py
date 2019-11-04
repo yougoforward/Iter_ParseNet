@@ -133,7 +133,7 @@ class Contexture(nn.Module):
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, xp_list, p_fea, part_list_list):
-        F_dep_list = [self.F_cont[i](p_fea, xp_list[i]) for i in range(len(xp_list))]
+        F_dep_list = [self.F_cont[i](p_fea, xp_list[i], xp_list) for i in range(len(xp_list))]
         att_list = [self.att_list[i](F_dep_list[i]) for i in range(len(xp_list))]
         att_list_list = [list(torch.split(self.softmax(att_list[i]), 1, dim=1)) for i in range(len(xp_list))]
         return F_dep_list, att_list_list, att_list
