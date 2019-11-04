@@ -96,9 +96,10 @@ class Dep_Context(nn.Module):
         self.gamma = nn.Parameter(torch.ones(1))
         # self.att = node_att()
         self.sigmoid = nn.Sigmoid()
+        self.parts =parts
         self.coord_fea = torch.from_numpy(generate_spatial_batch(60, 60))
         self.maxpool = nn.AdaptiveMaxPool2d(1)
-        self.project = nn.Sequential(nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+        self.project = nn.Sequential(nn.Conv2d(in_dim, parts*hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
                                      BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
                                      )
         self.img_conv = nn.Sequential(nn.Conv2d(in_dim + 8, in_dim, kernel_size=1, stride=1, padding=0, bias=True))
@@ -117,9 +118,10 @@ class Dep_Context(nn.Module):
         attention = torch.softmax(energy, dim=1)
         # co_context = torch.bmm(self.project(p_fea).view(n, -1, h*w), attention).view(n, -1, h, w)
 
-        co_context = self.gamma*torch.bmm(p_fea.view(n, -1, h*w), attention).view(n, -1, h, w) + p_fea
-        co_context = self.project(co_context)
-        return co_context
+        co_context0 = torch.bmm(p_fea.view(n, -1, h*w), attention).view(n, -1, h, w)
+        co_context = self.project(co_context0)+torch.cat(dp_list, dim=1)
+        co_context_list = torch.split(co_context, self.hidden_dim, 1)
+        return co_context0, co_context_list
 
 
 class Contexture(nn.Module):
@@ -129,17 +131,23 @@ class Contexture(nn.Module):
         self.F_cont = nn.ModuleList([Dep_Context(in_dim, hidden_dim, parts=len(part_list_list[i])) for i in range(len(part_list_list))])
         self.parts = parts
         self.att_list = nn.ModuleList([nn.Sequential(
-            nn.Conv2d(hidden_dim, len(part_list_list[i])+ 1, kernel_size=1, padding=0, stride=1, bias=True),
+            nn.Conv2d(in_dim, len(part_list_list[i])+ 1, kernel_size=1, padding=0, stride=1, bias=True),
         ) for i in range(len(part_list_list))])
 
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, xp_list, p_fea, part_list_list):
         dp_list_list = [[xp_list[j] for j in part_list_list[i]] for i in range(len(xp_list))]
-        F_dep_list = [self.F_cont[i](p_fea, xp_list[i], dp_list_list[i]) for i in range(len(xp_list))]
+        context_list_list = []
+        F_dep_list = []
+        
+        for i in range(len(xp_list)):
+            F_dep, context_list = self.F_cont[i](p_fea, xp_list[i], dp_list_list[i])
+            F_dep_list.append(F_dep)
+            context_list_list.append(context_list)
         att_list = [self.att_list[i](F_dep_list[i]) for i in range(len(xp_list))]
         att_list_list = [list(torch.split(self.softmax(att_list[i]), 1, dim=1)) for i in range(len(xp_list))]
-        return F_dep_list, att_list_list, att_list
+        return context_list_list, att_list_list, att_list
 
 
 class Part_Dependency(nn.Module):
@@ -339,7 +347,7 @@ class Part_Graph(nn.Module):
         for i in range(self.edge_index_num):
             xpp_list_list[self.edge_index[i, 1]].append(
                 self.part_dp(att_list_list[self.edge_index[i, 0]][1+self.part_list_list[self.edge_index[i, 0]].index(self.edge_index[i, 1])] *
-                    F_dep_list[self.edge_index[i, 0]], xp_list[self.edge_index[i, 1]]))
+                    F_dep_list[self.edge_index[i, 0]][self.part_list_list[self.edge_index[i, 0]].index(self.edge_index[i, 1])], xp_list[self.edge_index[i, 1]]))
         xp_list_new = []
         for i in range(self.cls_p - 1):
             if i + 1 in self.upper_part_list:
