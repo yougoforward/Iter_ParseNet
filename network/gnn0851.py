@@ -28,7 +28,7 @@ class Composition(nn.Module):
         # com_att = torch.max(torch.stack(xp_att_list, dim=1), dim=1, keepdim=False)[0]
         com_att = sum(xp_att_list)
         xph_message = sum([self.conv_ch(torch.cat([xh, xp * com_att], dim=1)) for xp in xp_list])
-        return xph_message
+        return xph_message, com_att
 
 
 class Decomposition(nn.Module):
@@ -243,7 +243,7 @@ class Full_Graph(nn.Module):
     def forward(self, xf, xh_list, xp_list, f_att_list, h_att_list, p_att_list):
         comp_h, com_f_att= self.comp_h(xf, xh_list, h_att_list[1:3])
         xf = self.conv_Update(xf, comp_h)
-        return xf, com_f_att
+        return xf
 
 
 class Half_Graph(nn.Module):
