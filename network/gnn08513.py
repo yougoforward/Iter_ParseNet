@@ -496,7 +496,9 @@ class Final_classifer(nn.Module):
         self.cls = nn.Sequential(
             nn.Conv2d((cls_f+cls_h+cls_p-2)*hidden_dim + 48, in_dim, kernel_size=3, padding=1, dilation=1, bias=False),
             BatchNorm2d(in_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(in_dim, (cls_f+cls_h+cls_p-2)*hidden_dim, groups= (cls_f+cls_h+cls_p-2), kernel_size=3, padding=1, dilation=1, bias=False),
+            nn.Conv2d(in_dim, in_dim, kernel_size=3, padding=1, dilation=1, bias=False),
+            BatchNorm2d(in_dim), nn.ReLU(inplace=False),
+            nn.Conv2d(in_dim, (cls_f+cls_h+cls_p-2)*hidden_dim, kernel_size=1, padding=0, dilation=1, bias=False),
             BatchNorm2d((cls_f+cls_h+cls_p-2)*hidden_dim), nn.ReLU(inplace=False),
         ) 
     def forward(self, node_list, xl):
