@@ -456,32 +456,6 @@ class GNN_infer(nn.Module):
         return [p_seg, p_seg_new, p_seg_final], [h_seg, h_seg_new, h_seg_final], [f_seg, f_seg_new, f_seg_final], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map]
         # return [sum([p_seg, p_seg_new])/2, p_seg_final], [sum([h_seg, h_seg_new])/2, h_seg_final], [sum([f_seg, f_seg_new])/2, f_seg_final], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map]
 
-# class Final_classifer(nn.Module):
-#     def __init__(self, in_dim=256, hidden_dim=20, cls_p=7, cls_h=3, cls_f=2):
-#         super(Final_classifer, self).__init__()
-#         self.cp = cls_p
-#         self.ch = cls_h
-#         self.cf = cls_f
-#         self.ch_in = in_dim
-
-#         # classifier
-#         self.conv2 = nn.Sequential(nn.Conv2d(in_dim, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
-#                                    BatchNorm2d(48), nn.ReLU(inplace=False))
-#         self.cls = nn.ModuleList([nn.Sequential(
-#             nn.Conv2d(hidden_dim + 48, hidden_dim, kernel_size=3, padding=1, dilation=1, bias=False),
-#             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-#             nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=1, dilation=1, bias=False),
-#             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
-#         ) for i in range(cls_p+cls_h+cls_f-2)])
-#     def forward(self, node_list, xl):
-#         # classifier
-#         _, _, th, tw = xl.size()
-#         node_list = [F.interpolate(node, size=(th, tw), mode='bilinear', align_corners=True) for node in node_list]
-#         xl = self.conv2(xl)
-#         node_list = [self.cls[i](torch.cat([xl, node_list[i]], dim=1)) for i in range(self.cp+self.ch+self.cf-2)]
-#         out = torch.cat(node_list, dim=1)
-#         return out
-
 class Final_classifer(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=20, cls_p=7, cls_h=3, cls_f=2):
         super(Final_classifer, self).__init__()
@@ -493,21 +467,47 @@ class Final_classifer(nn.Module):
         # classifier
         self.conv2 = nn.Sequential(nn.Conv2d(in_dim, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(48), nn.ReLU(inplace=False))
-        self.cls = nn.Sequential(
-            nn.Conv2d((cls_f+cls_h+cls_p-2)*hidden_dim + 48, in_dim, kernel_size=3, padding=1, dilation=1, bias=False),
-            BatchNorm2d(in_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(in_dim, in_dim, kernel_size=3, padding=1, dilation=1, bias=False),
-            BatchNorm2d(in_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(in_dim, (cls_f+cls_h+cls_p-2)*hidden_dim, kernel_size=1, padding=0, dilation=1, bias=False),
-            BatchNorm2d((cls_f+cls_h+cls_p-2)*hidden_dim), nn.ReLU(inplace=False),
-        ) 
+        self.cls = nn.ModuleList([nn.Sequential(
+            nn.Conv2d(hidden_dim + 48, hidden_dim, kernel_size=3, padding=1, dilation=1, bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=1, dilation=1, bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
+        ) for i in range(cls_p+cls_h+cls_f-2)])
     def forward(self, node_list, xl):
         # classifier
         _, _, th, tw = xl.size()
-        node_up = F.interpolate(torch.cat(node_list, dim=1), size=(th, tw), mode='bilinear', align_corners=True)
+        node_list = [F.interpolate(node, size=(th, tw), mode='bilinear', align_corners=True) for node in node_list]
         xl = self.conv2(xl)
-        refined_node = self.cls(torch.cat([node_up, xl], dim=1))
-        return refined_node
+        node_list = [self.cls[i](torch.cat([xl, node_list[i]], dim=1)) for i in range(self.cp+self.ch+self.cf-2)]
+        out = torch.cat(node_list, dim=1)
+        return out
+
+# class Final_classifer(nn.Module):
+#     def __init__(self, in_dim=256, hidden_dim=20, cls_p=7, cls_h=3, cls_f=2):
+#         super(Final_classifer, self).__init__()
+#         self.cp = cls_p
+#         self.ch = cls_h
+#         self.cf = cls_f
+#         self.ch_in = in_dim
+
+#         # classifier
+#         self.conv2 = nn.Sequential(nn.Conv2d(in_dim, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
+#                                    BatchNorm2d(48), nn.ReLU(inplace=False))
+#         self.cls = nn.Sequential(
+#             nn.Conv2d((cls_f+cls_h+cls_p-2)*hidden_dim + 48, in_dim, kernel_size=3, padding=1, dilation=1, bias=False),
+#             BatchNorm2d(in_dim), nn.ReLU(inplace=False),
+#             nn.Conv2d(in_dim, in_dim, kernel_size=3, padding=1, dilation=1, bias=False),
+#             BatchNorm2d(in_dim), nn.ReLU(inplace=False),
+#             nn.Conv2d(in_dim, (cls_f+cls_h+cls_p-2)*hidden_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+#             BatchNorm2d((cls_f+cls_h+cls_p-2)*hidden_dim), nn.ReLU(inplace=False),
+#         ) 
+#     def forward(self, node_list, xl):
+#         # classifier
+#         _, _, th, tw = xl.size()
+#         node_up = F.interpolate(torch.cat(node_list, dim=1), size=(th, tw), mode='bilinear', align_corners=True)
+#         xl = self.conv2(xl)
+#         refined_node = self.cls(torch.cat([node_up, xl], dim=1))
+#         return refined_node
 
 class Decoder(nn.Module):
     def __init__(self, num_classes=7, hbody_cls=3, fbody_cls=2):
