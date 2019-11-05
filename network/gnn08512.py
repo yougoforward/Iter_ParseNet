@@ -24,9 +24,9 @@ class Composition(nn.Module):
         )
     def forward(self, xh, xp_list, xp_att_list):
         com_att = sum(xp_att_list)
-        xp = torch.max(torch.stack(xp_list, dim=1), dim=1, keepdim=False)[0]
-        xph_message = self.conv_ch(torch.cat([xh, xp * com_att], dim=1))
-        # xph_message = sum([self.conv_ch(torch.cat([xh, xp * com_att], dim=1)) for xp in xp_list])
+        # xp = torch.max(torch.stack(xp_list, dim=1), dim=1, keepdim=False)[0]
+        # xph_message = self.conv_ch(torch.cat([xh, xp * com_att], dim=1))
+        xph_message = sum([self.conv_ch(torch.cat([xh, xp * com_att], dim=1)) for xp in xp_list])
         return xph_message
 
 

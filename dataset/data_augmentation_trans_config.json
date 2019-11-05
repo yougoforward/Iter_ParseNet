@@ -33,7 +33,7 @@
       "scale_search": [1.0]
     },
     "train_trans": {
-      "shuffle_trans_seq": ["random_contrast", "random_hue", "random_saturation", "random_brightness"],
+      "shuffle_trans_seq": ["random_contrast", "random_hue", "random_saturation", "random_brightness", "random_perm"],
       "trans_seq": ["random_rotate"],
       "random_saturation": {
           "ratio": 0.5,
