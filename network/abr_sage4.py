@@ -400,21 +400,21 @@ class GNN_infer(nn.Module):
         node_seg_final = self.node_cls_new(node_new)
         # node_seg_new2 = self.node_cls_new2(torch.cat([bg_node_new2, f_fea_new2] + h_fea_list_new2 + p_fea_list_new2, dim=1))
 
-        # node_seg = sum([node_seg, node_seg_final]) / 2.0
+        node_seg = sum([node_seg, node_seg_final]) / 2.0
 
         node_seg_list = list(torch.split(node_seg, 1, dim=1))
         f_seg = torch.cat(node_seg_list[0:2], dim=1)
         h_seg = torch.cat([node_seg_list[0]] + node_seg_list[2:4], dim=1)
         p_seg = torch.cat([node_seg_list[0]] + node_seg_list[4:], dim=1)
 
-        node_seg_list = list(torch.split(node_seg_final, 1, dim=1))
-        f_seg_final = torch.cat(node_seg_list[0:2], dim=1)
-        h_seg_final = torch.cat([node_seg_list[0]] + node_seg_list[2:4], dim=1)
-        p_seg_final = torch.cat([node_seg_list[0]] + node_seg_list[4:], dim=1)
+        # node_seg_list = list(torch.split(node_seg_final, 1, dim=1))
+        # f_seg_final = torch.cat(node_seg_list[0:2], dim=1)
+        # h_seg_final = torch.cat([node_seg_list[0]] + node_seg_list[2:4], dim=1)
+        # p_seg_final = torch.cat([node_seg_list[0]] + node_seg_list[4:], dim=1)
 
-        # xphf_infer =torch.cat([node, node_new], dim=1)
+        xphf_infer =torch.cat([node, node_new], dim=1)
         # xphf_infer = node_new
-        # p_seg_final, h_seg_final, f_seg_final = self.final_cls(xphf_infer, xp, xh, xf, xl)
+        p_seg_final, h_seg_final, f_seg_final = self.final_cls(xphf_infer, xp, xh, xf, xl)
 
         return p_seg_final, h_seg_final, f_seg_final, p_seg, h_seg, f_seg, att_decomp
 
