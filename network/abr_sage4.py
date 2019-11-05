@@ -372,7 +372,7 @@ class GNN_infer(nn.Module):
         self.node_cls_new = nn.Conv2d(hidden_dim*(cls_p+cls_h+cls_f-2), (cls_p+cls_h+cls_f-2), kernel_size=1, padding=0, stride=1, bias=True, groups=(cls_p+cls_h+cls_f-2))
         # self.node_cls_new2 = nn.Conv2d(self.hidden*(cls_p+cls_h+cls_f-2), (cls_p+cls_h+cls_f-2), kernel_size=1, padding=0, stride=1, bias=True, groups=(cls_p+cls_h+cls_f-2))
 
-        # self.final_cls = Final_classifer(in_dim, hidden_dim, cls_p, cls_h, cls_f)
+        self.final_cls = Final_classifer(in_dim, hidden_dim, cls_p, cls_h, cls_f)
 
 
     def forward(self, xp, xh, xf, xl):
