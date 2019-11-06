@@ -438,13 +438,19 @@ class GNN_infer(nn.Module):
         f_att_list = list(torch.split(self.softmax(f_seg), 1, dim=1))
         h_att_list = list(torch.split(self.softmax(h_seg), 1, dim=1))
         p_att_list = list(torch.split(self.softmax(p_seg), 1, dim=1))
+        decomp_fh_att_map = []
+        decomp_up_att_map = []
+        decomp_lp_att_map = []
 
         # gnn infer
-        p_fea_list_new, h_fea_list_new, f_fea_new, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map = self.gnn(p_node_list, h_node_list, f_node, xp, f_att_list, h_att_list, p_att_list)
+        p_fea_list_new, h_fea_list_new, f_fea_new, decomp_fh_att_map_new, decomp_up_att_map_new, decomp_lp_att_map_new = self.gnn(p_node_list, h_node_list, f_node, xp, f_att_list, h_att_list, p_att_list)
         # node supervision
         node_new = torch.cat([bg_node, f_fea_new] + h_fea_list_new + p_fea_list_new, dim=1)
         node_seg_new = self.node_cls_final(node_new)
         node_seg.append(node_seg_new)
+        decomp_fh_att_map.append(decomp_fh_att_map_new)
+        decomp_up_att_map.append(decomp_up_att_map_new)
+        decomp_lp_att_map.append(decomp_lp_att_map_new)
         # node_seg_list_new = list(torch.split(node_seg_new, 1, dim=1))
         # f_seg_new = torch.cat(node_seg_list_new[0:2], dim=1)
         # h_seg_new = torch.cat([node_seg_list_new[0]] + node_seg_list_new[2:4], dim=1)
@@ -470,7 +476,7 @@ class GNN_infer(nn.Module):
         # return [p_seg, p_seg_new, p_seg_final], [h_seg, h_seg_new, h_seg_final], [f_seg, f_seg_new, f_seg_final], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map]
 
         # return [p_seg, p_seg_new, p_seg_final], [h_seg, h_seg_new, h_seg_final], [f_seg, f_seg_new, f_seg_final], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map]
-        return [sum([p_seg, p_seg_final])/2], [sum([h_seg, h_seg_final])/2], [sum([f_seg, f_seg_final])/2], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map]
+        return [sum([p_seg, p_seg_final])/2], [sum([h_seg, h_seg_final])/2], [sum([f_seg, f_seg_final])/2], [sum(decomp_fh_att_map)/len(decomp_lp_att_map)], [sum(decomp_up_att_map)/len(decomp_lp_att_map)], [sum(decomp_lp_att_map)/len(decomp_lp_att_map)]
 
 # class Final_classifer(nn.Module):
 #     def __init__(self, in_dim=256, hidden_dim=20, cls_p=7, cls_h=3, cls_f=2):
