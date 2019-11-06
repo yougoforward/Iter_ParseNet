@@ -407,6 +407,12 @@ class GNN_infer(nn.Module):
         self.node_cls_final = nn.Conv2d(hidden_dim * (cls_p + cls_h + cls_f - 2), (cls_p + cls_h + cls_f - 2),
                                         kernel_size=1, padding=0, stride=1, bias=True,
                                         groups=(cls_p + cls_h + cls_f - 2))
+        self.node_cls_final2 = nn.Conv2d(hidden_dim * (cls_p + cls_h + cls_f - 2), (cls_p + cls_h + cls_f - 2),
+                                        kernel_size=1, padding=0, stride=1, bias=True,
+                                        groups=(cls_p + cls_h + cls_f - 2))
+        self.node_cls_final3 = nn.Conv2d(hidden_dim * (cls_p + cls_h + cls_f - 2), (cls_p + cls_h + cls_f - 2),
+                                        kernel_size=1, padding=0, stride=1, bias=True,
+                                        groups=(cls_p + cls_h + cls_f - 2))
         self.final_cls = Final_classifer(in_dim, hidden_dim, cls_p, cls_h, cls_f)
 
         self.softmax = nn.Softmax(dim=1)
@@ -437,7 +443,7 @@ class GNN_infer(nn.Module):
         p_fea_list_new, h_fea_list_new, f_fea_new, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map = self.gnn(p_node_list, h_node_list, f_node, xp, f_att_list, h_att_list, p_att_list)
         # node supervision
         node_new = torch.cat([f_fea_new] + h_fea_list_new + p_fea_list_new, dim=1)
-        node_seg_new = self.node_cls_final(torch.cat([bg_node, node_new], dim=1))
+        node_seg_new = self.node_cls_final2(torch.cat([bg_node, node_new], dim=1))
         node_seg_list_new = list(torch.split(node_seg_new, 1, dim=1))
         f_seg_new = torch.cat(node_seg_list_new[0:2], dim=1)
         h_seg_new = torch.cat([node_seg_list_new[0]] + node_seg_list_new[2:4], dim=1)
@@ -447,14 +453,14 @@ class GNN_infer(nn.Module):
         # node_new = torch.cat([bg_node]+[f_fea_new] + h_fea_list_new + p_fea_list_new, dim=1)
         node_final = self.final_cls([bg_node] + [f_fea_new] + h_fea_list_new + p_fea_list_new, xl)
 
-        node_seg_final = self.node_cls_final(node_final)
+        node_seg_final = self.node_cls_final3(node_final)
         node_seg_list_final = list(torch.split(node_seg_final, 1, dim=1))
         f_seg_final = torch.cat(node_seg_list_final[0:2], dim=1)
         h_seg_final = torch.cat([node_seg_list_final[0]] + node_seg_list_final[2:4], dim=1)
         p_seg_final = torch.cat([node_seg_list_final[0]] + node_seg_list_final[4:], dim=1)
 
-        return [p_seg, p_seg_new, p_seg_final], [h_seg, h_seg_new, h_seg_final], [f_seg, f_seg_new, f_seg_final], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map]
-        # return [sum([p_seg, p_seg_new])/2, p_seg_final], [sum([h_seg, h_seg_new])/2, h_seg_final], [sum([f_seg, f_seg_new])/2, f_seg_final], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map]
+        # return [p_seg, p_seg_new, p_seg_final], [h_seg, h_seg_new, h_seg_final], [f_seg, f_seg_new, f_seg_final], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map]
+        return [sum([p_seg, p_seg_new])/2, p_seg_final], [sum([h_seg, h_seg_new])/2, h_seg_final], [sum([f_seg, f_seg_new])/2, f_seg_final], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map]
 
 class Final_classifer(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=20, cls_p=7, cls_h=3, cls_f=2):
