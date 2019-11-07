@@ -1,4 +1,3 @@
-
 import argparse
 import os
 import random
@@ -15,11 +14,11 @@ from torch.utils import data
 
 from dataset.dataloader import DataGenerator
 # from dataset.datasets import DatasetGenerator
-from network.gnn085132 import get_model
+from network.gnn085133 import get_model
 # from network.abrnet import get_model
 from progress.bar import Bar
 # from utils.aaf_lovasz_loss import gnn_ABRLovaszLoss as ABRLovaszLoss
-from utils.aaf_lovasz_loss import ABRLovaszLoss_List_att1 as ABRLovaszLoss
+from utils.aaf_lovasz_loss import ABRLovaszLoss_List_att_full as ABRLovaszLoss
 from utils.metric import *
 from utils.parallel import DataParallelModel, DataParallelCriterion
 from utils.visualize import inv_preprocess, decode_predictions
