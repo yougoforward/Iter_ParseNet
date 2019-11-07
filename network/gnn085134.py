@@ -120,7 +120,7 @@ class Contexture(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, parts=6):
         super(Contexture, self).__init__()
         self.F_cont = nn.ModuleList(
-            [Dep_Context(in_dim, hidden_dim) for i in range(len(part_list_list))])
+            [Dep_Context(in_dim, hidden_dim) for i in range(parts)])
         self.F_cont = Dep_Context(in_dim, hidden_dim)
         self.parts = parts
         self.hidden_dim = hidden_dim
