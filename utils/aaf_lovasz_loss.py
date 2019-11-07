@@ -2338,8 +2338,8 @@ class ABRLovaszLoss_List_att(nn.Module):
             loss_hb.append(lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
                                       only_present=self.only_present))
         # loss_hb = sum(loss_hb[:-1])*0.1 + loss_hb[-1]
-        loss_hb = sum(loss_hb[:-1])/len(loss_hb[:-1]) + loss_hb[-1]
-        # loss_hb = sum(loss_hb)
+        # loss_hb = sum(loss_hb[:-1])/len(loss_hb[:-1]) + loss_hb[-1]
+        loss_hb = sum(loss_hb)/len(loss_hb)
 
         # full body
         loss_fb = []
@@ -2349,8 +2349,8 @@ class ABRLovaszLoss_List_att(nn.Module):
             loss_fb.append(lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
                                       only_present=self.only_present))
         # loss_fb = sum(loss_fb[:-1])*0.1 + loss_fb[-1]
-        loss_fb = sum(loss_fb[:-1])/len(loss_fb[:-1]) + loss_fb[-1]
-        # loss_fb = sum(loss_fb)
+        # loss_fb = sum(loss_fb[:-1])/len(loss_fb[:-1]) + loss_fb[-1]
+        loss_fb = sum(loss_fb)/len(loss_fb)
 
         #decomp fh
         loss_fh_att = []
