@@ -474,7 +474,7 @@ class GNN_infer(nn.Module):
         p_seg = torch.cat([node_seg_list[0]] + node_seg_list[4:], dim=1)
         p_seg = F.interpolate(p_seg, (th, tw), mode='bilinear', align_corners=True)
         xphf_infer = node_new
-        p_seg_final, h_seg_final, f_seg_final = self.final_cls(xphf_infer, xp, xh, xf, xl)
+        p_seg_final = self.final_cls(xphf_infer, xp, xh, xf, xl)
         # return [p_seg, p_seg_new, p_seg_final], [h_seg, h_seg_new, h_seg_final], [f_seg, f_seg_new, f_seg_final], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map]
 
         # return [p_seg, p_seg_new, p_seg_final], [h_seg, h_seg_new, h_seg_final], [f_seg, f_seg_new, f_seg_final], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map]
