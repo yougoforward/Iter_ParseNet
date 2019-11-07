@@ -355,8 +355,8 @@ class Part_Graph(nn.Module):
             elif i + 1 in self.lower_part_list:
                 # message = decomp_pl_list[self.lower_part_list.index(i + 1)] + sum(xpp_list_list[i])
                 message = decomp_pl_list[self.lower_part_list.index(i + 1)]
-            # message = message + self.part_dp(F_dep_list[i], xp_list[i])
-            message = message + F_dep_list[i]
+            message = message + self.part_dp(F_dep_list[i], xp_list[i])
+            # message = message + F_dep_list[i]
             xp_list_new.append(self.node_update_list[i](xp_list[i], message))
         return xp_list_new, decomp_pu_att_map, decomp_pl_att_map, torch.cat(F_dep_list, dim=1)
 
