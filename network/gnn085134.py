@@ -127,7 +127,7 @@ class Contexture(nn.Module):
         self.center_conv = nn.Conv1d(in_dim, in_dim//4, kernel_size=1, padding=0, stride=1, bias=True)
         self.img_conv = nn.Conv2d(in_dim, in_dim//4, kernel_size=1, padding=0, stride=1, bias=True)
         self.p_conv = nn.Sequential(
-            nn.Conv2d(in_dim, hidden_dim * parts, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2*in_dim, hidden_dim * parts, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim * parts), nn.ReLU(inplace=False))
     def forward(self, p_att_list, p_fea):
         n,c,h,w = p_fea.size()
@@ -138,8 +138,8 @@ class Contexture(nn.Module):
         energy = torch.bmm(query, key)# n, h*w, N
         attention = torch.softmax(energy, dim=-1)
         refine_fea = torch.bmm(center_fea, attention.permute(0,2,1)).view(n, c, h, w)
-        self.p_conv(refine_fea)
-        p_node_list = list(torch.split(self.p_conv(p_fea), self.hidden_dim, dim=1))
+        refine_fea = torch.cat([refine_fea, p_fea], dim=1)
+        p_node_list = list(torch.split(self.p_conv(refine_fea), self.hidden_dim, dim=1))
         return p_node_list
 
 
