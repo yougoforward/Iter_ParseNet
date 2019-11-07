@@ -2539,7 +2539,7 @@ class ABRLovaszLoss_List_att_dp(nn.Module):
             dp_loss.append(lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
         # dp_loss = sum(dp_loss[:-1])*0.1+dp_loss[-1]
         # dp_loss = sum(dp_loss[:-1])/len(dp_loss[:-1])+dp_loss[-1]
-        dp_loss = sum(dp_loss)/len(loss[:-1])
+        dp_loss = sum(dp_loss)/(sum(dp_loss)+1)
 
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
