@@ -429,7 +429,7 @@ class GNN_infer(nn.Module):
         bg_node = self.bg_conv(torch.cat([xp, xh, xf], dim=1))
         # node supervision
         node = torch.cat([bg_node, f_node] + h_node_list + p_node_list, dim=1)
-        node_seg = [self.node_cls_final(node)]
+        node_seg = self.node_cls_final(node)
         node_seg_list = list(torch.split(node_seg, 1, dim=1))
         f_seg = torch.cat(node_seg_list[0:2], dim=1)
         h_seg = torch.cat([node_seg_list[0]] + node_seg_list[2:4], dim=1)
@@ -441,7 +441,7 @@ class GNN_infer(nn.Module):
         decomp_fh_att_map = []
         decomp_up_att_map = []
         decomp_lp_att_map = []
-
+        node_seg = []
         # gnn infer
         p_fea_list_new, h_fea_list_new, f_fea_new, decomp_fh_att_map_new, decomp_up_att_map_new, decomp_lp_att_map_new = self.gnn(p_node_list, h_node_list, f_node, xp, f_att_list, h_att_list, p_att_list)
         # node supervision
