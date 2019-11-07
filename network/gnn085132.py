@@ -50,7 +50,9 @@ class Decomposition(nn.Module):
 class Decomp_att(nn.Module):
     def __init__(self, hidden_dim=10, parts=2):
         super(Decomp_att, self).__init__()
-        self.conv_fh = nn.Conv2d(hidden_dim, parts+1, kernel_size=1, padding=0, stride=1, bias=True)
+        self.conv_fh = nn.Conv2d(parts*hidden_dim+hidden_dim, parts+1, kernel_size=1, padding=0, stride=1, bias=True)
+
+        # self.conv_fh = nn.Conv2d(hidden_dim, parts+1, kernel_size=1, padding=0, stride=1, bias=True)
         self.softmax= nn.Softmax(dim=1)
 
     def forward(self, xf, xh_list):
@@ -478,7 +480,7 @@ class GNN_infer(nn.Module):
         # return [p_seg, p_seg_new, p_seg_final], [h_seg, h_seg_new, h_seg_final], [f_seg, f_seg_new, f_seg_final], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map]
 
         # return [p_seg, p_seg_new, p_seg_final], [h_seg, h_seg_new, h_seg_final], [f_seg, f_seg_new, f_seg_final], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map]
-        return [sum([p_seg, p_seg_final])/2], [h_seg], [f_seg], [sum(decomp_fh_att_map)/len(decomp_lp_att_map)], [sum(decomp_up_att_map)/len(decomp_lp_att_map)], [sum(decomp_lp_att_map)/len(decomp_lp_att_map)]
+        return [sum([p_seg, p_seg_final])/2, p_seg_final], [h_seg], [f_seg], [sum(decomp_fh_att_map)/len(decomp_lp_att_map)], [sum(decomp_up_att_map)/len(decomp_lp_att_map)], [sum(decomp_lp_att_map)/len(decomp_lp_att_map)]
         # return [p_seg, p_seg_final], [h_seg, h_seg_final], [f_seg, f_seg_final], [sum(decomp_fh_att_map)/len(decomp_lp_att_map)], [sum(decomp_up_att_map)/len(decomp_lp_att_map)], [sum(decomp_lp_att_map)/len(decomp_lp_att_map)]
 
 # class Final_classifer(nn.Module):
