@@ -114,9 +114,15 @@ class Contexture(nn.Module):
         self.p_conv = nn.Sequential(
             nn.Conv2d(2*in_dim, hidden_dim * parts, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim * parts), nn.ReLU(inplace=False))
+
+        self.feed_conv = nn.Sequential(nn.Conv2d(in_dim, in_dim//2, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(in_dim//2), nn.ReLU(inplace=False))
+        self.back_conv = nn.Sequential(nn.Conv2d(in_dim//2, in_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(in_dim), nn.ReLU(inplace=False))
     def forward(self, p_att_list, p_fea):
         n,c,h,w = p_fea.size()
-        F_dep_list = [self.F_cont(p_fea, p_att_list[i]) for i in range(len(p_att_list))]
+        fea = self.feed_conv(p_fea)
+        F_dep_list = [self.F_cont(fea, p_att_list[i]) for i in range(len(p_att_list))]
         center_fea = torch.stack(F_dep_list, dim=-1) # n, c, N
         # query = self.img_conv(p_fea).view(n, -1, h*w).permute(0, 2, 1) # n, h*w, c//4
         # key = self.center_conv(center_fea) # n, c//4, N
@@ -124,7 +130,7 @@ class Contexture(nn.Module):
         # attention = torch.softmax(energy, dim=-1)
         attention = torch.cat(p_att_list, dim=1).view(n, -1, h*w)
         refine_fea = torch.bmm(center_fea, attention).view(n, c, h, w)
-        # refine_fea = torch.cat([refine_fea, p_fea], dim=1)
+        refine_fea = self.back_conv(refine_fea)
         p_node_list = list(torch.split(self.p_conv(torch.cat([refine_fea, p_fea], dim=1)), self.hidden_dim, dim=1))
         return p_node_list
 
@@ -335,7 +341,7 @@ class Part_Graph(nn.Module):
                 # message = decomp_pl_list[self.lower_part_list.index(i + 1)] + sum(xpp_list_list[i])
                 message = decomp_pl_list[self.lower_part_list.index(i + 1)]
             # message = message + F_dep_list[i]
-            xp_list_new.append(self.node_update_list[i](self.part_dp(F_dep_list[i], xp_list[i]), message))
+            xp_list_new.append(self.node_update_list[i](xp_list[i], F_dep_list[i]+message))
         return xp_list_new, decomp_pu_att_map, decomp_pl_att_map, torch.cat(F_dep_list, dim=1)
 
 
