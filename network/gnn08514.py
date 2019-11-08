@@ -446,8 +446,8 @@ class Decoder(nn.Module):
         alpha_fb_fea = self.layerf(seg, x[1])
 
         # gnn infer
-        p_seg_final, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, p_seg = self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, x[0])
-        return p_seg_final, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, p_seg, x_dsn
+        p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map  = self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, x[0])
+        return p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, x_dsn
 
 
 class OCNet(nn.Module):
