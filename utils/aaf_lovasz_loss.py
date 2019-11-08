@@ -2514,7 +2514,7 @@ class ABRLovaszLoss_List_att_dp(nn.Module):
             loss_up_att.append(lovasz_softmax_flat(*flatten_probas(pred_up, targets_up, self.ignore_index),
                                                    only_present=self.only_present))
         loss_up_att = sum(loss_up_att)/len(preds[4])
-        loss_up_att = sum(loss_up_att)
+        # loss_up_att = sum(loss_up_att)
 
         #decomp lp
         lower_bg_node = 1-one_hot_hb_list[2]
