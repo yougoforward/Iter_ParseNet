@@ -56,7 +56,7 @@ class Decomp_att(nn.Module):
         self.softmax= nn.Softmax(dim=1)
 
     def forward(self, xf, xh_list):
-        decomp_map = self.conv_fh(torch.cat([xf]+xh_list, dim=1)
+        decomp_map = self.conv_fh(torch.cat([xf]+xh_list, dim=1))
         decomp_att = self.softmax(decomp_map)
         decomp_att_list = list(torch.split(decomp_att, 1, dim=1))
         return decomp_att_list, decomp_map
