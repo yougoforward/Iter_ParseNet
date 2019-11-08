@@ -494,9 +494,9 @@ class GNN_infer(nn.Module):
         # h_seg_final = torch.cat([node_seg_list_final[0]] + node_seg_list_final[2:4], dim=1)
         # p_seg_final = torch.cat([node_seg_list_final[0]] + node_seg_list_final[4:], dim=1)
 
-        xphf_infer = node_new
-        p_seg_final = self.final_cls(xphf_infer, xp, xh, xf, xl)
-        return [p_seg, p_seg_new, p_seg_final], [h_seg, h_seg_new], [f_seg, f_seg_new], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map], [dep_seg_new]
+        # xphf_infer = node_new
+        # p_seg_final = self.final_cls(xphf_infer, xp, xh, xf, xl)
+        return [p_seg, p_seg_new], [h_seg, h_seg_new], [f_seg, f_seg_new], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map], [dep_seg_new]
 
         # return [p_seg, p_seg_new, p_seg_final], [h_seg, h_seg_new, h_seg_final], [f_seg, f_seg_new, f_seg_final], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map]
         # return [sum([p_seg, p_seg_new])/2, p_seg_final], [sum([h_seg, h_seg_new])/2, h_seg_final], [sum([f_seg, f_seg_new])/2, f_seg_final], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map]

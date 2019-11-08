@@ -2444,8 +2444,8 @@ class ABRLovaszLoss_List_att_dp(nn.Module):
             pred = F.softmax(input=pred, dim=1)
             loss.append(lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
         # loss = sum(loss[:-1])*0.1+loss[-1]
-        loss = sum(loss[:-1])/len(loss[:-1])+loss[-1]
-        # loss = sum(loss)
+        # loss = sum(loss[:-1])/len(loss[:-1])+loss[-1]
+        loss = sum(loss)/len(loss)
 
         # half body
         loss_hb = []
