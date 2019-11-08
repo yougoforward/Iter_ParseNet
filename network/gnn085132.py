@@ -41,7 +41,7 @@ class Decomposition(nn.Module):
         self.att = node_att()
 
     def forward(self, xf, xh_list):
-        decomp_att_list, maps = self.decomp_att(xf)
+        decomp_att_list, maps = self.decomp_att(xf, xh_list)
         decomp_fh_list = [self.conv_fh(torch.cat([xf * decomp_att_list[i+1], xh_list[i]], dim=1)) for i in
                           range(len(xh_list))]
         return decomp_fh_list, decomp_att_list, maps
