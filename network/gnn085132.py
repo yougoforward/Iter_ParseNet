@@ -56,7 +56,7 @@ class Decomp_att(nn.Module):
         self.softmax= nn.Softmax(dim=1)
 
     def forward(self, xf, xh_list):
-        decomp_map = self.conv_fh(xf)
+        decomp_map = self.conv_fh(torch.cat([xf]+xh_list, dim=1)
         decomp_att = self.softmax(decomp_map)
         decomp_att_list = list(torch.split(decomp_att, 1, dim=1))
         return decomp_att_list, decomp_map
@@ -474,7 +474,7 @@ class GNN_infer(nn.Module):
         f_seg = torch.cat(node_seg_list[0:2], dim=1)
         h_seg = torch.cat([node_seg_list[0]] + node_seg_list[2:4], dim=1)
         p_seg = torch.cat([node_seg_list[0]] + node_seg_list[4:], dim=1)
-        p_seg = F.interpolate(p_seg, (th, tw), mode='bilinear', align_corners=True)
+        # p_seg = F.interpolate(p_seg, (th, tw), mode='bilinear', align_corners=True)
         # xphf_infer = node_new
         # p_seg_final = self.final_cls(xphf_infer, xp, xh, xf, xl)
         # return [p_seg, p_seg_new, p_seg_final], [h_seg, h_seg_new, h_seg_final], [f_seg, f_seg_new, f_seg_final], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map]
