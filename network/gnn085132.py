@@ -456,10 +456,10 @@ class GNN_infer(nn.Module):
         decomp_fh_att_map.append(decomp_fh_att_map_new)
         decomp_up_att_map.append(decomp_up_att_map_new)
         decomp_lp_att_map.append(decomp_lp_att_map_new)
-        # node_seg_list_new = list(torch.split(node_seg_new, 1, dim=1))
-        # f_seg_new = torch.cat(node_seg_list_new[0:2], dim=1)
-        # h_seg_new = torch.cat([node_seg_list_new[0]] + node_seg_list_new[2:4], dim=1)
-        # p_seg_new = torch.cat([node_seg_list_new[0]] + node_seg_list_new[4:], dim=1)
+        node_seg_list_new = list(torch.split(node_seg_new, 1, dim=1))
+        f_seg_new = torch.cat(node_seg_list_new[0:2], dim=1)
+        h_seg_new = torch.cat([node_seg_list_new[0]] + node_seg_list_new[2:4], dim=1)
+        p_seg_new = torch.cat([node_seg_list_new[0]] + node_seg_list_new[4:], dim=1)
 
 
         # node supervision
@@ -472,18 +472,18 @@ class GNN_infer(nn.Module):
         # h_seg_final = torch.cat([node_seg_list_final[0]] + node_seg_list_final[2:4], dim=1)
         # p_seg_final = torch.cat([node_seg_list_final[0]] + node_seg_list_final[4:], dim=1)
         # node_seg = F.interpolate(sum(node_seg)/len(node_seg), (th, tw), mode='bilinear', align_corners=True)
-        node_seg = sum(node_seg)/len(node_seg)
-        node_seg_list = list(torch.split(node_seg, 1, dim=1))
-        f_seg = torch.cat(node_seg_list[0:2], dim=1)
-        h_seg = torch.cat([node_seg_list[0]] + node_seg_list[2:4], dim=1)
-        p_seg = torch.cat([node_seg_list[0]] + node_seg_list[4:], dim=1)
+        # node_seg = sum(node_seg)/len(node_seg)
+        # node_seg_list = list(torch.split(node_seg, 1, dim=1))
+        # f_seg = torch.cat(node_seg_list[0:2], dim=1)
+        # h_seg = torch.cat([node_seg_list[0]] + node_seg_list[2:4], dim=1)
+        # p_seg = torch.cat([node_seg_list[0]] + node_seg_list[4:], dim=1)
         # p_seg = F.interpolate(p_seg, (th, tw), mode='bilinear', align_corners=True)
         # xphf_infer = node_new
         # p_seg_final = self.final_cls(xphf_infer, xp, xh, xf, xl)
         # return [p_seg, p_seg_new, p_seg_final], [h_seg, h_seg_new, h_seg_final], [f_seg, f_seg_new, f_seg_final], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map]
 
         # return [p_seg, p_seg_new, p_seg_final], [h_seg, h_seg_new, h_seg_final], [f_seg, f_seg_new, f_seg_final], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map]
-        return [p_seg], [h_seg], [f_seg], [sum(decomp_fh_att_map)/len(decomp_lp_att_map)], [sum(decomp_up_att_map)/len(decomp_lp_att_map)], [sum(decomp_lp_att_map)/len(decomp_lp_att_map)]
+        return [p_seg, p_seg_new], [h_seg, h_seg_new], [f_seg, f_seg_new], decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map
         # return [p_seg, p_seg_final], [h_seg, h_seg_final], [f_seg, f_seg_final], [sum(decomp_fh_att_map)/len(decomp_lp_att_map)], [sum(decomp_up_att_map)/len(decomp_lp_att_map)], [sum(decomp_lp_att_map)/len(decomp_lp_att_map)]
 
 # class Final_classifer(nn.Module):
