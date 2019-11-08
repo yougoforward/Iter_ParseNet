@@ -13,19 +13,6 @@ BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
 
 from modules.dcn import DFConv2d
 
-# class Composition(nn.Module):
-#     def __init__(self, hidden_dim, parts_len):
-#         super(Composition, self).__init__()
-#         self.conv_ch = nn.Sequential(
-#             nn.Conv2d((parts_len+1) * hidden_dim, 2*hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-#             BatchNorm2d(2*hidden_dim), nn.LeakyReLU(inplace=False),
-#             nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-#             BatchNorm2d(hidden_dim), nn.LeakyReLU(inplace=False)
-#         )
-#     def forward(self, xh, xp_list):
-#         xph = self.conv_ch(torch.cat([xh]+xp_list, dim=1))
-#         return xph
-
 class Composition(nn.Module):
     def __init__(self, hidden_dim, parts_len):
         super(Composition, self).__init__()
