@@ -129,7 +129,7 @@ class Contexture(nn.Module):
         # energy = torch.bmm(query, key)# n, h*w, N
         # attention = torch.softmax(energy, dim=-1)
         attention = torch.cat(p_att_list, dim=1).view(n, -1, h*w)
-        refine_fea = torch.bmm(center_fea, attention).view(n, c, h, w)
+        refine_fea = torch.bmm(center_fea, attention).view(n, c//2, h, w)
         refine_fea = self.back_conv(refine_fea)
         p_node_list = list(torch.split(self.p_conv(torch.cat([refine_fea, p_fea], dim=1)), self.hidden_dim, dim=1))
         return p_node_list
