@@ -51,7 +51,7 @@ class Decomp_att(nn.Module):
     def __init__(self, hidden_dim=10, parts=2):
         super(Decomp_att, self).__init__()
         self.conv_fh = nn.Sequential(
-            nn.Conv2d(parts*hidden_dim+hidden_dim, parts+1, kernel_size=1, padding=0, stride=1, bias=True))
+            nn.Conv2d(hidden_dim, parts+1, kernel_size=1, padding=0, stride=1, bias=True))
 
         # self.conv_fh = nn.Conv2d(hidden_dim, parts+1, kernel_size=1, padding=0, stride=1, bias=True)
         self.softmax= nn.Softmax(dim=1)
