@@ -1645,7 +1645,7 @@ class ABRLovaszLoss_List_att_final2(nn.Module):
                     parts_onehot.append(one_hot_pb_list[k+1])
                 parts_bg_node = 1-sum(parts_onehot)
                 targets_dp_onehot = torch.stack([parts_bg_node] + parts_onehot, dim=1)
-                targets_dp = targets_dp_onehot.argmax(dim=1, keepdim=False)
+                targets_dp = targets_dp_onehot.argmax(dim=1, keepdim=False).float()
                 targets_dp[targets[0] == 255] = 255
                 pred_dp = F.interpolate(input=preds[-2][i][j], size=(h, w), mode='bilinear', align_corners=True)
                 pred_dp = F.softmax(input=pred_dp, dim=1)
