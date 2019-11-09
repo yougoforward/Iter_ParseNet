@@ -311,6 +311,7 @@ class Part_Graph(nn.Module):
         self.part_list_list = [[] for i in range(self.cls_p - 1)]
         for i in range(self.edge_index_num):
             self.part_list_list[self.edge_index[i, 1]].append(self.edge_index[i, 0])
+        self.F_dep_list = Contexture(in_dim=in_dim, hidden_dim=hidden_dim, parts=self.cls_p - 1, part_list_list=self.part_list_list)
 
         self.decomp_hpu_list = Decomposition(hidden_dim, parts=len(upper_part_list))
         self.decomp_hpl_list = Decomposition(hidden_dim, parts=len(lower_part_list))
