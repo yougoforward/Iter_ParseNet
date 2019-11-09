@@ -112,13 +112,13 @@ class Contexture(nn.Module):
         self.center_conv = nn.Conv1d(in_dim, in_dim//4, kernel_size=1, padding=0, stride=1, bias=True)
         self.img_conv = nn.Conv2d(in_dim, in_dim//4, kernel_size=1, padding=0, stride=1, bias=True)
         self.p_conv = nn.Sequential(
-            nn.Conv2d(2*in_dim, hidden_dim * parts, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(in_dim//2+parts*hidden_dim, hidden_dim * parts, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim * parts), nn.ReLU(inplace=False))
 
         self.feed_conv = nn.Sequential(nn.Conv2d(in_dim, in_dim//2, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(in_dim//2), nn.ReLU(inplace=False))
-        self.back_conv = nn.Sequential(nn.Conv2d(in_dim//2, in_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(in_dim), nn.ReLU(inplace=False))
+        # self.back_conv = nn.Sequential(nn.Conv2d(in_dim//2, in_dim, kernel_size=1, padding=0, stride=1, bias=False),
+        #     BatchNorm2d(in_dim), nn.ReLU(inplace=False))
     def forward(self, p_att_list, p_fea):
         n,c,h,w = p_fea.size()
         fea = self.feed_conv(p_fea)
@@ -130,8 +130,8 @@ class Contexture(nn.Module):
         # attention = torch.softmax(energy, dim=-1)
         attention = torch.cat(p_att_list, dim=1).view(n, -1, h*w)
         refine_fea = torch.bmm(center_fea, attention).view(n, c//2, h, w)
-        refine_fea = self.back_conv(refine_fea)
-        p_node_list = list(torch.split(self.p_conv(torch.cat([refine_fea, p_fea], dim=1)), self.hidden_dim, dim=1))
+        # refine_fea = self.back_conv(refine_fea)
+        p_node_list = list(torch.split(self.p_conv(torch.cat([refine_fea]+xp_list, dim=1)), self.hidden_dim, dim=1))
         return p_node_list
 
 
@@ -311,7 +311,7 @@ class Part_Graph(nn.Module):
         self.decomp_hpu_list = Decomposition(hidden_dim, parts=len(upper_part_list))
         self.decomp_hpl_list = Decomposition(hidden_dim, parts=len(lower_part_list))
         self.F_dep_list = Contexture(in_dim=in_dim, hidden_dim=hidden_dim, parts=self.cls_p - 1)
-        self.part_dp = Part_Dependency(in_dim, hidden_dim)
+        self.part_dp = nn.ModuleList([Part_Dependency(in_dim, hidden_dim) for i in range(self.cls_p - 1)]) 
         self.node_update_list = nn.ModuleList([conv_Update(hidden_dim) for i in range(self.cls_p - 1)])
         self.node_update_list2 = nn.ModuleList([conv_Update(hidden_dim) for i in range(self.cls_p - 1)])
 
@@ -343,7 +343,7 @@ class Part_Graph(nn.Module):
                 # message = decomp_pl_list[self.lower_part_list.index(i + 1)] + sum(xpp_list_list[i])
                 message = decomp_pl_list[self.lower_part_list.index(i + 1)]
             # message = message + F_dep_list[i]
-            xp_list_new.append(self.node_update_list[i]((xp_list[i]+F_dep_list[i])/2, message))
+            xp_list_new.append(self.node_update_list[i]((xp_list[i], self.part_dp[i](F_dep_list[i], xp_list[i])+message))
         return xp_list_new, decomp_pu_att_map, decomp_pl_att_map, torch.cat(F_dep_list, dim=1)
 
 
