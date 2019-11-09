@@ -1500,7 +1500,7 @@ class ABRLovaszLoss_List_att_final2(nn.Module):
         super(ABRLovaszLoss_List_att_final2, self).__init__()
         self.edge_index = torch.nonzero(adj_matrix)
         self.edge_index_num = self.edge_index.shape[0]
-        self.part_list_list = [[i] for i in range(cls_p - 1)]
+        self.part_list_list = [[] for i in range(cls_p - 1)]
         for i in range(self.edge_index_num):
             self.part_list_list[self.edge_index[i, 1]].append(self.edge_index[i, 0])
 
@@ -1523,7 +1523,9 @@ class ABRLovaszLoss_List_att_final2(nn.Module):
             pred = F.interpolate(input=preds[0][i], size=(h, w), mode='bilinear', align_corners=True)
             pred = F.softmax(input=pred, dim=1)
             loss.append(lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
-        loss = sum(loss)
+        # loss = sum(loss)
+        loss = sum(loss[:-1])/len(loss[:-1])+loss[-1]
+
 
         # half body
         loss_hb = []
@@ -1532,7 +1534,8 @@ class ABRLovaszLoss_List_att_final2(nn.Module):
             pred_hb = F.softmax(input=pred_hb, dim=1)
             loss_hb.append(lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
                                       only_present=self.only_present))
-        loss_hb = sum(loss_hb)
+        # loss_hb = sum(loss_hb)
+        loss_hb = sum(loss_hb)/len(loss_hb)
 
         # full body
         loss_fb = []
@@ -1541,8 +1544,8 @@ class ABRLovaszLoss_List_att_final2(nn.Module):
             pred_fb = F.softmax(input=pred_fb, dim=1)
             loss_fb.append(lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
                                       only_present=self.only_present))
-        loss_fb = sum(loss_fb)
-
+        # loss_fb = sum(loss_fb)
+        loss_fb = sum(loss_fb)/len(loss_fb)
         #decomp fh
         loss_fh_att = []
         for i in range(len(preds[3])):
@@ -1550,7 +1553,8 @@ class ABRLovaszLoss_List_att_final2(nn.Module):
             pred_fh = F.softmax(input=pred_fh, dim=1)
             loss_fh_att.append(lovasz_softmax_flat(*flatten_probas(pred_fh, targets[1], self.ignore_index),
                                                only_present=self.only_present))
-        loss_fh_att = sum(loss_fh_att)
+        # loss_fh_att = sum(loss_fh_att)
+        loss_fh_att = sum(loss_fh_att)/len(loss_fh_att)
         #one hot part
         labels_p = targets[0]
         one_label_p = labels_p.clone().long()
@@ -1595,7 +1599,9 @@ class ABRLovaszLoss_List_att_final2(nn.Module):
             pred_up = F.softmax(input=pred_up, dim=1)
             loss_up_att.append(lovasz_softmax_flat(*flatten_probas(pred_up, targets_up, self.ignore_index),
                                                    only_present=self.only_present))
-        loss_up_att = sum(loss_up_att)
+        # loss_up_att = sum(loss_up_att)
+        loss_up_att = sum(loss_up_att)/len(loss_up_att)
+
         #decomp lp
         lower_bg_node = 1-one_hot_hb_list[2]
         lower_parts = []
@@ -1610,20 +1616,21 @@ class ABRLovaszLoss_List_att_final2(nn.Module):
             pred_lp = F.softmax(input=pred_lp, dim=1)
             loss_lp_att.append(lovasz_softmax_flat(*flatten_probas(pred_lp, targets_lp, self.ignore_index),
                                                    only_present=self.only_present))
-        loss_lp_att = sum(loss_lp_att)
-
-        # # com bce loss
-        # com_full_onehot = one_hot_fb_list[1].float().unsqueeze(1)
-        # com_u_onehot = one_hot_hb_list[1].float().unsqueeze(1)
-        # com_l_onehot = one_hot_hb_list[2].float().unsqueeze(1)
-        # com_onehot = torch.cat([com_full_onehot,com_u_onehot, com_l_onehot], dim=1)
-        # loss_com_att = []
-        # for i in range(len(preds[6])):
-        #     pred_com_full = F.interpolate(input=preds[6][i], size=(h, w), mode='bilinear', align_corners=True)
-        #     pred_com_u = F.interpolate(input=preds[7][i], size=(h, w), mode='bilinear', align_corners=True)
-        #     pred_com_l = F.interpolate(input=preds[8][i], size=(h, w), mode='bilinear', align_corners=True)
-        #     loss_com_att.append(torch.mean(self.bceloss(torch.cat([pred_com_full, pred_com_u, pred_com_l], dim=1), com_onehot) * ignore))
+        # loss_lp_att = sum(loss_lp_att)
+        loss_lp_att = sum(loss_lp_att)/len(loss_lp_att)
+        # com bce loss
+        com_full_onehot = one_hot_fb_list[1].float().unsqueeze(1)
+        com_u_onehot = one_hot_hb_list[1].float().unsqueeze(1)
+        com_l_onehot = one_hot_hb_list[2].float().unsqueeze(1)
+        com_onehot = torch.cat([com_full_onehot,com_u_onehot, com_l_onehot], dim=1)
+        loss_com_att = []
+        for i in range(len(preds[6])):
+            pred_com_full = F.interpolate(input=preds[6][i], size=(h, w), mode='bilinear', align_corners=True)
+            pred_com_u = F.interpolate(input=preds[7][i], size=(h, w), mode='bilinear', align_corners=True)
+            pred_com_l = F.interpolate(input=preds[8][i], size=(h, w), mode='bilinear', align_corners=True)
+            loss_com_att.append(torch.mean(self.bceloss(torch.cat([pred_com_full, pred_com_u, pred_com_l], dim=1), com_onehot) * ignore))
         # loss_com_att = sum(loss_com_att)
+        loss_com_att = sum(loss_com_att)/len(loss_com_att)
 
         # dependency decomposition
         # loss_context_att =[]
@@ -1659,13 +1666,15 @@ class ABRLovaszLoss_List_att_final2(nn.Module):
             # loss_context = sum(loss_context)
             # loss_context_att.append(loss_context)
         # loss_context_att = sum(loss_context_att)
-        loss_dp_att = sum(loss_dp_att)
+        # loss_dp_att = sum(loss_dp_att)
+        loss_dp_att = sum(loss_dp_att)/len(loss_dp_att)
+
 
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
         return loss + 0.4 * loss_hb + 0.4 * loss_fb + \
-               0.4*(loss_fh_att + loss_up_att + loss_lp_att + loss_dp_att) + 0.4 * loss_dsn
+               0.4*(loss_fh_att + loss_up_att + loss_lp_att + loss_dp_att+loss_com_att) + 0.4 * loss_dsn
 
 class ABRLovaszLoss_List_att_final(nn.Module):
     """Lovasz loss for Alpha process"""

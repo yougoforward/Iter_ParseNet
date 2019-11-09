@@ -44,8 +44,6 @@ class Decomposition(nn.Module):
         decomp_fh_list = [self.conv_fh(torch.cat([xf * decomp_att_list[i+1], xh_list[i]], dim=1)) for i in
                           range(len(xh_list))]
         return decomp_fh_list, decomp_att_list, maps
-
-
 class Decomp_att(nn.Module):
     def __init__(self, hidden_dim=10, parts=2):
         super(Decomp_att, self).__init__()
@@ -57,17 +55,6 @@ class Decomp_att(nn.Module):
         decomp_att = self.softmax(decomp_map)
         decomp_att_list = list(torch.split(decomp_att, 1, dim=1))
         return decomp_att_list, decomp_map
-
-class node_att(nn.Module):
-    def __init__(self):
-        super(node_att, self).__init__()
-        self.maxpool = nn.AdaptiveMaxPool2d(1)
-
-    def forward(self, xf):
-        xff = xf * xf
-        xff_sum = torch.sum(xff, dim=1, keepdim=True)
-        parent_att = xff_sum / self.maxpool(xff_sum)
-        return parent_att
 
 def generate_spatial_batch(featmap_H, featmap_W):
     import numpy as np
@@ -91,7 +78,6 @@ class Dep_Context(nn.Module):
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
         self.W = nn.Parameter(torch.ones(in_dim + 8, hidden_dim + 8))
-        self.att = node_att()
         self.sigmoid = nn.Sigmoid()
         self.coord_fea = torch.from_numpy(generate_spatial_batch(60, 60))
         self.maxpool = nn.AdaptiveMaxPool2d(1)
