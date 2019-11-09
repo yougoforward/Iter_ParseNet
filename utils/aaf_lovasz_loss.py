@@ -1619,9 +1619,9 @@ class ABRLovaszLoss_List_att_final2(nn.Module):
         # loss_lp_att = sum(loss_lp_att)
         loss_lp_att = sum(loss_lp_att)/len(loss_lp_att)
         # com bce loss
-        com_full_onehot = one_hot_fb_list[1].clone().float().unsqueeze(1)
-        com_u_onehot = one_hot_hb_list[1].clone().float().unsqueeze(1)
-        com_l_onehot = one_hot_hb_list[2].clone().float().unsqueeze(1)
+        com_full_onehot = one_hot_fb_list[1].float().unsqueeze(1)
+        com_u_onehot = one_hot_hb_list[1].float().unsqueeze(1)
+        com_l_onehot = one_hot_hb_list[2].float().unsqueeze(1)
         com_onehot = torch.cat([com_full_onehot,com_u_onehot, com_l_onehot], dim=1)
         loss_com_att = []
         for i in range(len(preds[6])):
