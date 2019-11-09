@@ -114,7 +114,7 @@ class Contexture(nn.Module):
         super(Contexture, self).__init__()
         self.hidden_dim =hidden_dim
         self.F_cont = nn.ModuleList(
-            [Dep_Context(in_dim, hidden_dim, parts=len(part_list_list[i])) for i in range(len(part_list_list))])
+            [Dep_Context(in_dim, hidden_dim) for i in range(len(part_list_list))])
 
         self.dp_cont = nn.ModuleList(
             [nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=True)
@@ -268,7 +268,7 @@ class Half_Graph(nn.Module):
         self.lower_parts_len = len(lower_part_list)
         self.hidden = hidden_dim
 
-        self.decomp_fh_list = Decomposition(in_dim, hidden_dim, parts=2)
+        self.decomp_fh_list = Decomposition(hidden_dim, parts=2)
         self.comp_u = Composition(hidden_dim, parts=len(upper_part_list))
         self.comp_l = Composition(hidden_dim, parts=len(lower_part_list))
 
@@ -276,7 +276,7 @@ class Half_Graph(nn.Module):
         self.update_l = conv_Update(hidden_dim)
 
     def forward(self, xf, xh_list, xp_list, h_fea):
-        decomp_list, decomp_att_list, decomp_att_map = self.decomp_fh_list(xf, xh_list, h_fea)
+        decomp_list, decomp_att_list, decomp_att_map = self.decomp_fh_list(xf, xh_list)
         # upper half
         upper_parts = []
         for part in self.upper_part_list:
@@ -312,8 +312,8 @@ class Part_Graph(nn.Module):
         for i in range(self.edge_index_num):
             self.part_list_list[self.edge_index[i, 1]].append(self.edge_index[i, 0])
 
-        self.decomp_hpu_list = Decomposition(in_dim, hidden_dim, parts=len(upper_part_list))
-        self.decomp_hpl_list = Decomposition(in_dim, hidden_dim, parts=len(lower_part_list))
+        self.decomp_hpu_list = Decomposition(hidden_dim, parts=len(upper_part_list))
+        self.decomp_hpl_list = Decomposition(hidden_dim, parts=len(lower_part_list))
         self.part_dp = nn.ModuleList([Part_Dependency(in_dim, hidden_dim) for i in range(self.edge_index_num)])
         self.node_update_list = nn.ModuleList([conv_Update(hidden_dim) for i in range(self.cls_p - 1)])
 
@@ -326,8 +326,8 @@ class Part_Graph(nn.Module):
         lower_parts = []
         for part in self.lower_part_list:
             lower_parts.append(xp_list[part - 1])
-        decomp_pu_list, decomp_pu_att_list, decomp_pu_att_map = self.decomp_hpu_list(xh_list[0], upper_parts, xp)
-        decomp_pl_list, decomp_pl_att_list, decomp_pl_att_map = self.decomp_hpl_list(xh_list[1], lower_parts, xp)
+        decomp_pu_list, decomp_pu_att_list, decomp_pu_att_map = self.decomp_hpu_list(xh_list[0], upper_parts)
+        decomp_pl_list, decomp_pl_att_list, decomp_pl_att_map = self.decomp_hpl_list(xh_list[1], lower_parts)
 
         #dp
         F_dep_list, att_list_list, Fdep_att_list = self.F_dep_list(xp_list, xp, self.part_list_list)
