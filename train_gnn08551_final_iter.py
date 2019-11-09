@@ -113,7 +113,10 @@ def main(args):
                                  batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
     # define criterion & optimizer
-    criterion = ABRLovaszLoss(ignore_index=args.ignore_label, only_present=True, upper_part_list=[1, 2, 3, 4], lower_part_list=[5, 6], cls_p= args.num_classes, cls_h= args.hbody_cls, cls_f= args.fbody_cls)
+    adj_matrix = torch.tensor(
+        [[0, 1, 0, 0, 0, 0], [1, 0, 1, 0, 1, 0], [0, 1, 0, 1, 0, 0], [0, 0, 1, 0, 0, 0], [0, 1, 0, 0, 0, 1],
+         [0, 0, 0, 0, 1, 0]], requires_grad=False)
+    criterion = ABRLovaszLoss(adj_matrix, ignore_index=args.ignore_label, only_present=True, upper_part_list=[1, 2, 3, 4], lower_part_list=[5, 6], cls_p= args.num_classes, cls_h= args.hbody_cls, cls_f= args.fbody_cls)
     criterion = DataParallelCriterion(criterion).cuda()
 
     optimizer = optim.SGD(
