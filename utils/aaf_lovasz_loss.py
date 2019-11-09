@@ -1619,9 +1619,9 @@ class ABRLovaszLoss_List_att_final2(nn.Module):
         # loss_lp_att = sum(loss_lp_att)
         loss_lp_att = sum(loss_lp_att)/len(loss_lp_att)
         # com bce loss
-        com_full_onehot = one_hot_fb_list[1].float().unsqueeze(1)
-        com_u_onehot = one_hot_hb_list[1].float().unsqueeze(1)
-        com_l_onehot = one_hot_hb_list[2].float().unsqueeze(1)
+        com_full_onehot = one_hot_fb_list[1].clone().float().unsqueeze(1)
+        com_u_onehot = one_hot_hb_list[1].clone().float().unsqueeze(1)
+        com_l_onehot = one_hot_hb_list[2].clone().float().unsqueeze(1)
         com_onehot = torch.cat([com_full_onehot,com_u_onehot, com_l_onehot], dim=1)
         loss_com_att = []
         for i in range(len(preds[6])):
@@ -1645,7 +1645,7 @@ class ABRLovaszLoss_List_att_final2(nn.Module):
                     parts_onehot.append(one_hot_pb_list[k+1])
                 parts_bg_node = 1-sum(parts_onehot)
                 targets_dp_onehot = torch.stack([parts_bg_node] + parts_onehot, dim=1)
-                targets_dp = targets_dp_onehot.argmax(dim=1, keepdim=False).float()
+                targets_dp = targets_dp_onehot.argmax(dim=1, keepdim=False)
                 targets_dp[targets[0] == 255] = 255
                 pred_dp = F.interpolate(input=preds[-2][i][j], size=(h, w), mode='bilinear', align_corners=True)
                 pred_dp = F.softmax(input=pred_dp, dim=1)
