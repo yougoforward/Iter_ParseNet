@@ -500,7 +500,7 @@ class GNN_infer(nn.Module):
         h_node_list = [h_node_list]
         f_node = [f_node]
 
-        for iter in range(1):
+        for iter in range(2):
             p_fea_list_new, h_fea_list_new, f_fea_new, decomp_fh_att_map_new, decomp_up_att_map_new, \
             decomp_lp_att_map_new, com_map_new, com_u_map_new, com_l_map_new, Fdep_att_list_new = self.gnn(
                 p_node_list[iter], h_node_list[iter], f_node[iter], xp, xh)
