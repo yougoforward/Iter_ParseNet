@@ -84,7 +84,7 @@ class Dep_Context(nn.Module):
         self.hidden_dim = hidden_dim
         self.W = nn.Parameter(torch.ones(in_dim, hidden_dim))
         self.sigmoid = nn.Sigmoid()
-        self.coord_fea = torch.from_numpy(generate_spatial_batch(60, 60))
+        self.coord_fea = torch.from_numpy(generate_spatial_batch(30, 30))
         self.maxpool = nn.AdaptiveMaxPool2d(1)
 
         self.project = nn.Sequential(nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
@@ -93,19 +93,24 @@ class Dep_Context(nn.Module):
         self.img_conv = nn.Sequential(nn.Conv2d(in_dim + 8, in_dim, kernel_size=1, stride=1, padding=0, bias=True))
         self.node_conv = nn.Sequential(nn.Conv2d(hidden_dim + 8, hidden_dim, kernel_size=1, stride=1, padding=0, bias=True))
 
+        self.pool = nn.MaxPool2d(kernel_size=(2,2))
+
     def forward(self, p_fea, hu):
         n, c, h, w = p_fea.size()
-        # att_hu = self.att(hu)
-        # hu = att_hu * hu
+        query = self.pool(p_fea)
+        key = self.pool(hu)
+        n, c, hp, wp = query.size()
+
         # coord_fea = torch.from_numpy(generate_spatial_batch(n,h,w)).to(p_fea.device).view(n,-1,8) #n,hw,8
         coord_fea = self.coord_fea.to(p_fea.device).repeat((n, 1, 1, 1)).permute(0, 3, 1, 2)
 
 
-        project1 = torch.matmul(self.img_conv(torch.cat([p_fea, coord_fea], dim=1)).view(n, -1, h*w).permute(0,2,1), self.W)  # n,hw,hidden
-        energy = torch.matmul(project1, self.node_conv(torch.cat([hu, coord_fea], dim=1)).view(n, -1, h*w))  # n,hw,hw
+        project1 = torch.matmul(self.img_conv(torch.cat([query, coord_fea], dim=1)).view(n, -1, hp*wp).permute(0,2,1), self.W)  # n,hw,hidden
+        energy = torch.matmul(project1, self.node_conv(torch.cat([key, coord_fea], dim=1)).view(n, -1, hp*wp))  # n,hw,hw
         attention = torch.softmax(energy, dim=-1)
         co_context = torch.bmm(hu.view(n, -1, h*w), attention.permute(0, 2, 1)).view(n, -1, h, w)
-        co_context =self.project(co_context)
+        co_context = self.project(co_context)
+        co_context =F.interpolate(co_context, (h, w), mode="bilinear", align_corners=True)
         return co_context
 
 
@@ -425,40 +430,6 @@ class GNN_infer(nn.Module):
                                         groups=1)
 
         self.softmax = nn.Softmax(dim=1)
-
-        # self.p_node_refine = nn.ModuleList(
-        #     [nn.Sequential(nn.Conv2d(in_dim+hidden_dim, in_dim, kernel_size=1, padding=0, stride=1, bias=False),
-        #                     BatchNorm2d(in_dim), nn.ReLU(inplace=False),
-        #                     nn.Conv2d(in_dim, hidden_dim, kernel_size=1,
-        #                             padding=0, stride=1, bias=False),
-        #                     BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-        #                            ) for i in range(cls_p-1)])
-        # self.h_node_refine = nn.ModuleList(
-        #     [nn.Sequential(nn.Conv2d(in_dim+hidden_dim, in_dim, kernel_size=1, padding=0, stride=1, bias=False),
-        #                     BatchNorm2d(in_dim), nn.ReLU(inplace=False),
-        #                     nn.Conv2d(in_dim, hidden_dim, kernel_size=1,
-        #                             padding=0, stride=1, bias=False),
-        #                     BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-        #                    ) for i in range(cls_h - 1)])
-        # self.f_node_refine = nn.Sequential(nn.Conv2d(in_dim+hidden_dim, in_dim, kernel_size=1, padding=0, stride=1, bias=False),
-        #                     BatchNorm2d(in_dim), nn.ReLU(inplace=False),
-        #                     nn.Conv2d(in_dim, hidden_dim, kernel_size=1,
-        #                             padding=0, stride=1, bias=False),
-        #                     BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-        #                    )
-
-        self.p_node_refine = nn.ModuleList(
-            [nn.Sequential(nn.Conv2d(in_dim + hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-                           BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-                           ) for i in range(cls_p - 1)])
-        self.h_node_refine = nn.ModuleList(
-            [nn.Sequential(nn.Conv2d(in_dim + hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-                           BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-                           ) for i in range(cls_h - 1)])
-        self.f_node_refine = nn.Sequential(
-            nn.Conv2d(in_dim + hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-            )
         self.final_cls = Final_classifer(in_dim, hidden_dim, cls_p, cls_h, cls_f)
 
     def forward(self, xp, xh, xf, xl):
@@ -505,10 +476,6 @@ class GNN_infer(nn.Module):
             decomp_lp_att_map_new, com_map_new, com_u_map_new, com_l_map_new, Fdep_att_list_new = self.gnn(
                 p_node_list[iter], h_node_list[iter], f_node[iter], xp, xh)
 
-            p_fea_list_new = [self.p_node_refine[i](torch.cat([xp, p_fea_list_new[i]], dim=1)) for i in range(self.cls_p-1)]
-            h_fea_list_new = [self.h_node_refine[i](torch.cat([xh, h_fea_list_new[i]], dim=1)) for i in range(self.cls_h-1)]
-            f_fea_new = self.f_node_refine(torch.cat([xf, f_fea_new], dim=1))
-
             p_node_list.append(p_fea_list_new)
             h_node_list.append(h_fea_list_new)
             f_node.append(f_fea_new)
@@ -532,18 +499,6 @@ class GNN_infer(nn.Module):
             h_seg.append(h_seg_new)
             f_seg.append(f_seg_new)
 
-        # p_fea_list_final = [self.p_node_refine[i](torch.cat([p_node_list[0][i], p_fea_list_new[i]], dim=1)) for i in range(self.cls_p-1)]
-        # h_fea_list_final = [self.h_node_refine[i](torch.cat([h_node_list[0][i], h_fea_list_new[i]], dim=1)) for i in range(self.cls_h-1)]
-        # f_fea_final = self.f_node_refine(torch.cat([f_node[0], f_fea_new], dim=1))
-        # p_cls_new = torch.cat(p_fea_list_final, dim=1)
-        # h_cls_new = torch.cat(h_fea_list_final, dim=1)
-        # f_cls_new = f_fea_final
-        # f_seg_new = torch.cat([bg_cls, f_cls_new], dim=1)
-        # h_seg_new = torch.cat([bg_cls, h_cls_new], dim=1)
-        # p_seg_new = torch.cat([bg_cls, p_cls_new], dim=1)
-        # p_seg.append(p_seg_new)
-        # h_seg.append(h_seg_new)
-        # f_seg.append(f_seg_new)
         xphf_infer = torch.cat([bg_node] + p_fea_list_new, dim=1)
         p_seg_final = self.final_cls(xphf_infer, xp, xh, xf, xl)
         p_seg.append(p_seg_final)
