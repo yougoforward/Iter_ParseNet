@@ -27,7 +27,7 @@ class Composition(nn.Module):
 
     def forward(self, xh, xp_list):
         com_att = self.com_att(torch.cat(xp_list, dim=1))
-        xph_message = sum([self.conv_ch_list[i](torch.cat([xp * torch.sigmoid(com_att), xh], dim=1)) for i in range(len(xp_list))])
+        xph_message = sum([self.conv_ch_list[i](torch.cat([xp_list[i]* torch.sigmoid(com_att), xh], dim=1)) for i in range(len(xp_list))])
         return xph_message, com_att
 
 
