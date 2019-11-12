@@ -108,7 +108,7 @@ class Dep_Context(nn.Module):
         project1 = torch.matmul(self.img_conv(torch.cat([query, coord_fea], dim=1)).view(n, -1, hp*wp).permute(0,2,1), self.W)  # n,hw,hidden
         energy = torch.matmul(project1, self.node_conv(torch.cat([key, coord_fea], dim=1)).view(n, -1, hp*wp))  # n,hw,hw
         attention = torch.softmax(energy, dim=-1)
-        co_context = torch.bmm(hu.view(n, -1, hp*wp), attention.permute(0, 2, 1)).view(n, -1, hp, wp)
+        co_context = torch.bmm(key.view(n, -1, hp*wp), attention.permute(0, 2, 1)).view(n, -1, hp, wp)
         co_context = self.project(co_context)
         co_context =F.interpolate(co_context, (h, w), mode="bilinear", align_corners=True)
         return co_context
