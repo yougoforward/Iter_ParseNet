@@ -14,16 +14,17 @@ from modules.convGRU import ConvGRU
 from modules.dcn import DFConv2d
 
 class Composition(nn.Module):
-    def __init__(self, hidden_dim, parts=2):
+    def __init__(self, hidden_dim):
         super(Composition, self).__init__()
         self.conv_ch = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+            nn.Conv2d(2 * hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
-        self.conv_ch_list = nn.ModuleList([self.conv_ch for i in range(parts)])
     def forward(self, xh, xp_list, xp_att_list):
         com_att = sum(xp_att_list)
-        xph_message = sum([self.conv_ch_list[i](torch.cat([xp_list[i] * com_att, xh], dim=1)) for i in range(len(xp_list))])
+        xph_message = sum([self.conv_ch(torch.cat([xh, xp * com_att], dim=1)) for xp in xp_list])
         return xph_message
 
 
@@ -31,15 +32,16 @@ class Decomposition(nn.Module):
     def __init__(self, hidden_dim=10, parts=2):
         super(Decomposition, self).__init__()
         self.conv_fh = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+            nn.Conv2d(2 * hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
         self.decomp_att = Decomp_att(hidden_dim=hidden_dim, parts=parts)
-        self.conv_fh_list = nn.ModuleList([self.conv_fh for i in range(parts)])
 
     def forward(self, xf, xh_list):
         decomp_att_list, maps = self.decomp_att(xf, xh_list)
-        decomp_fh_list = [self.conv_fh_list[i](torch.cat([xf * decomp_att_list[i+1], xh_list[i]], dim=1)) for i in
+        decomp_fh_list = [self.conv_fh(torch.cat([xf * decomp_att_list[i+1], xh_list[i]], dim=1)) for i in
                           range(len(xh_list))]
         return decomp_fh_list, decomp_att_list, maps
 class Decomp_att(nn.Module):
@@ -75,16 +77,16 @@ class Dep_Context(nn.Module):
         super(Dep_Context, self).__init__()
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
-        self.W = nn.Parameter(torch.ones(in_dim+8, hidden_dim+8))
+        self.W = nn.Parameter(torch.ones(in_dim, hidden_dim))
         self.sigmoid = nn.Sigmoid()
         self.coord_fea = torch.from_numpy(generate_spatial_batch(30, 30))
         self.maxpool = nn.AdaptiveMaxPool2d(1)
 
-        self.project = nn.Sequential(nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+        self.project = nn.Sequential(nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
                                      BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
                                      )
-        self.img_conv = nn.Sequential(nn.Conv2d(in_dim + 8, in_dim+8, kernel_size=1, stride=1, padding=0, bias=True))
-        self.node_conv = nn.Sequential(nn.Conv2d(hidden_dim + 8, hidden_dim+8, kernel_size=1, stride=1, padding=0, bias=True))
+        self.img_conv = nn.Sequential(nn.Conv2d(in_dim + 8, in_dim, kernel_size=1, stride=1, padding=0, bias=True))
+        self.node_conv = nn.Sequential(nn.Conv2d(hidden_dim + 8, hidden_dim, kernel_size=1, stride=1, padding=0, bias=True))
 
         self.pool = nn.MaxPool2d(kernel_size=(2,2))
 
@@ -101,7 +103,7 @@ class Dep_Context(nn.Module):
         project1 = torch.matmul(self.img_conv(torch.cat([query, coord_fea], dim=1)).view(n, -1, hp*wp).permute(0,2,1), self.W)  # n,hw,hidden
         energy = torch.matmul(project1, self.node_conv(torch.cat([key, coord_fea], dim=1)).view(n, -1, hp*wp))  # n,hw,hw
         attention = torch.softmax(energy, dim=-1)
-        co_context = torch.bmm(query.view(n, -1, hp*wp), attention.permute(0, 2, 1)).view(n, -1, hp, wp)
+        co_context = torch.bmm(key.view(n, -1, hp*wp), attention.permute(0, 2, 1)).view(n, -1, hp, wp)
         co_context = self.project(co_context)
         co_context =F.interpolate(co_context, (h, w), mode="bilinear", align_corners=True)
         return co_context
@@ -141,8 +143,10 @@ class Part_Dependency(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10):
         super(Part_Dependency, self).__init__()
         self.R_dep = nn.Sequential(
-            nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+            nn.Conv2d(2*hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
 
     def forward(self, F_dep_hu, hv):
@@ -157,7 +161,7 @@ class conv_Update(nn.Module):
         dtype = torch.cuda.FloatTensor
         self.update = ConvGRU(input_dim=hidden_dim,
                               hidden_dim=hidden_dim,
-                              kernel_size=(3, 3),
+                              kernel_size=(1, 1),
                               num_layers=1,
                               dtype=dtype,
                               batch_first=True,
@@ -244,7 +248,7 @@ class Full_Graph(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, cls_p=7, cls_h=3, cls_f=2):
         super(Full_Graph, self).__init__()
         self.hidden = hidden_dim
-        self.comp_h = Composition(hidden_dim, parts=2)
+        self.comp_h = Composition(hidden_dim)
         self.conv_Update = conv_Update(hidden_dim)
 
     def forward(self, xf, xh_list, xp_list, f_att_list, h_att_list, p_att_list):
@@ -265,8 +269,8 @@ class Half_Graph(nn.Module):
         self.hidden = hidden_dim
 
         self.decomp_fh_list = Decomposition(hidden_dim, parts=2)
-        self.comp_u = Composition(hidden_dim, parts=len(upper_part_list))
-        self.comp_l = Composition(hidden_dim, parts=len(lower_part_list))
+        self.comp_u = Composition(hidden_dim)
+        self.comp_l = Composition(hidden_dim)
 
         self.update_u = conv_Update(hidden_dim)
         self.update_l = conv_Update(hidden_dim)
@@ -323,7 +327,7 @@ class Part_Graph(nn.Module):
         lower_parts = []
         for part in self.lower_part_list:
             lower_parts.append(xp_list[part - 1])
-        decomp_pu_list, decomp_pu_att_list, decomp_pu_att_map = self.decomp_hpu_list(xh_list[0], upper_parts)
+        decomp_pu_list, decomp_pu_att_list, decomp_pu_att_map  = self.decomp_hpu_list(xh_list[0], upper_parts)
         decomp_pl_list, decomp_pl_att_list, decomp_pl_att_map = self.decomp_hpl_list(xh_list[1], lower_parts)
 
         #dp
@@ -389,16 +393,16 @@ class GNN_infer(nn.Module):
 
         # feature transform
         self.p_conv = nn.Sequential(
-            nn.Conv2d(in_dim, hidden_dim * (cls_p - 1), kernel_size=3, padding=1, stride=1, bias=False),
+            nn.Conv2d(in_dim, hidden_dim * (cls_p - 1), kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim * (cls_p - 1)), nn.ReLU(inplace=False))
         self.h_conv = nn.Sequential(
-            nn.Conv2d(in_dim, hidden_dim * (cls_h - 1), kernel_size=3, padding=1, stride=1, bias=False),
+            nn.Conv2d(in_dim, hidden_dim * (cls_h - 1), kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim * (cls_h - 1)), nn.ReLU(inplace=False))
         self.f_conv = nn.Sequential(
-            nn.Conv2d(in_dim, hidden_dim * (cls_f - 1), kernel_size=3, padding=1, stride=1, bias=False),
+            nn.Conv2d(in_dim, hidden_dim * (cls_f - 1), kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim * (cls_f - 1)), nn.ReLU(inplace=False))
         self.bg_conv = nn.Sequential(
-            nn.Conv2d(3 * in_dim, hidden_dim, kernel_size=3, padding=1, stride=1,
+            nn.Conv2d(3 * in_dim, hidden_dim, kernel_size=1, padding=0, stride=1,
                       bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
 
@@ -496,7 +500,7 @@ class GNN_infer(nn.Module):
             Fdep_att_list.append(Fdep_att_list_new)
 
         xphf_infer = torch.cat([bg_node] + p_fea_list_new, dim=1)
-        p_seg_final = self.p_cls(self.final_cls(xphf_infer, xp, xh, xf, xl))
+        p_seg_final = self.final_cls(xphf_infer, xp, xh, xf, xl)
         p_seg.append(p_seg_final)
 
         return p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, Fdep_att_list
@@ -509,18 +513,18 @@ class Final_classifer(nn.Module):
         self.ch_in = in_dim
 
         # classifier
-        self.conv0 = nn.Sequential(nn.Conv2d(in_dim + cls_p*hidden_dim, in_dim//2, kernel_size=3, padding=1, dilation=1, bias=False),
-                                   BatchNorm2d(in_dim//2), nn.ReLU(inplace=False),
-                                   nn.Conv2d(in_dim//2, cls_p*hidden_dim, kernel_size=3, padding=1, dilation=1, bias=False),
-                                   BatchNorm2d(cls_p*hidden_dim),
+        self.conv0 = nn.Sequential(nn.Conv2d(in_dim + cls_p*hidden_dim, in_dim, kernel_size=3, padding=1, dilation=1, bias=False),
+                                   BatchNorm2d(in_dim), nn.ReLU(inplace=False),
+                                   nn.Conv2d(in_dim, in_dim, kernel_size=3, padding=1, dilation=1, bias=False),
+                                   BatchNorm2d(in_dim), nn.ReLU(inplace=False)
                                    )
         self.conv2 = nn.Sequential(nn.Conv2d(in_dim, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(48), nn.ReLU(inplace=False))
 
-        self.conv3 = nn.Sequential(nn.Conv2d(cls_p*hidden_dim + 48, in_dim//2, kernel_size=3, padding=1, dilation=1, bias=False),
-                                   BatchNorm2d(in_dim//2), nn.ReLU(inplace=False),
-                                   nn.Conv2d(in_dim//2, cls_p*hidden_dim, kernel_size=3, padding=1, dilation=1, bias=False),
-                                   BatchNorm2d(cls_p*hidden_dim)
+        self.conv3 = nn.Sequential(nn.Conv2d(in_dim + 48, in_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+                                   BatchNorm2d(in_dim), nn.ReLU(inplace=False),
+                                   nn.Conv2d(in_dim, in_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+                                   BatchNorm2d(in_dim)
                                    )
         self.relu = nn.ReLU(inplace=False)
 
@@ -529,12 +533,12 @@ class Final_classifer(nn.Module):
     def forward(self, xphf, xp, xh, xf, xl):
         # classifier
         _, _, th, tw = xl.size()
-        xt = F.interpolate(self.relu(xphf+self.conv0(torch.cat([xphf, xp], dim=1))), size=(th, tw), mode='bilinear', align_corners=True)
+        xt = F.interpolate(self.conv0(torch.cat([xphf, xp], dim=1)), size=(th, tw), mode='bilinear', align_corners=True)
         xl = self.conv2(xl)
         x = torch.cat([xt, xl], dim=1)
         x_fea = self.relu(self.conv3(x)+xt)
-        # xp_seg = self.p_cls(x_fea)
-        return x_fea
+        xp_seg = self.p_cls(x_fea)
+        return xp_seg
 
 class Decoder(nn.Module):
     def __init__(self, num_classes=7, hbody_cls=3, fbody_cls=2):
@@ -548,7 +552,7 @@ class Decoder(nn.Module):
             [[0, 1, 0, 0, 0, 0], [1, 0, 1, 0, 1, 0], [0, 1, 0, 1, 0, 0], [0, 0, 1, 0, 0, 0], [0, 1, 0, 0, 0, 1],
              [0, 0, 0, 0, 1, 0]], requires_grad=False)
         self.gnn_infer = GNN_infer(adj_matrix=self.adj_matrix, upper_half_node=[1, 2, 3, 4], lower_half_node=[5, 6],
-                                   in_dim=256, hidden_dim=64, cls_p=7, cls_h=3, cls_f=2)
+                                   in_dim=256, hidden_dim=32, cls_p=7, cls_h=3, cls_f=2)
         #
         self.layer_dsn = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
                                        BatchNorm2d(512), nn.ReLU(inplace=False),
