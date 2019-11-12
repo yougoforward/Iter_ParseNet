@@ -2,12 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="2810911a-08cc-4176-bfd2-ef66950fbb73" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/network/gnn08513_final_iter.py" beforeDir="false" afterPath="$PROJECT_DIR$/network/gnn08513_final_iter.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/network/gnn08513_final_iter2.py" beforeDir="false" afterPath="$PROJECT_DIR$/network/gnn08513_final_iter2.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/network/gnn08513_final_iter3.py" beforeDir="false" afterPath="$PROJECT_DIR$/network/gnn08513_final_iter3.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/network/gnn08551_final_iter.py" beforeDir="false" afterPath="$PROJECT_DIR$/network/gnn08551_final_iter.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/network/gnn08551_final_iter2.py" beforeDir="false" afterPath="$PROJECT_DIR$/network/gnn08551_final_iter2.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/network/gnn08551_final_iter3.py" beforeDir="false" afterPath="$PROJECT_DIR$/network/gnn08551_final_iter3.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/aaf_lovasz_loss.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/aaf_lovasz_loss.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
