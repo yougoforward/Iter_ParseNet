@@ -496,8 +496,11 @@ class GNN_infer(nn.Module):
             Fdep_att_list.append(Fdep_att_list_new)
 
         xphf_infer = torch.cat([bg_node] + p_fea_list_new, dim=1)
-        p_seg_final = self.p_cls(self.final_cls(xphf_infer, xp, xh, xf, xl))
-        p_seg.append(p_seg_final)
+        p_final = self.final_cls(xphf_infer, xp, xh, xf, xl)
+        p_list = torch.split(p_final, self.hidden_dim, dim=1)
+        bg_seg_final = self.bg_cls(p_list[0])
+        p_seg_final = self.p_cls(torch.cat(p_list[1:], dim=1))
+        p_seg.append(torch.cat([bg_seg_final, p_seg_final], dim=1))
 
         return p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, Fdep_att_list
 class Final_classifer(nn.Module):
