@@ -532,8 +532,8 @@ class Final_classifer(nn.Module):
         xl = self.conv2(xl)
         x = torch.cat([xt, xl], dim=1)
         x_fea = self.relu(self.conv3(x)+xt)
-        # xp_seg = self.p_cls(x_fea)
-        return x_fea
+        xp_seg = self.p_cls(x_fea)
+        return xp_seg
 
 class Decoder(nn.Module):
     def __init__(self, num_classes=7, hbody_cls=3, fbody_cls=2):

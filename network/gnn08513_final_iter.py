@@ -511,15 +511,15 @@ class Final_classifer(nn.Module):
         # classifier
         self.conv0 = nn.Sequential(nn.Conv2d(in_dim + cls_p*hidden_dim, in_dim, kernel_size=3, padding=1, dilation=1, bias=False),
                                    BatchNorm2d(in_dim), nn.ReLU(inplace=False),
-                                   nn.Conv2d(in_dim, in_dim, kernel_size=3, padding=1, dilation=1, bias=False),
-                                   BatchNorm2d(in_dim), nn.ReLU(inplace=False)
+                                   nn.Conv2d(in_dim, cls_p*hidden_dim, kernel_size=3, padding=1, dilation=1,bias=False),
+                                   BatchNorm2d(cls_p*hidden_dim)
                                    )
         self.conv2 = nn.Sequential(nn.Conv2d(in_dim, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(48), nn.ReLU(inplace=False))
 
-        self.conv3 = nn.Sequential(nn.Conv2d(in_dim + 48, in_dim//2, kernel_size=3, padding=1, dilation=1, bias=False),
-                                   BatchNorm2d(in_dim//2), nn.ReLU(inplace=False),
-                                   nn.Conv2d(in_dim//2, in_dim, kernel_size=3, padding=1, dilation=1, bias=False),
+        self.conv3 = nn.Sequential(nn.Conv2d(cls_p*hidden_dim + 48, in_dim, kernel_size=3, padding=1, dilation=2, bias=False),
+                                   BatchNorm2d(in_dim), nn.ReLU(inplace=False),
+                                   nn.Conv2d(in_dim, in_dim, kernel_size=3, padding=1, dilation=4, bias=False),
                                    BatchNorm2d(in_dim)
                                    )
         self.relu = nn.ReLU(inplace=False)
@@ -529,12 +529,12 @@ class Final_classifer(nn.Module):
     def forward(self, xphf, xp, xh, xf, xl):
         # classifier
         _, _, th, tw = xl.size()
-        xt = F.interpolate(self.conv0(torch.cat([xphf, xp], dim=1)), size=(th, tw), mode='bilinear', align_corners=True)
+        xt = F.interpolate(self.relu(xphf+self.conv0(torch.cat([xphf, xp], dim=1))), size=(th, tw), mode='bilinear', align_corners=True)
         xl = self.conv2(xl)
         x = torch.cat([xt, xl], dim=1)
         x_fea = self.relu(self.conv3(x)+xt)
-        # xp_seg = self.p_cls(x_fea)
-        return x_fea
+        xp_seg = self.p_cls(x_fea)
+        return xp_seg
 
 class Decoder(nn.Module):
     def __init__(self, num_classes=7, hbody_cls=3, fbody_cls=2):
