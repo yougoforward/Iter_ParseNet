@@ -102,7 +102,7 @@ class DatasetGenerator(data.Dataset):
         self.segs_rev = segs_rev
         self.crop_size = crop_size
         self.training = training
-        self.configer = Configer(hypes_file='./datasets/data_augmentation_trans_config.json')
+        self.configer = Configer(hypes_file='./dataset/data_augmentation_trans_config.json')
 
         if self.configer.get('data', 'image_tool') == 'pil':
             self.aug_train_transform = pil_aug_trans.PILAugCompose(self.configer, split='train')
