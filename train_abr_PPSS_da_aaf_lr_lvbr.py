@@ -12,16 +12,12 @@ from torch.nn import functional as F
 from torch.nn.parallel.scatter_gather import gather
 from torch.utils import data
 
-from dataset.combo_dataloader import DataGenerator
-# from dataset.dataloader import DataGenerator
-# from dataset.datasets import DatasetGenerator
+from dataset.ppss_combo_dataloader import DatasetGenerator
 from network.abrnet_se154 import get_model
+
 # from network.abrnet import get_model
 from progress.bar import Bar
-# from utils.lovasz_loss import ABRLovaszLoss
-# from utils.lovasz_loss import AAF_Loss as ABRLovaszLoss
-from utils.aaf_lovasz_loss import LR_AAF_Loss as ABRLovaszLoss
-
+from utils.aaf_lovasz_loss import PPSS_LR_AAF_Loss as ABRLovaszLoss
 from utils.metric import *
 from utils.parallel import DataParallelModel, DataParallelCriterion
 from utils.visualize import inv_preprocess, decode_predictions
@@ -30,14 +26,14 @@ from utils.learning_policy import cosine_decay, restart_cosine_decay
 
 def parse_args():
     parser = argparse.ArgumentParser(description='PyTorch Segmentation')
-    parser.add_argument('--method', type=str, default='abr')
+    parser.add_argument('--method', type=str, default='gate_ppss_321')
     # Datasets
-    parser.add_argument('--root', default='./data/Person', type=str)
-    parser.add_argument('--val-root', default='./data/Person', type=str)
-    parser.add_argument('--lst', default='./dataset/Pascal/train_id.txt', type=str)
-    parser.add_argument('--val-lst', default='./dataset/Pascal/val_id.txt', type=str)
-    parser.add_argument('--crop-size', type=int, default=473)
-    parser.add_argument('--num-classes', type=int, default=7)
+    parser.add_argument('--root', default='./data/PPSS/TrainData/', type=str)
+    parser.add_argument('--val-root', default='./data/PPSS/TestData/', type=str)
+    parser.add_argument('--lst', default='./dataset/PPSS/train_id.txt', type=str)
+    parser.add_argument('--val-lst', default='./dataset/PPSS/test_id.txt', type=str)
+    parser.add_argument('--crop-size', type=tuple, default=(473, 473))
+    parser.add_argument('--num-classes', type=int, default=8)
     parser.add_argument('--hbody-cls', type=int, default=3)
     parser.add_argument('--fbody-cls', type=int, default=2)
     # Optimization options
@@ -118,10 +114,10 @@ def main(args):
     model.cuda()
 
     # define dataloader
-    train_loader = data.DataLoader(DataGenerator(root=args.root, list_path=args.lst,
+    train_loader = data.DataLoader(DatasetGenerator(root=args.root, list_path=args.lst,
                                                     crop_size=args.crop_size, training=True),
                                    batch_size=args.batch_size, shuffle=True, num_workers=4, pin_memory=True)
-    val_loader = data.DataLoader(DataGenerator(root=args.val_root, list_path=args.val_lst,
+    val_loader = data.DataLoader(DatasetGenerator(root=args.val_root, list_path=args.val_lst,
                                                   crop_size=args.crop_size, training=False),
                                  batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
 

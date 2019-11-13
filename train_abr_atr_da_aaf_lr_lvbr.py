@@ -11,33 +11,31 @@ from tensorboardX import SummaryWriter
 from torch.nn import functional as F
 from torch.nn.parallel.scatter_gather import gather
 from torch.utils import data
-
-from dataset.combo_dataloader import DataGenerator
+# from dataset.combo_dataloader import DataGenerator
 # from dataset.dataloader import DataGenerator
-# from dataset.datasets import DatasetGenerator
+from dataset.atr_combo_dataloader import DatasetGenerator as DataGenerator
 from network.abrnet_se154 import get_model
 # from network.abrnet import get_model
 from progress.bar import Bar
 # from utils.lovasz_loss import ABRLovaszLoss
 # from utils.lovasz_loss import AAF_Loss as ABRLovaszLoss
-from utils.aaf_lovasz_loss import LR_AAF_Loss as ABRLovaszLoss
+from utils.aaf_lovasz_loss import ATR_LR_AAF_Loss as ABRLovaszLoss
 
 from utils.metric import *
 from utils.parallel import DataParallelModel, DataParallelCriterion
 from utils.visualize import inv_preprocess, decode_predictions
-from utils.learning_policy import cosine_decay, restart_cosine_decay
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='PyTorch Segmentation')
     parser.add_argument('--method', type=str, default='abr')
     # Datasets
-    parser.add_argument('--root', default='./data/Person', type=str)
-    parser.add_argument('--val-root', default='./data/Person', type=str)
-    parser.add_argument('--lst', default='./dataset/Pascal/train_id.txt', type=str)
-    parser.add_argument('--val-lst', default='./dataset/Pascal/val_id.txt', type=str)
-    parser.add_argument('--crop-size', type=int, default=473)
-    parser.add_argument('--num-classes', type=int, default=7)
+    parser.add_argument('--root', default='./data/ATR/train_set', type=str)
+    parser.add_argument('--val-root', default='./data/ATR/test_set/', type=str)
+    parser.add_argument('--lst', default='./dataset/ATR/train_id.txt', type=str)
+    parser.add_argument('--val-lst', default='./dataset/ATR/test_id.txt', type=str)
+    parser.add_argument('--crop-size', type=int, default=513)
+    parser.add_argument('--num-classes', type=int, default=18)
     parser.add_argument('--hbody-cls', type=int, default=3)
     parser.add_argument('--fbody-cls', type=int, default=2)
     # Optimization options

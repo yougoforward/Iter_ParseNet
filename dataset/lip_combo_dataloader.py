@@ -10,6 +10,7 @@ from dataset import cv2_aug_transforms as cv2_aug_trans
 # from dataset import transforms as trans
 import json
 import logging
+from .label_relax_transforms import RelaxedBoundaryLossToTensor
 
 class Configer(object):
     def __init__(self, hypes_file=None):
@@ -93,6 +94,7 @@ class DatasetGenerator(data.Dataset):
     def __init__(self, root, list_path, crop_size, training=True):
 
         imgs, segs, segs_rev = make_dataset(root, list_path)
+        self.label_relax = RelaxedBoundaryLossToTensor(ignore_id=255, num_classes=20)
 
         self.root = root
         self.imgs = imgs
@@ -140,7 +142,7 @@ class DatasetGenerator(data.Dataset):
             if self.aug_train_transform is not None:
                 img, seg = self.aug_train_transform(img, labelmap=seg)
             # random scale
-            ratio = random.uniform(0.5, 1.5)
+            ratio = random.uniform(0.5, 2.0)
             img = cv2.resize(img, None, fx=ratio, fy=ratio, interpolation=cv2.INTER_LINEAR)
             seg = cv2.resize(seg, None, fx=ratio, fy=ratio, interpolation=cv2.INTER_NEAREST)
             img = np.array(img).astype(np.float32) - mean
@@ -199,8 +201,10 @@ class DatasetGenerator(data.Dataset):
         segmentations_half = seg_half.copy()
         segmentations_full = seg_full.copy()
 
-        return images, segmentations, segmentations_half, segmentations_full, name
+        # label_relaxation
+        lr_segmentations = self.label_relax(segmentations)
 
+        return images, segmentations, segmentations_half, segmentations_full, lr_segmentations, name
     def __len__(self):
         return len(self.imgs)
 
