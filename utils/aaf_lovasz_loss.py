@@ -3069,15 +3069,14 @@ class AAF_Loss(nn.Module):
         #aaf loss
         labels = targets[0]
         one_label=labels.clone()
-        ignore = (targets[0]!=self.ignore_index).float().unsqueeze(1)
         one_label[labels==self.ignore_index]=0
         one_hot_lab=F.one_hot(one_label, num_classes=self.num_classes)
 
-        # targets_p_node_list = list(torch.split(one_hot_lab,1, dim=3))
-        # for i in range(self.num_classes):
-        #     targets_p_node_list[i] = targets_p_node_list[i].squeeze(-1)
-        #     targets_p_node_list[i][labels==255]=255
-        # one_hot_lab = torch.stack(targets_p_node_list, dim=-1)
+        targets_p_node_list = list(torch.split(one_hot_lab,1, dim=3))
+        for i in range(self.num_classes):
+            targets_p_node_list[i] = targets_p_node_list[i].squeeze(-1)
+            targets_p_node_list[i][labels==255]=255
+        one_hot_lab = torch.stack(targets_p_node_list, dim=-1)
 
         prob = pred
         w_edge = self.w_edge_softmax(self.w_edge)
@@ -3112,10 +3111,10 @@ class AAF_Loss(nn.Module):
         #                                                  w_edge[..., 2],
         #                                                  w_not_edge[..., 2])
         dec = self.dec
-        aaf_loss = torch.mean(eloss_1*ignore) * self.kld_lambda_1*dec
+        aaf_loss = torch.mean(eloss_1) * self.kld_lambda_1*dec
         # aaf_loss += torch.mean(eloss_2) * self.kld_lambda_1*dec
         # aaf_loss += torch.mean(eloss_3) * self.kld_lambda_1*dec
-        aaf_loss += torch.mean(neloss_1*ignore) * self.kld_lambda_2*dec
+        aaf_loss += torch.mean(neloss_1) * self.kld_lambda_2*dec
         # aaf_loss += torch.mean(neloss_2) * self.kld_lambda_2*dec
         # aaf_loss += torch.mean(neloss_3) * self.kld_lambda_2*dec
 
