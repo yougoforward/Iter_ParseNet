@@ -171,7 +171,7 @@ class DatasetGenerator(data.Dataset):
             h_off = random.randint(0, img_h - self.crop_size[0])
             w_off = random.randint(0, img_w - self.crop_size[1])
             img = np.asarray(img_pad[h_off: h_off + self.crop_size[0], w_off: w_off + self.crop_size[1]], np.float32)
-            seg = np.asarray(seg_pad[h_off: h_off + self.crop_size[0], w_off: w_off + self.crop_size[1]], np.float32)
+            seg = np.asarray(seg_pad[h_off: h_off + self.crop_size[0], w_off: w_off + self.crop_size[1]], np.uint8)
             img = img.transpose((2, 0, 1))
             # generate body masks
             seg_half = seg.copy()
