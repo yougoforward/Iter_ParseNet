@@ -65,10 +65,10 @@ class DatasetGenerator(data.Dataset):
         # seg_h, seg_w, _ = img.shape
         img = cv2.resize(img, (seg_w, seg_h), interpolation=cv2.INTER_LINEAR)
         # seg = cv2.resize(seg, (seg_w, seg_h), interpolation=cv2.INTER_NEAREST)
-
+        new_seg = np.ones_like(seg)*255
         for i in range(len(map_idx)):
-            seg[seg == map_idx[i]] = i
-
+            new_seg[seg == map_idx[i]] = i
+        seg = new_seg
         if self.training:
             # random mirror
             flip = np.random.choice(2) * 2 - 1
