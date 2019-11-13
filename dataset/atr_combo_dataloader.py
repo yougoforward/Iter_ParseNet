@@ -86,7 +86,7 @@ def scale_crop(img, seg, crop_size):
         img_pad, seg_pad = img, seg
 
     img = np.asarray(img_pad[0: crop_size, 0: crop_size], np.float32)
-    seg = np.asarray(seg_pad[0: crop_size, 0: crop_size], np.float32)
+    seg = np.asarray(seg_pad[0: crop_size, 0: crop_size], np.uint8)
 
     return img, seg
 
