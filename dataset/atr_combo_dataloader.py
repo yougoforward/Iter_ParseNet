@@ -2,6 +2,7 @@ import os
 import os.path
 import random
 
+from PIL import Image, ImageOps, ImageFilter
 import cv2
 import numpy as np
 import torch.utils.data as data
@@ -138,6 +139,17 @@ class DatasetGenerator(data.Dataset):
                 seg = seg_rev_in
             else:
                 seg = seg_in
+            # random blur
+            # gaussian blur as in PSP
+            # if random.random() < 0.5:
+            #     sigma = random.random()*10
+            #     img = cv2.GaussianBlur(img, (int(sigma)*2+1,int(sigma)*2+1), int(sigma)+1)
+            # gaussian blur as in PSP
+            pil_img = Image.fromarray(img)
+            if random.random() < 0.5:
+                pil_img = pil_img.filter(ImageFilter.GaussianBlur(
+                    radius=random.random()))
+            img = np.asarray(pil_img)
 
             if self.aug_train_transform is not None:
                 img, seg = self.aug_train_transform(img, labelmap=seg)

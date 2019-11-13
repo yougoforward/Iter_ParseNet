@@ -46,18 +46,9 @@ class LIP_LR_AAF_Loss(nn.Module):
         self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=self.weight)
 
         self.num_classes=num_classes
-        self.kld_margin=3.0
-        self.kld_lambda_1=1.0
-        self.kld_lambda_2=1.0
-        # self.dec = 1e-3
-        self.dec = 1e-2
-        self.softmax = nn.Softmax(dim=1)
-        self.w_edge = nn.Parameter(torch.zeros(1,1,1,self.num_classes,1,3))
-        self.w_edge_softmax = nn.Softmax(dim=-1)
-        self.w_not_edge = nn.Parameter(torch.zeros(1, 1, 1, self.num_classes, 1, 3))
-        self.w_not_edge_softmax = nn.Softmax(dim=-1)
-        self.label_relax_loss = ImgWtLossSoftNLL(classes=num_classes, ignore_index=255, weights=self.weight, upper_bound=1.0,
+        self.label_relax_loss = ImgWtLossSoftNLL(classes=num_classes, ignore_index=ignore_index, weights=self.weight, upper_bound=1.0,
                                                  norm=False)
+        self.aaf_loss = AAF_Loss(ignore_index, num_classes)
 
     def forward(self, preds, targets):
         h, w = targets[0].size(1), targets[0].size(2)
@@ -83,56 +74,7 @@ class LIP_LR_AAF_Loss(nn.Module):
 
 
         #aaf loss
-        labels = targets[0]
-        one_label=labels.clone()
-        one_label[one_label==255]=0
-        one_hot_lab=F.one_hot(one_label, num_classes=self.num_classes)
-
-        targets_p_node_list = list(torch.split(one_hot_lab,1, dim=3))
-        for i in range(self.num_classes):
-            targets_p_node_list[i] = targets_p_node_list[i].squeeze(-1)
-            targets_p_node_list[i][labels==255]=255
-        one_hot_lab = torch.stack(targets_p_node_list, dim=-1)
-
-        prob = pred
-        w_edge = self.w_edge_softmax(self.w_edge)
-        w_not_edge = self.w_not_edge_softmax(self.w_not_edge)
-
-        # w_edge_shape=list(w_edge.shape)
-        # Apply AAF on 3x3 patch.
-        eloss_1, neloss_1 = lossx.adaptive_affinity_loss(labels,
-                                                         one_hot_lab,
-                                                         prob,
-                                                         1,
-                                                         self.num_classes,
-                                                         self.kld_margin,
-                                                         w_edge[..., 0],
-                                                         w_not_edge[..., 0])
-        # Apply AAF on 5x5 patch.
-        eloss_2, neloss_2 = lossx.adaptive_affinity_loss(labels,
-                                                         one_hot_lab,
-                                                         prob,
-                                                         2,
-                                                         self.num_classes,
-                                                         self.kld_margin,
-                                                         w_edge[..., 1],
-                                                         w_not_edge[..., 1])
-        # Apply AAF on 7x7 patch.
-        eloss_3, neloss_3 = lossx.adaptive_affinity_loss(labels,
-                                                         one_hot_lab,
-                                                         prob,
-                                                         3,
-                                                         self.num_classes,
-                                                         self.kld_margin,
-                                                         w_edge[..., 2],
-                                                         w_not_edge[..., 2])
-        dec = self.dec
-        aaf_loss = torch.mean(eloss_1) * self.kld_lambda_1 * dec
-        aaf_loss += torch.mean(eloss_2) * self.kld_lambda_1 * dec
-        aaf_loss += torch.mean(eloss_3) * self.kld_lambda_1 * dec
-        aaf_loss += torch.mean(neloss_1) * self.kld_lambda_2 * dec
-        aaf_loss += torch.mean(neloss_2) * self.kld_lambda_2 * dec
-        aaf_loss += torch.mean(neloss_3) * self.kld_lambda_2 * dec
+        aaf_loss = self.aaf_loss(preds, targets)
 
         # label relax loss
         label_relax_loss = self.label_relax_loss(pred0, targets[3])
@@ -140,7 +82,7 @@ class LIP_LR_AAF_Loss(nn.Module):
         # pred variance loss
         lvbr = 1-torch.mean(torch.sum(pred*pred, dim=1))
 
-        return 0.5*loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.1*aaf_loss + 0.5*label_relax_loss + 0.2*lvbr
+        return 0.8*loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.2*aaf_loss + 0.2*label_relax_loss + 0.2*lvbr
 
 class ATR_LR_AAF_Loss(nn.Module):
     """
@@ -155,19 +97,11 @@ class ATR_LR_AAF_Loss(nn.Module):
  1.08384483, 1.08506841, 1.09560942, 1.09565198, 1.07504567, 1.20411509])
         self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=self.weight)
 
-        self.num_classes=num_classes
-        self.kld_margin=3.0
-        self.kld_lambda_1=1.0
-        self.kld_lambda_2=1.0
-        # self.dec = 1e-3
-        self.dec = 1e-2
-        self.softmax = nn.Softmax(dim=1)
-        self.w_edge = nn.Parameter(torch.zeros(1,1,1,self.num_classes,1,3))
-        self.w_edge_softmax = nn.Softmax(dim=-1)
-        self.w_not_edge = nn.Parameter(torch.zeros(1, 1, 1, self.num_classes, 1, 3))
-        self.w_not_edge_softmax = nn.Softmax(dim=-1)
-        self.label_relax_loss = ImgWtLossSoftNLL(classes=num_classes, ignore_index=255, weights=self.weight, upper_bound=1.0,
+        self.num_classes = num_classes
+        self.label_relax_loss = ImgWtLossSoftNLL(classes=num_classes, ignore_index=ignore_index, weights=self.weight,
+                                                 upper_bound=1.0,
                                                  norm=False)
+        self.aaf_loss = AAF_Loss(ignore_index, num_classes)
 
     def forward(self, preds, targets):
         h, w = targets[0].size(1), targets[0].size(2)
@@ -190,67 +124,16 @@ class ATR_LR_AAF_Loss(nn.Module):
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
 
-
-
-        #aaf loss
-        labels = targets[0]
-        one_label=labels.clone()
-        one_label[one_label==255]=0
-        one_hot_lab=F.one_hot(one_label, num_classes=self.num_classes)
-
-        targets_p_node_list = list(torch.split(one_hot_lab,1, dim=3))
-        for i in range(self.num_classes):
-            targets_p_node_list[i] = targets_p_node_list[i].squeeze(-1)
-            targets_p_node_list[i][labels==255]=255
-        one_hot_lab = torch.stack(targets_p_node_list, dim=-1)
-
-        prob = pred
-        w_edge = self.w_edge_softmax(self.w_edge)
-        w_not_edge = self.w_not_edge_softmax(self.w_not_edge)
-
-        # w_edge_shape=list(w_edge.shape)
-        # Apply AAF on 3x3 patch.
-        eloss_1, neloss_1 = lossx.adaptive_affinity_loss(labels,
-                                                         one_hot_lab,
-                                                         prob,
-                                                         1,
-                                                         self.num_classes,
-                                                         self.kld_margin,
-                                                         w_edge[..., 0],
-                                                         w_not_edge[..., 0])
-        # Apply AAF on 5x5 patch.
-        eloss_2, neloss_2 = lossx.adaptive_affinity_loss(labels,
-                                                         one_hot_lab,
-                                                         prob,
-                                                         2,
-                                                         self.num_classes,
-                                                         self.kld_margin,
-                                                         w_edge[..., 1],
-                                                         w_not_edge[..., 1])
-        # Apply AAF on 7x7 patch.
-        eloss_3, neloss_3 = lossx.adaptive_affinity_loss(labels,
-                                                         one_hot_lab,
-                                                         prob,
-                                                         3,
-                                                         self.num_classes,
-                                                         self.kld_margin,
-                                                         w_edge[..., 2],
-                                                         w_not_edge[..., 2])
-        dec = self.dec
-        aaf_loss = torch.mean(eloss_1) * self.kld_lambda_1 * dec
-        aaf_loss += torch.mean(eloss_2) * self.kld_lambda_1 * dec
-        aaf_loss += torch.mean(eloss_3) * self.kld_lambda_1 * dec
-        aaf_loss += torch.mean(neloss_1) * self.kld_lambda_2 * dec
-        aaf_loss += torch.mean(neloss_2) * self.kld_lambda_2 * dec
-        aaf_loss += torch.mean(neloss_3) * self.kld_lambda_2 * dec
+        # aaf loss
+        aaf_loss = self.aaf_loss(preds, targets)
 
         # label relax loss
         label_relax_loss = self.label_relax_loss(pred0, targets[3])
 
         # pred variance loss
-        lvbr = 1-torch.mean(torch.sum(pred*pred, dim=1))
+        lvbr = 1 - torch.mean(torch.sum(pred * pred, dim=1))
 
-        return 0.5*loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.1*aaf_loss + 0.5*label_relax_loss + 0.2*lvbr
+        return 0.8 * loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.2 * aaf_loss + 0.2 * label_relax_loss + 0.2 * lvbr
 
 class CCF_LR_AAF_Loss(nn.Module):
     """
@@ -265,19 +148,11 @@ class CCF_LR_AAF_Loss(nn.Module):
      1.06208869, 1.0160915,  1.1613597,  1.17624919, 1.1701143,  1.24720215])
         self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=self.weight)
 
-        self.num_classes=num_classes
-        self.kld_margin=3.0
-        self.kld_lambda_1=1.0
-        self.kld_lambda_2=1.0
-        # self.dec = 1e-3
-        self.dec = 1e-2
-        self.softmax = nn.Softmax(dim=1)
-        self.w_edge = nn.Parameter(torch.zeros(1,1,1,self.num_classes,1,3))
-        self.w_edge_softmax = nn.Softmax(dim=-1)
-        self.w_not_edge = nn.Parameter(torch.zeros(1, 1, 1, self.num_classes, 1, 3))
-        self.w_not_edge_softmax = nn.Softmax(dim=-1)
-        self.label_relax_loss = ImgWtLossSoftNLL(classes=num_classes, ignore_index=255, weights=self.weight, upper_bound=1.0,
+        self.num_classes = num_classes
+        self.label_relax_loss = ImgWtLossSoftNLL(classes=num_classes, ignore_index=ignore_index, weights=self.weight,
+                                                 upper_bound=1.0,
                                                  norm=False)
+        self.aaf_loss = AAF_Loss(ignore_index, num_classes)
 
     def forward(self, preds, targets):
         h, w = targets[0].size(1), targets[0].size(2)
@@ -300,67 +175,16 @@ class CCF_LR_AAF_Loss(nn.Module):
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
 
-
-
-        #aaf loss
-        labels = targets[0]
-        one_label=labels.clone()
-        one_label[one_label==255]=0
-        one_hot_lab=F.one_hot(one_label, num_classes=self.num_classes)
-
-        targets_p_node_list = list(torch.split(one_hot_lab,1, dim=3))
-        for i in range(self.num_classes):
-            targets_p_node_list[i] = targets_p_node_list[i].squeeze(-1)
-            targets_p_node_list[i][labels==255]=255
-        one_hot_lab = torch.stack(targets_p_node_list, dim=-1)
-
-        prob = pred
-        w_edge = self.w_edge_softmax(self.w_edge)
-        w_not_edge = self.w_not_edge_softmax(self.w_not_edge)
-
-        # w_edge_shape=list(w_edge.shape)
-        # Apply AAF on 3x3 patch.
-        eloss_1, neloss_1 = lossx.adaptive_affinity_loss(labels,
-                                                         one_hot_lab,
-                                                         prob,
-                                                         1,
-                                                         self.num_classes,
-                                                         self.kld_margin,
-                                                         w_edge[..., 0],
-                                                         w_not_edge[..., 0])
-        # Apply AAF on 5x5 patch.
-        eloss_2, neloss_2 = lossx.adaptive_affinity_loss(labels,
-                                                         one_hot_lab,
-                                                         prob,
-                                                         2,
-                                                         self.num_classes,
-                                                         self.kld_margin,
-                                                         w_edge[..., 1],
-                                                         w_not_edge[..., 1])
-        # # Apply AAF on 7x7 patch.
-        # eloss_3, neloss_3 = lossx.adaptive_affinity_loss(labels,
-        #                                                  one_hot_lab,
-        #                                                  prob,
-        #                                                  3,
-        #                                                  self.num_classes,
-        #                                                  self.kld_margin,
-        #                                                  w_edge[..., 2],
-        #                                                  w_not_edge[..., 2])
-        dec = self.dec
-        aaf_loss = torch.mean(eloss_1) * self.kld_lambda_1 * dec
-        aaf_loss += torch.mean(eloss_2) * self.kld_lambda_1 * dec
-        # aaf_loss += torch.mean(eloss_3) * self.kld_lambda_1 * dec
-        aaf_loss += torch.mean(neloss_1) * self.kld_lambda_2 * dec
-        aaf_loss += torch.mean(neloss_2) * self.kld_lambda_2 * dec
-        # aaf_loss += torch.mean(neloss_3) * self.kld_lambda_2 * dec
+        # aaf loss
+        aaf_loss = self.aaf_loss(preds, targets)
 
         # label relax loss
         label_relax_loss = self.label_relax_loss(pred0, targets[3])
 
         # pred variance loss
-        lvbr = 1-torch.mean(torch.sum(pred*pred, dim=1))
+        lvbr = 1 - torch.mean(torch.sum(pred * pred, dim=1))
 
-        return 0.8*loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.1*aaf_loss + 0.2*label_relax_loss + 0.2*lvbr
+        return 0.8 * loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.2 * aaf_loss + 0.2 * label_relax_loss + 0.2 * lvbr
 
 class PPSS_LR_AAF_Loss(nn.Module):
     """
@@ -375,19 +199,11 @@ class PPSS_LR_AAF_Loss(nn.Module):
                                          1.17911144, 1.00641032, 1.47017195, 1.16447113])
         self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=self.weight)
 
-        self.num_classes=num_classes
-        self.kld_margin=3.0
-        self.kld_lambda_1=1.0
-        self.kld_lambda_2=1.0
-        # self.dec = 1e-3
-        self.dec = 1e-2
-        self.softmax = nn.Softmax(dim=1)
-        self.w_edge = nn.Parameter(torch.zeros(1,1,1,self.num_classes,1,3))
-        self.w_edge_softmax = nn.Softmax(dim=-1)
-        self.w_not_edge = nn.Parameter(torch.zeros(1, 1, 1, self.num_classes, 1, 3))
-        self.w_not_edge_softmax = nn.Softmax(dim=-1)
-        self.label_relax_loss = ImgWtLossSoftNLL(classes=num_classes, ignore_index=255, weights=self.weight, upper_bound=1.0,
+        self.num_classes = num_classes
+        self.label_relax_loss = ImgWtLossSoftNLL(classes=num_classes, ignore_index=ignore_index, weights=self.weight,
+                                                 upper_bound=1.0,
                                                  norm=False)
+        self.aaf_loss = AAF_Loss(ignore_index, num_classes)
 
     def forward(self, preds, targets):
         h, w = targets[0].size(1), targets[0].size(2)
@@ -410,67 +226,16 @@ class PPSS_LR_AAF_Loss(nn.Module):
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
 
-
-
-        #aaf loss
-        labels = targets[0]
-        one_label=labels.clone()
-        one_label[one_label==255]=0
-        one_hot_lab=F.one_hot(one_label, num_classes=self.num_classes)
-
-        targets_p_node_list = list(torch.split(one_hot_lab,1, dim=3))
-        for i in range(self.num_classes):
-            targets_p_node_list[i] = targets_p_node_list[i].squeeze(-1)
-            targets_p_node_list[i][labels==255]=255
-        one_hot_lab = torch.stack(targets_p_node_list, dim=-1)
-
-        prob = pred
-        w_edge = self.w_edge_softmax(self.w_edge)
-        w_not_edge = self.w_not_edge_softmax(self.w_not_edge)
-
-        # w_edge_shape=list(w_edge.shape)
-        # Apply AAF on 3x3 patch.
-        eloss_1, neloss_1 = lossx.adaptive_affinity_loss(labels,
-                                                         one_hot_lab,
-                                                         prob,
-                                                         1,
-                                                         self.num_classes,
-                                                         self.kld_margin,
-                                                         w_edge[..., 0],
-                                                         w_not_edge[..., 0])
-        # Apply AAF on 5x5 patch.
-        eloss_2, neloss_2 = lossx.adaptive_affinity_loss(labels,
-                                                         one_hot_lab,
-                                                         prob,
-                                                         2,
-                                                         self.num_classes,
-                                                         self.kld_margin,
-                                                         w_edge[..., 1],
-                                                         w_not_edge[..., 1])
-        # Apply AAF on 7x7 patch.
-        eloss_3, neloss_3 = lossx.adaptive_affinity_loss(labels,
-                                                         one_hot_lab,
-                                                         prob,
-                                                         3,
-                                                         self.num_classes,
-                                                         self.kld_margin,
-                                                         w_edge[..., 2],
-                                                         w_not_edge[..., 2])
-        dec = self.dec
-        aaf_loss = torch.mean(eloss_1) * self.kld_lambda_1 * dec
-        aaf_loss += torch.mean(eloss_2) * self.kld_lambda_1 * dec
-        aaf_loss += torch.mean(eloss_3) * self.kld_lambda_1 * dec
-        aaf_loss += torch.mean(neloss_1) * self.kld_lambda_2 * dec
-        aaf_loss += torch.mean(neloss_2) * self.kld_lambda_2 * dec
-        aaf_loss += torch.mean(neloss_3) * self.kld_lambda_2 * dec
+        # aaf loss
+        aaf_loss = self.aaf_loss(preds, targets)
 
         # label relax loss
         label_relax_loss = self.label_relax_loss(pred0, targets[3])
 
         # pred variance loss
-        lvbr = 1-torch.mean(torch.sum(pred*pred, dim=1))
+        lvbr = 1 - torch.mean(torch.sum(pred * pred, dim=1))
 
-        return 0.5*loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.1*aaf_loss + 0.5*label_relax_loss + 0.2*lvbr
+        return 0.8 * loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.2 * aaf_loss + 0.2 * label_relax_loss + 0.2 * lvbr
 
 
 
@@ -487,19 +252,11 @@ class LR_AAF_Loss(nn.Module):
 
         self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=self.weight)
 
-        self.num_classes=num_classes
-        self.kld_margin=3.0
-        self.kld_lambda_1=1.0
-        self.kld_lambda_2=1.0
-        # self.dec = 1e-3
-        self.dec = 1e-2
-        self.softmax = nn.Softmax(dim=1)
-        self.w_edge = nn.Parameter(torch.zeros(1,1,1,self.num_classes,1,3))
-        self.w_edge_softmax = nn.Softmax(dim=-1)
-        self.w_not_edge = nn.Parameter(torch.zeros(1, 1, 1, self.num_classes, 1, 3))
-        self.w_not_edge_softmax = nn.Softmax(dim=-1)
-        self.label_relax_loss = ImgWtLossSoftNLL(classes=num_classes, ignore_index=255, weights=self.weight, upper_bound=1.0,
+        self.num_classes = num_classes
+        self.label_relax_loss = ImgWtLossSoftNLL(classes=num_classes, ignore_index=ignore_index, weights=self.weight,
+                                                 upper_bound=1.0,
                                                  norm=False)
+        self.aaf_loss = AAF_Loss(ignore_index, num_classes)
 
     def forward(self, preds, targets):
         h, w = targets[0].size(1), targets[0].size(2)
@@ -522,70 +279,16 @@ class LR_AAF_Loss(nn.Module):
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
 
-
-
-        #aaf loss
-        labels = targets[0]
-        one_label=labels.clone()
-        one_label[one_label==255]=0
-        one_hot_lab=F.one_hot(one_label, num_classes=self.num_classes)
-
-        targets_p_node_list = list(torch.split(one_hot_lab,1, dim=3))
-        for i in range(self.num_classes):
-            targets_p_node_list[i] = targets_p_node_list[i].squeeze(-1)
-            targets_p_node_list[i][labels==255]=255
-        one_hot_lab = torch.stack(targets_p_node_list, dim=-1)
-
-        prob = pred
-        w_edge = self.w_edge_softmax(self.w_edge)
-        w_not_edge = self.w_not_edge_softmax(self.w_not_edge)
-
-        # w_edge_shape=list(w_edge.shape)
-        # Apply AAF on 3x3 patch.
-        eloss_1, neloss_1 = lossx.adaptive_affinity_loss(labels,
-                                                         one_hot_lab,
-                                                         prob,
-                                                         1,
-                                                         self.num_classes,
-                                                         self.kld_margin,
-                                                         w_edge[..., 0],
-                                                         w_not_edge[..., 0])
-        # Apply AAF on 5x5 patch.
-        eloss_2, neloss_2 = lossx.adaptive_affinity_loss(labels,
-                                                         one_hot_lab,
-                                                         prob,
-                                                         2,
-                                                         self.num_classes,
-                                                         self.kld_margin,
-                                                         w_edge[..., 1],
-                                                         w_not_edge[..., 1])
-        # Apply AAF on 7x7 patch.
-        eloss_3, neloss_3 = lossx.adaptive_affinity_loss(labels,
-                                                         one_hot_lab,
-                                                         prob,
-                                                         3,
-                                                         self.num_classes,
-                                                         self.kld_margin,
-                                                         w_edge[..., 2],
-                                                         w_not_edge[..., 2])
-        dec = self.dec
-        aaf_loss = torch.mean(eloss_1) * self.kld_lambda_1 * dec
-        aaf_loss += torch.mean(eloss_2) * self.kld_lambda_1 * dec
-        aaf_loss += torch.mean(eloss_3) * self.kld_lambda_1 * dec
-        aaf_loss += torch.mean(neloss_1) * self.kld_lambda_2 * dec
-        aaf_loss += torch.mean(neloss_2) * self.kld_lambda_2 * dec
-        aaf_loss += torch.mean(neloss_3) * self.kld_lambda_2 * dec
+        # aaf loss
+        aaf_loss = self.aaf_loss(preds, targets)
 
         # label relax loss
         label_relax_loss = self.label_relax_loss(pred0, targets[3])
 
         # pred variance loss
-        lvbr = 1-torch.mean(torch.sum(pred*pred, dim=1))
+        lvbr = 1 - torch.mean(torch.sum(pred * pred, dim=1))
 
-        # return torch.stack([loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn, aaf_loss], dim=0)
-        return 0.5*loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.1*aaf_loss + 0.5*label_relax_loss + 0.2*lvbr
-
-        # return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + aaf_loss + label_relax_loss
+        return 0.8 * loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.2 * aaf_loss + 0.2 * label_relax_loss + 0.2 * lvbr
 
 
 class abr_aaf_labelrelax2(nn.Module):
@@ -3342,19 +3045,15 @@ class AAF_Loss(nn.Module):
     Loss function for multiple outputs
     """
 
-    def __init__(self, ignore_index=255,  only_present=True, num_classes=7):
+    def __init__(self, ignore_index=255, num_classes=7):
         super(AAF_Loss, self).__init__()
         self.ignore_index = ignore_index
-        self.only_present = only_present
-        self.weight = torch.FloatTensor([0.82877791, 0.95688253, 0.94921949, 1.00538108, 1.0201687,  1.01665831, 1.05470914])
-        self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=self.weight)
-
         self.num_classes=num_classes
         self.kld_margin=3.0
         self.kld_lambda_1=1.0
         self.kld_lambda_2=1.0
-        self.dec = 1e-3
-        # self.dec = 1e-2
+        # self.dec = 1e-3
+        self.dec = 1e-2
         self.softmax = nn.Softmax(dim=1)
         self.w_edge = nn.Parameter(torch.zeros(1,1,1,self.num_classes,1,3))
         self.w_edge_softmax = nn.Softmax(dim=-1)
@@ -3370,14 +3069,15 @@ class AAF_Loss(nn.Module):
         #aaf loss
         labels = targets[0]
         one_label=labels.clone()
-        one_label[one_label==255]=0
+        ignore = (targets[0]!=self.ignore_index).float().unsqueeze(1)
+        one_label[labels==self.ignore_index]=0
         one_hot_lab=F.one_hot(one_label, num_classes=self.num_classes)
 
-        targets_p_node_list = list(torch.split(one_hot_lab,1, dim=3))
-        for i in range(self.num_classes):
-            targets_p_node_list[i] = targets_p_node_list[i].squeeze(-1)
-            targets_p_node_list[i][labels==255]=255
-        one_hot_lab = torch.stack(targets_p_node_list, dim=-1)
+        # targets_p_node_list = list(torch.split(one_hot_lab,1, dim=3))
+        # for i in range(self.num_classes):
+        #     targets_p_node_list[i] = targets_p_node_list[i].squeeze(-1)
+        #     targets_p_node_list[i][labels==255]=255
+        # one_hot_lab = torch.stack(targets_p_node_list, dim=-1)
 
         prob = pred
         w_edge = self.w_edge_softmax(self.w_edge)
@@ -3393,31 +3093,31 @@ class AAF_Loss(nn.Module):
                                                          self.kld_margin,
                                                          w_edge[..., 0],
                                                          w_not_edge[..., 0])
-        # Apply AAF on 5x5 patch.
-        eloss_2, neloss_2 = lossx.adaptive_affinity_loss(labels,
-                                                         one_hot_lab,
-                                                         prob,
-                                                         2,
-                                                         self.num_classes,
-                                                         self.kld_margin,
-                                                         w_edge[..., 1],
-                                                         w_not_edge[..., 1])
-        # Apply AAF on 7x7 patch.
-        eloss_3, neloss_3 = lossx.adaptive_affinity_loss(labels,
-                                                         one_hot_lab,
-                                                         prob,
-                                                         3,
-                                                         self.num_classes,
-                                                         self.kld_margin,
-                                                         w_edge[..., 2],
-                                                         w_not_edge[..., 2])
+        # # Apply AAF on 5x5 patch.
+        # eloss_2, neloss_2 = lossx.adaptive_affinity_loss(labels,
+        #                                                  one_hot_lab,
+        #                                                  prob,
+        #                                                  2,
+        #                                                  self.num_classes,
+        #                                                  self.kld_margin,
+        #                                                  w_edge[..., 1],
+        #                                                  w_not_edge[..., 1])
+        # # Apply AAF on 7x7 patch.
+        # eloss_3, neloss_3 = lossx.adaptive_affinity_loss(labels,
+        #                                                  one_hot_lab,
+        #                                                  prob,
+        #                                                  3,
+        #                                                  self.num_classes,
+        #                                                  self.kld_margin,
+        #                                                  w_edge[..., 2],
+        #                                                  w_not_edge[..., 2])
         dec = self.dec
-        aaf_loss = torch.mean(eloss_1) * self.kld_lambda_1*dec
-        aaf_loss += torch.mean(eloss_2) * self.kld_lambda_1*dec
-        aaf_loss += torch.mean(eloss_3) * self.kld_lambda_1*dec
-        aaf_loss += torch.mean(neloss_1) * self.kld_lambda_2*dec
-        aaf_loss += torch.mean(neloss_2) * self.kld_lambda_2*dec
-        aaf_loss += torch.mean(neloss_3) * self.kld_lambda_2*dec
+        aaf_loss = torch.mean(eloss_1*ignore) * self.kld_lambda_1*dec
+        # aaf_loss += torch.mean(eloss_2) * self.kld_lambda_1*dec
+        # aaf_loss += torch.mean(eloss_3) * self.kld_lambda_1*dec
+        aaf_loss += torch.mean(neloss_1*ignore) * self.kld_lambda_2*dec
+        # aaf_loss += torch.mean(neloss_2) * self.kld_lambda_2*dec
+        # aaf_loss += torch.mean(neloss_3) * self.kld_lambda_2*dec
 
         return aaf_loss
 
