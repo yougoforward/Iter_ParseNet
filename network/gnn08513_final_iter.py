@@ -517,10 +517,10 @@ class Final_classifer(nn.Module):
         self.conv2 = nn.Sequential(nn.Conv2d(in_dim, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(48), nn.ReLU(inplace=False))
 
-        self.conv3 = nn.Sequential(nn.Conv2d(in_dim + 48, in_dim, kernel_size=1, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(in_dim), nn.ReLU(inplace=False),
-                                   nn.Conv2d(in_dim, in_dim, kernel_size=1, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(in_dim),nn.ReLU(inplace=False)
+        self.conv3 = nn.Sequential(nn.Conv2d(in_dim + 48, in_dim//2, kernel_size=3, padding=1, dilation=1, bias=False),
+                                   BatchNorm2d(in_dim//2), nn.ReLU(inplace=False),
+                                   nn.Conv2d(in_dim//2, in_dim, kernel_size=3, padding=1, dilation=1, bias=False),
+                                   BatchNorm2d(in_dim)
                                    )
         self.relu = nn.ReLU(inplace=False)
 
@@ -532,7 +532,7 @@ class Final_classifer(nn.Module):
         xt = F.interpolate(self.conv0(torch.cat([xphf, xp], dim=1)), size=(th, tw), mode='bilinear', align_corners=True)
         xl = self.conv2(xl)
         x = torch.cat([xt, xl], dim=1)
-        x_fea = self.conv3(x)
+        x_fea = self.relu(self.conv3(x)+xt)
         # xp_seg = self.p_cls(x_fea)
         return x_fea
 
