@@ -61,11 +61,11 @@ class DatasetGenerator(data.Dataset):
         name = self.imgs[index].split('/')[-1][:-4]
         img = cv2.imread(self.imgs[index], cv2.IMREAD_COLOR)
         seg = np.array(Image.open(self.segs[index]))
-        seg_h, seg_w = seg.shape
-        # seg_h, seg_w, _ = img.shape
-        img = cv2.resize(img, (seg_w, seg_h), interpolation=cv2.INTER_LINEAR)
-        # seg = cv2.resize(seg, (seg_w, seg_h), interpolation=cv2.INTER_NEAREST)
-        new_seg = np.ones_like(seg)*255
+        # seg_h, seg_w = seg.shape
+        seg_h, seg_w, _ = img.shape
+        # img = cv2.resize(img, (seg_w, seg_h), interpolation=cv2.INTER_LINEAR)
+        seg = cv2.resize(seg, (seg_w, seg_h), interpolation=cv2.INTER_NEAREST)
+        new_seg = (np.ones_like(seg)*255).astype(np.uint8)
         for i in range(len(map_idx)):
             new_seg[seg == map_idx[i]] = i
         seg = new_seg
