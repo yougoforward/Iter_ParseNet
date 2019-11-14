@@ -478,7 +478,6 @@ class Final_classifer(nn.Module):
         # classifier
         _, _, th, tw = xl.size()
         xt = F.interpolate(xphf, size=(th, tw), mode='bilinear', align_corners=True)
-        xl = self.conv2(xl)
         x = torch.cat([xt, xl], dim=1)
         x_fea = self.conv0(x)
         xp_seg = self.p_cls(x_fea)
