@@ -24,6 +24,7 @@ from utils.aaf_lovasz_loss import ATR_LR_AAF_Loss as ABRLovaszLoss
 from utils.metric import *
 from utils.parallel import DataParallelModel, DataParallelCriterion
 from utils.visualize import inv_preprocess, decode_predictions
+from utils.learning_policy import cosine_decay, restart_cosine_decay
 
 
 def parse_args():
