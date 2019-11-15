@@ -82,7 +82,7 @@ class LIP_LR_AAF_Loss(nn.Module):
         # pred variance loss
         lvbr = 1-torch.mean(torch.sum(pred*pred, dim=1))
 
-        return 0.8*loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.2*aaf_loss + 0.2*label_relax_loss + 0.2*lvbr
+        return 0.8*loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.1*aaf_loss + 0.2*label_relax_loss + 0.2*lvbr
 
 class ATR_LR_AAF_Loss(nn.Module):
     """
