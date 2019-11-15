@@ -17,8 +17,6 @@ class Composition(nn.Module):
     def __init__(self, hidden_dim):
         super(Composition, self).__init__()
         self.conv_ch = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, 2 * hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
-            BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
@@ -32,8 +30,6 @@ class Decomposition(nn.Module):
     def __init__(self, hidden_dim=10, parts=2):
         super(Decomposition, self).__init__()
         self.conv_fh = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, 2 * hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
-            BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
@@ -390,16 +386,16 @@ class GNN_infer(nn.Module):
 
         # feature transform
         self.p_conv = nn.Sequential(
-            nn.Conv2d(in_dim, hidden_dim * (cls_p - 1), kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(in_dim, hidden_dim * (cls_p - 1), kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(hidden_dim * (cls_p - 1)), nn.ReLU(inplace=False))
         self.h_conv = nn.Sequential(
-            nn.Conv2d(in_dim, hidden_dim * (cls_h - 1), kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(in_dim, hidden_dim * (cls_h - 1), kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(hidden_dim * (cls_h - 1)), nn.ReLU(inplace=False))
         self.f_conv = nn.Sequential(
-            nn.Conv2d(in_dim, hidden_dim * (cls_f - 1), kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(in_dim, hidden_dim * (cls_f - 1), kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(hidden_dim * (cls_f - 1)), nn.ReLU(inplace=False))
         self.bg_conv = nn.Sequential(
-            nn.Conv2d(3 * in_dim, hidden_dim, kernel_size=1, padding=0, stride=1,
+            nn.Conv2d(3 * in_dim, hidden_dim, kernel_size=3, padding=1, stride=1,
                       bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
 
