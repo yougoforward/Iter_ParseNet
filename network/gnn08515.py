@@ -19,7 +19,7 @@ class Composition(nn.Module):
         self.conv_ch = nn.Sequential(
             nn.Conv2d(2 * hidden_dim, 2 * hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
     def forward(self, xh, xp_list, xp_att_list):
@@ -34,7 +34,7 @@ class Decomposition(nn.Module):
         self.conv_fh = nn.Sequential(
             nn.Conv2d(2 * hidden_dim, 2 * hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
         self.decomp_att = Decomp_att(hidden_dim=hidden_dim, parts=parts)
@@ -156,7 +156,7 @@ class conv_Update(nn.Module):
         dtype = torch.cuda.FloatTensor
         self.update = ConvGRU(input_dim=hidden_dim,
                               hidden_dim=hidden_dim,
-                              kernel_size=(1, 1),
+                              kernel_size=(3, 3),
                               num_layers=1,
                               dtype=dtype,
                               batch_first=True,

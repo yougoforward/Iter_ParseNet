@@ -17,9 +17,9 @@ class Composition(nn.Module):
     def __init__(self, hidden_dim):
         super(Composition, self).__init__()
         self.conv_ch = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, 2 * hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
     def forward(self, xh, xp_list, xp_att_list):
@@ -32,9 +32,9 @@ class Decomposition(nn.Module):
     def __init__(self, hidden_dim=10, parts=2):
         super(Decomposition, self).__init__()
         self.conv_fh = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, 2 * hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
         self.decomp_att = Decomp_att(hidden_dim=hidden_dim, parts=parts)
@@ -138,7 +138,7 @@ class Part_Dependency(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10):
         super(Part_Dependency, self).__init__()
         self.R_dep = nn.Sequential(
-            nn.Conv2d(2*hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2*hidden_dim, 2 * hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
@@ -156,7 +156,7 @@ class conv_Update(nn.Module):
         dtype = torch.cuda.FloatTensor
         self.update = ConvGRU(input_dim=hidden_dim,
                               hidden_dim=hidden_dim,
-                              kernel_size=(1, 1),
+                              kernel_size=(3, 3),
                               num_layers=1,
                               dtype=dtype,
                               batch_first=True,
@@ -177,13 +177,15 @@ class DecoderModule(nn.Module):
         self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, dilation=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
 
-        self.conv2 = nn.Sequential(nn.Conv2d(256, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(48), nn.ReLU(inplace=False))
+        # self.conv2 = nn.Sequential(nn.Conv2d(256, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
+        #                            BatchNorm2d(48), nn.ReLU(inplace=False))
+        #
+        # self.conv3 = nn.Sequential(nn.Conv2d(304, 256, kernel_size=1, padding=0, dilation=1, bias=False),
+        #                            BatchNorm2d(256), nn.ReLU(inplace=False),
+        #                            nn.Conv2d(256, 256, kernel_size=1, padding=0, dilation=1, bias=False),
+        #                            BatchNorm2d(256), nn.ReLU(inplace=False))
 
-        self.conv3 = nn.Sequential(nn.Conv2d(304, 256, kernel_size=1, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   nn.Conv2d(256, 256, kernel_size=1, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False))
+        # self.conv4 = nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True)
         self.alpha = nn.Parameter(torch.ones(1))
 
     def forward(self, xt, xm, xl):
@@ -191,11 +193,12 @@ class DecoderModule(nn.Module):
         xt = self.conv0(F.interpolate(xt, size=(h, w), mode='bilinear', align_corners=True) + self.alpha * xm)
         _, _, th, tw = xl.size()
         xt_fea = self.conv1(xt)
-        xt = F.interpolate(xt_fea, size=(th, tw), mode='bilinear', align_corners=True)
-        xl = self.conv2(xl)
-        x = torch.cat([xt, xl], dim=1)
-        x_fea = self.conv3(x)
-        return x_fea, xt_fea
+        # xt = F.interpolate(xt_fea, size=(th, tw), mode='bilinear', align_corners=True)
+        # xl = self.conv2(xl)
+        # x = torch.cat([xt, xl], dim=1)
+        # x_fea = self.conv3(x)
+        # x_seg = self.conv4(x_fea)
+        return xt_fea
 
 
 class AlphaHBDecoder(nn.Module):
@@ -204,8 +207,7 @@ class AlphaHBDecoder(nn.Module):
         self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
                                    nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False), SEModule(256, reduction=16)
-                                   )
+                                   BatchNorm2d(256), nn.ReLU(inplace=False), SEModule(256, reduction=16))
 
         self.alpha_hb = nn.Parameter(torch.ones(1))
 
@@ -214,9 +216,9 @@ class AlphaHBDecoder(nn.Module):
 
         xup = F.interpolate(x, size=(h, w), mode='bilinear', align_corners=True)
         xfuse = xup + self.alpha_hb * skip
-        output = self.conv1(xfuse)
+        xfuse = self.conv1(xfuse)
 
-        return output
+        return xfuse
 
 
 class AlphaFBDecoder(nn.Module):
@@ -225,8 +227,7 @@ class AlphaFBDecoder(nn.Module):
         self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
                                    nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False), SEModule(256, reduction=16)
-                                   )
+                                   BatchNorm2d(256), nn.ReLU(inplace=False), SEModule(256, reduction=16))
         self.alpha_fb = nn.Parameter(torch.ones(1))
 
     def forward(self, x, skip):
@@ -234,9 +235,8 @@ class AlphaFBDecoder(nn.Module):
 
         xup = F.interpolate(x, size=(h, w), mode='bilinear', align_corners=True)
         xfuse = xup + self.alpha_fb * skip
-        output = self.conv1(xfuse)
-
-        return output
+        xfuse = self.conv1(xfuse)
+        return xfuse
 
 
 class Full_Graph(nn.Module):
@@ -455,7 +455,7 @@ class GNN_infer(nn.Module):
 
 
         xphf_infer = torch.cat([bg_node] + p_fea_list_new, dim=1)
-        p_seg_final = self.final_cls(xphf_infer, xl)
+        p_seg_final = self.final_cls(xphf_infer, xp, xh, xf, xl)
         return [p_seg, p_seg_new, p_seg_final], [h_seg, h_seg_new], [f_seg, f_seg_new], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map]
 
 class Final_classifer(nn.Module):
@@ -472,14 +472,25 @@ class Final_classifer(nn.Module):
                                    nn.Conv2d(in_dim, in_dim, kernel_size=3, padding=1, dilation=1, bias=False),
                                    BatchNorm2d(in_dim), nn.ReLU(inplace=False)
                                    )
+        self.conv2 = nn.Sequential(nn.Conv2d(in_dim, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
+                                   BatchNorm2d(48), nn.ReLU(inplace=False))
+
+        self.conv3 = nn.Sequential(nn.Conv2d(in_dim + 48, in_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+                                   BatchNorm2d(in_dim), nn.ReLU(inplace=False),
+                                   nn.Conv2d(in_dim, in_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+                                   BatchNorm2d(in_dim)
+                                   )
+        self.relu = nn.ReLU(inplace=False)
+
         self.p_cls = nn.Conv2d(in_dim, cls_p, kernel_size=1, padding=0, dilation=1, bias=True)
 
-    def forward(self, xphf, xl):
+    def forward(self, xphf, xp, xh, xf, xl):
         # classifier
         _, _, th, tw = xl.size()
-        xt = F.interpolate(xphf, size=(th, tw), mode='bilinear', align_corners=True)
+        xt = F.interpolate(self.conv0(torch.cat([xphf, xp], dim=1)), size=(th, tw), mode='bilinear', align_corners=True)
+        xl = self.conv2(xl)
         x = torch.cat([xt, xl], dim=1)
-        x_fea = self.conv0(x)
+        x_fea = self.relu(self.conv3(x)+xt)
         xp_seg = self.p_cls(x_fea)
         return xp_seg
 
@@ -490,25 +501,27 @@ class Decoder(nn.Module):
         self.layer6 = DecoderModule(num_classes)
         self.layerh = AlphaHBDecoder(hbody_cls)
         self.layerf = AlphaFBDecoder(fbody_cls)
-
-        self.layer_dsn = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
-                                       BatchNorm2d(512), nn.ReLU(inplace=False),
-                                       nn.Conv2d(512, num_classes, kernel_size=1, stride=1, padding=0, bias=True))
+        #
         self.adj_matrix = torch.tensor(
             [[0, 1, 0, 0, 0, 0], [1, 0, 1, 0, 1, 0], [0, 1, 0, 1, 0, 0], [0, 0, 1, 0, 0, 0], [0, 1, 0, 0, 0, 1],
              [0, 0, 0, 0, 1, 0]], requires_grad=False)
         self.gnn_infer = GNN_infer(adj_matrix=self.adj_matrix, upper_half_node=[1, 2, 3, 4], lower_half_node=[5, 6],
                                    in_dim=256, hidden_dim=10, cls_p=7, cls_h=3, cls_f=2)
+        #
+        self.layer_dsn = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
+                                       BatchNorm2d(512), nn.ReLU(inplace=False),
+                                       nn.Conv2d(512, num_classes, kernel_size=1, stride=1, padding=0, bias=True))
+
     def forward(self, x):
         x_dsn = self.layer_dsn(x[-2])
         seg = self.layer5(x[-1])
         # direct infer
-        x_fea, xt_fea = self.layer6(seg, x[1], x[0])
+        x_fea = self.layer6(seg, x[1], x[0])
         alpha_hb_fea = self.layerh(seg, x[1])
         alpha_fb_fea = self.layerf(seg, x[1])
 
         # gnn infer
-        p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map = self.gnn_infer(xt_fea, alpha_hb_fea, alpha_fb_fea, x_fea)
+        p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map = self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, x[0])
         return p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, x_dsn
 
 
