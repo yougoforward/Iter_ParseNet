@@ -17,9 +17,9 @@ class Composition(nn.Module):
     def __init__(self, hidden_dim):
         super(Composition, self).__init__()
         self.conv_ch = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, 2 * hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
     def forward(self, xh, xp_list, xp_att_list):
@@ -32,9 +32,9 @@ class Decomposition(nn.Module):
     def __init__(self, hidden_dim=10, parts=2):
         super(Decomposition, self).__init__()
         self.conv_fh = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, 2 * hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
         self.decomp_att = Decomp_att(hidden_dim=hidden_dim, parts=parts)
@@ -156,7 +156,7 @@ class conv_Update(nn.Module):
         dtype = torch.cuda.FloatTensor
         self.update = ConvGRU(input_dim=hidden_dim,
                               hidden_dim=hidden_dim,
-                              kernel_size=(1, 1),
+                              kernel_size=(3, 3),
                               num_layers=1,
                               dtype=dtype,
                               batch_first=True,
@@ -475,9 +475,9 @@ class Final_classifer(nn.Module):
         self.conv2 = nn.Sequential(nn.Conv2d(in_dim, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(48), nn.ReLU(inplace=False))
 
-        self.conv3 = nn.Sequential(nn.Conv2d(in_dim + 48, in_dim, kernel_size=3, padding=1, dilation=1, bias=False),
+        self.conv3 = nn.Sequential(nn.Conv2d(in_dim + 48, in_dim, kernel_size=1, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(in_dim), nn.ReLU(inplace=False),
-                                   nn.Conv2d(in_dim, in_dim, kernel_size=3, padding=1, dilation=1, bias=False),
+                                   nn.Conv2d(in_dim, in_dim, kernel_size=1, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(in_dim)
                                    )
         self.relu = nn.ReLU(inplace=False)
