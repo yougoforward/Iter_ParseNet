@@ -26,6 +26,8 @@ class DecoderModule(nn.Module):
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
                                    nn.Conv2d(256, 256, kernel_size=1, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
+        self.conv4 = nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True)
+
         self.alpha = nn.Parameter(torch.ones(1))
 
     def forward(self, xt, xm, xl):
