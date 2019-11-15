@@ -32,7 +32,7 @@ def parse_args():
     parser.add_argument('--val-root', default='./data/PPSS/TestData/', type=str)
     parser.add_argument('--lst', default='./dataset/PPSS/train_id.txt', type=str)
     parser.add_argument('--val-lst', default='./dataset/PPSS/test_id.txt', type=str)
-    parser.add_argument('--crop-size', type=tuple, default=(473, 473))
+    parser.add_argument('--crop-size', type=tuple, default=(321, 321))
     parser.add_argument('--num-classes', type=int, default=8)
     parser.add_argument('--hbody-cls', type=int, default=3)
     parser.add_argument('--fbody-cls', type=int, default=2)
