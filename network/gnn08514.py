@@ -152,7 +152,7 @@ class conv_Update(nn.Module):
         dtype = torch.cuda.FloatTensor
         self.update = ConvGRU(input_dim=hidden_dim,
                               hidden_dim=hidden_dim,
-                              kernel_size=(3, 3),
+                              kernel_size=(1, 1),
                               num_layers=1,
                               dtype=dtype,
                               batch_first=True,
@@ -386,16 +386,16 @@ class GNN_infer(nn.Module):
 
         # feature transform
         self.p_conv = nn.Sequential(
-            nn.Conv2d(in_dim, hidden_dim * (cls_p - 1), kernel_size=3, padding=1, stride=1, bias=False),
+            nn.Conv2d(in_dim, hidden_dim * (cls_p - 1), kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim * (cls_p - 1)), nn.ReLU(inplace=False))
         self.h_conv = nn.Sequential(
-            nn.Conv2d(in_dim, hidden_dim * (cls_h - 1), kernel_size=3, padding=1, stride=1, bias=False),
+            nn.Conv2d(in_dim, hidden_dim * (cls_h - 1), kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim * (cls_h - 1)), nn.ReLU(inplace=False))
         self.f_conv = nn.Sequential(
-            nn.Conv2d(in_dim, hidden_dim * (cls_f - 1), kernel_size=3, padding=1, stride=1, bias=False),
+            nn.Conv2d(in_dim, hidden_dim * (cls_f - 1), kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim * (cls_f - 1)), nn.ReLU(inplace=False))
         self.bg_conv = nn.Sequential(
-            nn.Conv2d(3 * in_dim, hidden_dim, kernel_size=3, padding=1, stride=1,
+            nn.Conv2d(3 * in_dim, hidden_dim, kernel_size=1, padding=0, stride=1,
                       bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
 
