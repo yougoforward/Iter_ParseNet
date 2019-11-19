@@ -500,7 +500,7 @@ class GNN_infer(nn.Module):
             decomp_up_att_map.append(decomp_up_att_map_new)
             decomp_lp_att_map.append(decomp_lp_att_map_new)
 
-        xphf_infer = torch.cat([bg_node] + p_fea_list_new + h_fea_list_new + f_fea_new, dim=1)
+        xphf_infer = torch.cat([bg_node] + p_fea_list_new + h_fea_list_new + [f_fea_new], dim=1)
         p_seg_final = self.final_cls(xphf_infer, xp, xh, xf, xl)
         p_seg.append(p_seg_final)
 
