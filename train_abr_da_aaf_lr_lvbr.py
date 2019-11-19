@@ -15,8 +15,8 @@ from torch.utils import data
 from dataset.combo_dataloader import DataGenerator
 # from dataset.dataloader import DataGenerator
 # from dataset.datasets import DatasetGenerator
-from network.abrnet_se154 import get_model
-# from network.abrnet import get_model
+# from network.abrnet_se154 import get_model
+from network.abrnet import get_model
 from progress.bar import Bar
 # from utils.lovasz_loss import ABRLovaszLoss
 # from utils.lovasz_loss import AAF_Loss as ABRLovaszLoss
@@ -41,15 +41,15 @@ def parse_args():
     parser.add_argument('--hbody-cls', type=int, default=3)
     parser.add_argument('--fbody-cls', type=int, default=2)
     # Optimization options
-    parser.add_argument('--epochs', default=301, type=int)
+    parser.add_argument('--epochs', default=151, type=int)
     parser.add_argument('--batch-size', default=20, type=int)
     parser.add_argument('--learning-rate', default=7e-3, type=float)
     parser.add_argument('--lr-mode', type=str, default='poly')
     parser.add_argument('--ignore-label', type=int, default=255)
     # Checkpoints
-    parser.add_argument('--restore-from', default='./checkpoints/init/senet154.pth', type=str)
+    # parser.add_argument('--restore-from', default='./checkpoints/init/senet154.pth', type=str)
     # parser.add_argument('--restore-from', default='./checkpoints/init/resnet152_stem.pth', type=str)
-    # parser.add_argument('--restore-from', default='./checkpoints/init/resnet101_stem.pth', type=str)
+    parser.add_argument('--restore-from', default='./checkpoints/init/resnet101_stem.pth', type=str)
     # parser.add_argument('--restore-from', default='./checkpoints/init/resnet50_stem.pth', type=str)
     parser.add_argument('--snapshot_dir', type=str, default='./checkpoints/exp/')
     parser.add_argument('--log-dir', type=str, default='./runs/')
