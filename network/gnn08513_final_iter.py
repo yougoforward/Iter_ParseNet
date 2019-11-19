@@ -161,7 +161,7 @@ class conv_Update(nn.Module):
         dtype = torch.cuda.FloatTensor
         self.update = ConvGRU(input_dim=hidden_dim+256,
                               hidden_dim=hidden_dim,
-                              kernel_size=(3, 3),
+                              kernel_size=(1, 1),
                               num_layers=1,
                               dtype=dtype,
                               batch_first=True,
@@ -500,7 +500,7 @@ class GNN_infer(nn.Module):
             decomp_up_att_map.append(decomp_up_att_map_new)
             decomp_lp_att_map.append(decomp_lp_att_map_new)
 
-        xphf_infer = torch.cat([bg_node] + p_fea_list_new, dim=1)
+        xphf_infer = torch.cat([bg_node] + p_fea_list_new + h_fea_list_new + f_fea_new, dim=1)
         p_seg_final = self.final_cls(xphf_infer, xp, xh, xf, xl)
         p_seg.append(p_seg_final)
 
@@ -514,9 +514,9 @@ class Final_classifer(nn.Module):
         self.ch_in = in_dim
 
         # classifier
-        self.conv0 = nn.Sequential(nn.Conv2d(in_dim + cls_p*hidden_dim, in_dim, kernel_size=3, padding=1, dilation=1, bias=False),
+        self.conv0 = nn.Sequential(nn.Conv2d((cls_p+cls_h+cls_f-2)*hidden_dim, in_dim, kernel_size=3, padding=1, dilation=1, bias=False),
                                    BatchNorm2d(in_dim), nn.ReLU(inplace=False),
-                                   nn.Conv2d(in_dim, in_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+                                   nn.Conv2d(in_dim, in_dim, kernel_size=3, padding=1, dilation=1, bias=False),
                                    BatchNorm2d(in_dim), nn.ReLU(inplace=False)
                                    )
         self.conv2 = nn.Sequential(nn.Conv2d(in_dim, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
@@ -524,7 +524,7 @@ class Final_classifer(nn.Module):
 
         self.conv3 = nn.Sequential(nn.Conv2d(in_dim + 48, in_dim, kernel_size=3, padding=1, dilation=1, bias=False),
                                    BatchNorm2d(in_dim), nn.ReLU(inplace=False),
-                                   nn.Conv2d(in_dim, in_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+                                   nn.Conv2d(in_dim, in_dim, kernel_size=3, padding=1, dilation=1, bias=False),
                                    BatchNorm2d(in_dim)
                                    )
         self.relu = nn.ReLU(inplace=False)
@@ -534,7 +534,7 @@ class Final_classifer(nn.Module):
     def forward(self, xphf, xp, xh, xf, xl):
         # classifier
         _, _, th, tw = xl.size()
-        xt = F.interpolate(self.conv0(torch.cat([xphf, xp], dim=1)), size=(th, tw), mode='bilinear', align_corners=True)
+        xt = F.interpolate(self.conv0(xphf), size=(th, tw), mode='bilinear', align_corners=True)
         xl = self.conv2(xl)
         x = torch.cat([xt, xl], dim=1)
         x_fea = self.relu(self.conv3(x)+xt)
