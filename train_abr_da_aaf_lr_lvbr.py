@@ -16,7 +16,7 @@ from dataset.combo_dataloader import DataGenerator
 # from dataset.dataloader import DataGenerator
 # from dataset.datasets import DatasetGenerator
 # from network.abrnet_se154 import get_model
-from network.abrnet import get_model
+from network.abrnet2 import get_model
 from progress.bar import Bar
 # from utils.lovasz_loss import ABRLovaszLoss
 # from utils.lovasz_loss import AAF_Loss as ABRLovaszLoss
