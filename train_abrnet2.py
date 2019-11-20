@@ -14,7 +14,7 @@ from torch.utils import data
 # from dataset.combo_dataloader import DataGenerator
 from dataset.dataloader import DataGenerator
 # from dataset.datasets import DatasetGenerator
-from network.abrnet import get_model
+from network.abrnet2 import get_model
 # from network.abrnet import get_model
 from progress.bar import Bar
 from utils.lovasz_loss import ABRLovaszLoss
@@ -75,7 +75,7 @@ def main(args):
 
     if not os.path.exists(args.snapshot_dir):
         os.makedirs(args.snapshot_dir)
-    writer = SummaryWriter(logdir=os.path.join(args.log_dir, args.method))
+    writer = SummaryWriter(log_dir=os.path.join(args.log_dir, args.method))
 
     random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -106,10 +106,10 @@ def main(args):
     # define dataloader
     train_loader = data.DataLoader(DataGenerator(root=args.root, list_path=args.lst,
                                                     crop_size=args.crop_size, training=True),
-                                   batch_size=args.batch_size, shuffle=True, num_workers=4, pin_memory=False)
+                                   batch_size=args.batch_size, shuffle=True, num_workers=4, pin_memory=True)
     val_loader = data.DataLoader(DataGenerator(root=args.val_root, list_path=args.val_lst,
                                                   crop_size=args.crop_size, training=False),
-                                 batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=False)
+                                 batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
     # define criterion & optimizer
     criterion = ABRLovaszLoss(ignore_index=args.ignore_label, only_present=True)
@@ -130,7 +130,7 @@ def main(args):
         _ = train(model, train_loader, epoch, criterion, optimizer, writer)
 
         # validation
-        if epoch %10 ==0 or epoch > args.epochs*0.8:
+        if epoch %10 ==0 or epoch > args.epochs-10:
             val_pixacc, val_miou = validation(model, val_loader, epoch, writer)
             # save model
             if val_pixacc > best_val_pixAcc:
@@ -140,6 +140,7 @@ def main(args):
                 model_dir = os.path.join(args.snapshot_dir, args.method + '_miou.pth')
                 torch.save(seg_model.state_dict(), model_dir)
                 print('Model saved to %s' % model_dir)
+
     os.rename(model_dir, os.path.join(args.snapshot_dir, args.method + '_miou'+str(best_val_mIoU)+'.pth'))
     print('Complete using', time.time() - start, 'seconds')
     print('Best pixAcc: {} | Best mIoU: {}'.format(best_val_pixAcc, best_val_mIoU))
@@ -152,16 +153,18 @@ def train(model, train_loader, epoch, criterion, optimizer, writer):
     iter_num = 0
 
     # Iterate over data.
-    bar = Bar('Processing | {}'.format('train'), max=len(train_loader))
-    bar.check_tty = False
-    for i_iter, batch in enumerate(train_loader):
+    # bar = Bar('Processing | {}'.format('train'), max=len(train_loader))
+    # bar.check_tty = False
+    from tqdm import tqdm
+    tbar = tqdm(train_loader)
+    for i_iter, batch in enumerate(tbar):
         sys.stdout.flush()
         start_time = time.time()
         iter_num += 1
         # adjust learning rate
         iters_per_epoch = len(train_loader)
         lr = adjust_learning_rate(optimizer, epoch, i_iter, iters_per_epoch, method=args.lr_mode)
-
+        # print("\n=>epoch  %d, learning_rate = %f" % (epoch, lr))
         image, label, hlabel, flabel, _ = batch
         images, labels, hlabel, flabel = image.cuda(), label.long().cuda(), hlabel.cuda(), flabel.cuda()
         torch.set_grad_enabled(True)
@@ -184,14 +187,18 @@ def train(model, train_loader, epoch, criterion, optimizer, writer):
 
         batch_time = time.time() - start_time
         # plot progress
-        bar.suffix = '{} / {} | Time: {batch_time:.4f} | Loss: {loss:.4f}'.format(iter_num, len(train_loader),
+        tbar.set_description('{} / {} | Time: {batch_time:.4f} | Loss: {loss:.4f}'.format(iter_num, len(train_loader),
                                                                                   batch_time=batch_time,
-                                                                                  loss=train_loss / iter_num)
-        bar.next()
+                                                                                  loss=train_loss / iter_num))
+        # bar.suffix = '{} / {} | Time: {batch_time:.4f} | Loss: {loss:.4f}'.format(iter_num, len(train_loader),
+        #                                                                           batch_time=batch_time,
+        #                                                                           loss=train_loss / iter_num)
+        # bar.next()
 
     epoch_loss = train_loss / iter_num
     writer.add_scalar('train_epoch_loss', epoch_loss, epoch)
-    bar.finish()
+    tbar.close()
+    # bar.finish()
 
     return epoch_loss
 
