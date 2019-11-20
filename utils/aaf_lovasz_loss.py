@@ -2702,7 +2702,7 @@ class ABRLovaszLoss_List_att(nn.Module):
         loss_hb = []
         for i in range(len(preds[1])):
             pred_hb = F.interpolate(input=preds[1][i], size=(h, w), mode='bilinear', align_corners=True)
-            loss_hb_ce = self.criterion(pred_hb, targets[1])
+            loss_hb_ce = self.criterion(pred_hb, targets[1].long())
 
             pred_hb = F.softmax(input=pred_hb, dim=1)
             loss_hb.append(loss_hb_ce+lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
@@ -2716,7 +2716,7 @@ class ABRLovaszLoss_List_att(nn.Module):
         loss_fb = []
         for i in range(len(preds[2])):
             pred_fb = F.interpolate(input=preds[2][i], size=(h, w), mode='bilinear', align_corners=True)
-            loss_fb_ce = self.criterion(pred_fb, targets[2])
+            loss_fb_ce = self.criterion(pred_fb, targets[2].long())
             pred_fb = F.softmax(input=pred_fb, dim=1)
             loss_fb.append(loss_fb_ce+lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
                                       only_present=self.only_present))
@@ -2729,7 +2729,7 @@ class ABRLovaszLoss_List_att(nn.Module):
         loss_fh_att = []
         for i in range(len(preds[3])):
             pred_fh = F.interpolate(input=preds[3][i], size=(h, w), mode='bilinear', align_corners=True)
-            loss_fh_att.append(self.criterion(pred_fh, targets[1]))
+            loss_fh_att.append(self.criterion(pred_fh, targets[1].long()))
 
             # pred_fh = F.softmax(input=pred_fh, dim=1)
             # loss_fh_att.append(lovasz_softmax_flat(*flatten_probas(pred_fh, targets[1], self.ignore_index),
