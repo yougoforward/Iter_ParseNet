@@ -283,12 +283,13 @@ class LR_AAF_Loss(nn.Module):
         aaf_loss = self.aaf_loss(preds, targets)
 
         # label relax loss
-        label_relax_loss = self.label_relax_loss(pred0, targets[3])
+        # label_relax_loss = self.label_relax_loss(pred0, targets[3])
 
         # pred variance loss
-        lvbr = 1 - torch.mean(torch.sum(pred * pred, dim=1))
+        # lvbr = 1 - torch.mean(torch.sum(pred * pred, dim=1))
 
-        return  loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.1 * aaf_loss + 0.2 * label_relax_loss + 0.2 * lvbr
+        # return  0.9*loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.1 * aaf_loss + 0.1 * label_relax_loss + 0.2 * lvbr
+        return  loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.1 * aaf_loss
 
 
 class abr_aaf_labelrelax2(nn.Module):
