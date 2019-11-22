@@ -251,6 +251,7 @@ class LR_AAF_Loss(nn.Module):
         self.weight = torch.FloatTensor([0.82877791, 0.95688253, 0.94921949, 1.00538108, 1.0201687,  1.01665831, 1.05470914])
 
         self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=self.weight)
+        self.criterion2 = torch.nn.CrossEntropyLoss(ignore_index=ignore_index)
 
         self.num_classes = num_classes
         self.label_relax_loss = ImgWtLossSoftNLL(classes=num_classes, ignore_index=ignore_index, weights=self.weight,
@@ -262,16 +263,20 @@ class LR_AAF_Loss(nn.Module):
         h, w = targets[0].size(1), targets[0].size(2)
         # seg loss
         pred0 = F.interpolate(input=preds[0], size=(h, w), mode='bilinear', align_corners=True)
+        loss_ce = self.criterion(pred0, targets[0])
+
         pred = F.softmax(input=pred0, dim=1)
         loss = lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present)
 
         # half body
         pred_hb = F.interpolate(input=preds[1], size=(h, w), mode='bilinear', align_corners=True)
+        loss_hb_ce = self.criterion2(pred_hb, targets[1])
         pred_hb = F.softmax(input=pred_hb, dim=1)
         loss_hb = lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
                                       only_present=self.only_present)
         # full body
         pred_fb = F.interpolate(input=preds[2], size=(h, w), mode='bilinear', align_corners=True)
+        loss_fb_ce = self.criterion2(pred_fb, targets[2])
         pred_fb = F.softmax(input=pred_fb, dim=1)
         loss_fb = lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
                                       only_present=self.only_present)
@@ -286,10 +291,10 @@ class LR_AAF_Loss(nn.Module):
         # label_relax_loss = self.label_relax_loss(pred0, targets[3])
 
         # pred variance loss
-        # lvbr = 1 - torch.mean(torch.sum(pred * pred, dim=1))
+        lvbr = 1 - torch.mean(torch.sum(pred * pred, dim=1))
 
         # return  0.9*loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.1 * aaf_loss + 0.1 * label_relax_loss + 0.2 * lvbr
-        return  loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.1 * aaf_loss
+        return  loss_ce+0.4*loss_hb_ce+0.4*loss_fb_ce+loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.1 * aaf_loss + 0.2*lvbr
 
 
 class abr_aaf_labelrelax2(nn.Module):
