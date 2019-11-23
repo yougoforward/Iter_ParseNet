@@ -191,7 +191,7 @@ class ASPPModule(nn.Module):
         feat2 = self.dilation_1(x)
         feat3 = self.dilation_2(x)
         feat4 = self.dilation_3(x)
-        feat5 = self.dilation_4(x)
+        # feat5 = self.dilation_4(x)
         # fusion branch
         # concat = torch.cat([feat0, feat1, feat2, feat3, feat4], 1)
         # output = self.head_conv(concat)
