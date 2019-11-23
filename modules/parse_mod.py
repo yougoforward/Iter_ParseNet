@@ -165,16 +165,22 @@ class ASPPModule(nn.Module):
                                         nn.Conv2d(out_dim, out_dim, kernel_size=3, padding=18, dilation=18, bias=False),
                                         InPlaceABNSync(out_dim))
 
-        self.dilation_4 = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=1, padding=0, dilation=1, bias=False),
-                                        InPlaceABNSync(out_dim),
-                                        nn.Conv2d(out_dim, out_dim, kernel_size=3, padding=24, dilation=24, bias=False),
-                                        InPlaceABNSync(out_dim))
+        # self.dilation_4 = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+        #                                 InPlaceABNSync(out_dim),
+        #                                 nn.Conv2d(out_dim, out_dim, kernel_size=3, padding=24, dilation=24, bias=False),
+        #                                 InPlaceABNSync(out_dim))
 
-        self.psaa_conv = nn.Sequential(nn.Conv2d(in_dim + 6 * out_dim, out_dim, 1, padding=0, bias=False),
-                                        InPlaceABNSync(out_dim),
-                                        nn.Conv2d(out_dim, 6, 1, bias=True))
+        # self.psaa_conv = nn.Sequential(nn.Conv2d(in_dim + 6 * out_dim, out_dim, 1, padding=0, bias=False),
+        #                                 InPlaceABNSync(out_dim),
+        #                                 nn.Conv2d(out_dim, 6, 1, bias=True))
 
-        self.head_conv = nn.Sequential(nn.Conv2d(out_dim * 6, out_dim, kernel_size=1, padding=0, bias=False),
+        # self.head_conv = nn.Sequential(nn.Conv2d(out_dim * 6, out_dim, kernel_size=1, padding=0, bias=False),
+        #                                InPlaceABNSync(out_dim))
+        self.psaa_conv = nn.Sequential(nn.Conv2d(in_dim + 5 * out_dim, out_dim, 1, padding=0, bias=False),
+                                        InPlaceABNSync(out_dim),
+                                        nn.Conv2d(out_dim, 5, 1, bias=True))
+
+        self.head_conv = nn.Sequential(nn.Conv2d(out_dim * 5, out_dim, kernel_size=1, padding=0, bias=False),
                                        InPlaceABNSync(out_dim))
 
     def forward(self, x):
@@ -196,8 +202,10 @@ class ASPPModule(nn.Module):
         psaa_att = torch.sigmoid(psaa_feat)
         psaa_att_list = torch.split(psaa_att, 1, dim=1)
 
+        # y2 = torch.cat((psaa_att_list[0] * feat0, psaa_att_list[1] * feat1, psaa_att_list[2] * feat2,
+        #                 psaa_att_list[3] * feat3, psaa_att_list[4] * feat4, psaa_att_list[5]*feat5), 1)
         y2 = torch.cat((psaa_att_list[0] * feat0, psaa_att_list[1] * feat1, psaa_att_list[2] * feat2,
-                        psaa_att_list[3] * feat3, psaa_att_list[4] * feat4, psaa_att_list[5]*feat5), 1)
+                        psaa_att_list[3] * feat3, psaa_att_list[4] * feat4), 1)
         output = self.head_conv(y2)
         return output
 
