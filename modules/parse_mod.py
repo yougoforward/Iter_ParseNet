@@ -197,7 +197,8 @@ class ASPPModule(nn.Module):
         # output = self.head_conv(concat)
 
         # psaa
-        y1 = torch.cat((feat0, feat1, feat2, feat3, feat4, feat5), 1)
+        # y1 = torch.cat((feat0, feat1, feat2, feat3, feat4, feat5), 1)
+        y1 = torch.cat((feat0, feat1, feat2, feat3, feat4), 1)
         psaa_feat = self.psaa_conv(torch.cat([x, y1], dim=1))
         psaa_att = torch.sigmoid(psaa_feat)
         psaa_att_list = torch.split(psaa_att, 1, dim=1)
