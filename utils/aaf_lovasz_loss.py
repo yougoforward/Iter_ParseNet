@@ -282,7 +282,8 @@ class LR_AAF_Loss(nn.Module):
                                       only_present=self.only_present)
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
-        loss_dsn = self.criterion(pred_dsn, targets[0])
+        # loss_dsn = self.criterion(pred_dsn, targets[0])
+        loss_dsn = self.label_relax_loss(pred_dsn, targets[3])
 
         # aaf loss
         aaf_loss = self.aaf_loss(preds, targets)
