@@ -294,7 +294,7 @@ class LR_AAF_Loss(nn.Module):
         lvbr = 1 - torch.mean(torch.sum(pred * pred, dim=1))
 
         # return  0.9*loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.1 * aaf_loss + 0.1 * label_relax_loss + 0.2 * lvbr
-        return  0.5*loss_ce+0.2*loss_hb_ce+0.2*loss_fb_ce+0.5*loss + 0.2 * loss_hb + 0.2 * loss_fb + 0.2 * loss_dsn + 0.1 * aaf_loss + 0.1*lvbr
+        return  loss_ce+0.4*loss_hb_ce+0.4*loss_fb_ce+loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.1 * aaf_loss + 0.1*lvbr
 
 
 class abr_aaf_labelrelax2(nn.Module):
