@@ -1670,7 +1670,7 @@ class ABRLovaszLoss2(nn.Module):
         h, w = targets[0].size(1), targets[0].size(2)
         # seg loss
         pred = F.interpolate(input=preds[0], size=(h, w), mode='bilinear', align_corners=True)
-        loss_ce = self.criterion(pred0, targets[0])
+        loss_ce = self.criterion(pred, targets[0])
 
         pred = F.softmax(input=pred, dim=1)
         loss = lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present)
