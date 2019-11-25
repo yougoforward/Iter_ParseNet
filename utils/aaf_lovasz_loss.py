@@ -286,7 +286,7 @@ class LR_AAF_Loss(nn.Module):
         # loss_dsn = self.label_relax_loss(pred_dsn, targets[3])
 
         # aaf loss
-        aaf_loss = self.aaf_loss(preds, targets)
+        # aaf_loss = self.aaf_loss(preds, targets)
 
         # label relax loss
         # label_relax_loss = self.label_relax_loss(pred0, targets[3])
