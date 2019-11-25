@@ -282,8 +282,8 @@ class LR_AAF_Loss(nn.Module):
                                       only_present=self.only_present)
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
-        # loss_dsn = self.criterion(pred_dsn, targets[0])
-        loss_dsn = self.label_relax_loss(pred_dsn, targets[3])
+        loss_dsn = self.criterion(pred_dsn, targets[0])
+        # loss_dsn = self.label_relax_loss(pred_dsn, targets[3])
 
         # aaf loss
         aaf_loss = self.aaf_loss(preds, targets)
@@ -296,7 +296,8 @@ class LR_AAF_Loss(nn.Module):
 
         # return  0.9*loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.1 * aaf_loss + 0.1 * label_relax_loss + 0.2 * lvbr
         # return  loss_ce+0.4*loss_hb_ce+0.4*loss_fb_ce+loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.1 * aaf_loss + 0.1*lvbr
-        return  loss_ce+0.4*loss_hb_ce+0.4*loss_fb_ce+loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.1 * loss_dsn + 0.1 * aaf_loss
+        # return  loss_ce+0.4*loss_hb_ce+0.4*loss_fb_ce+loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.1 * loss_dsn + 0.1 * aaf_loss
+        return  loss_ce+0.4*loss_hb_ce+0.4*loss_fb_ce+loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn
         # return  loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.1 * aaf_loss
 
 
