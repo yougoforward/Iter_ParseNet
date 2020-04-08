@@ -264,9 +264,9 @@ def validation(model, val_loader, epoch, writer):
             pixAcc_fb = 1.0 * total_correct_fb / (np.spacing(1) + total_label_fb)
             IoU_fb = round(np.nanmean(per_class_iu(hist_fb)) * 100, 2)
             # plot progress
-            tbar.set_description('{} / {} | pixAcc: {pixAcc:.4f}, mIoU: {IoU:.4f} |' \
-                         'pixAcc_hb: {pixAcc_hb:.4f}, mIoU_hb: {IoU_hb:.4f} |' \
-                         'pixAcc_fb: {pixAcc_fb:.4f}, mIoU_fb: {IoU_fb:.4f}'.format(idx + 1, len(val_loader), pixAcc=pixAcc, IoU=IoU,pixAcc_hb=pixAcc_hb, IoU_hb=IoU_hb,pixAcc_fb=pixAcc_fb, IoU_fb=IoU_fb))
+            tbar.set_description('{} / {} | {pixAcc:.4f}, {IoU:.4f} |' \
+                         '{pixAcc_hb:.4f}, {IoU_hb:.4f} |' \
+                         '{pixAcc_fb:.4f}, {IoU_fb:.4f}'.format(idx + 1, len(val_loader), pixAcc=pixAcc, IoU=IoU,pixAcc_hb=pixAcc_hb, IoU_hb=IoU_hb,pixAcc_fb=pixAcc_fb, IoU_fb=IoU_fb))
             # bar.suffix = '{} / {} | pixAcc: {pixAcc:.4f}, mIoU: {IoU:.4f} |' \
             #              'pixAcc_hb: {pixAcc_hb:.4f}, mIoU_hb: {IoU_hb:.4f} |' \
             #              'pixAcc_fb: {pixAcc_fb:.4f}, mIoU_fb: {IoU_fb:.4f}'.format(idx + 1, len(val_loader),
@@ -276,9 +276,9 @@ def validation(model, val_loader, epoch, writer):
             # bar.next()
 
 
-    print('\n per class iou part: {}'.format(per_class_iu(hist)*100))
-    print('per class iou hb: {}'.format(per_class_iu(hist_hb)*100))
-    print('per class iou fb: {}'.format(per_class_iu(hist_fb)*100))
+    print('\n per class iou part: {:.4f}'.format(per_class_iu(hist)*100))
+    print('per class iou hb: {:.4f}'.format(per_class_iu(hist_hb)*100))
+    print('per class iou fb: {:.4f}'.format(per_class_iu(hist_fb)*100))
 
     mIoU = round(np.nanmean(per_class_iu(hist)) * 100, 2)
     mIoU_hb = round(np.nanmean(per_class_iu(hist_hb)) * 100, 2)
