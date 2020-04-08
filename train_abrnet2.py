@@ -17,7 +17,8 @@ from dataset.dataloader import DataGenerator
 from network.abrnet2 import get_model
 # from network.abrnet import get_model
 from progress.bar import Bar
-from utils.lovasz_loss import ABRLovaszLoss2 as ABRLovaszLoss
+from utils.lovasz_loss import ABRLovaszLoss
+# from utils.lovasz_loss import ABRLovaszLoss2 as ABRLovaszLoss
 from utils.metric import *
 from utils.parallel import DataParallelModel, DataParallelCriterion
 from utils.visualize import inv_preprocess, decode_predictions
