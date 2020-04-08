@@ -186,10 +186,10 @@ def train(model, train_loader, epoch, criterion, optimizer, writer):
 
         batch_time = time.time() - start_time
         # plot progress
-        tbar.set_description('{} / {} | Time: {batch_time:.4f} | Loss: {loss:.4f}'.format(iter_num, len(train_loader),
+        tbar.set_description('{} / {} | Time: {batch_time:.4f} | Loss: {loss:.4f}'.format(iter_num, len(train_loader), batch_time=batch_time, loss=train_loss / iter_num))
         # bar.suffix = '{} / {} | Time: {batch_time:.4f} | Loss: {loss:.4f}'.format(iter_num, len(train_loader),
-                                                                                  batch_time=batch_time,
-                                                                                  loss=train_loss / iter_num)
+                                                                                #   batch_time=batch_time,
+                                                                                #   loss=train_loss / iter_num)
         # bar.next()
 
     epoch_loss = train_loss / iter_num
