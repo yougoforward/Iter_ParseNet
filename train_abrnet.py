@@ -158,7 +158,7 @@ def train(model, train_loader, epoch, criterion, optimizer, writer):
     # bar.check_tty = False
     from tqdm import tqdm
     tbar = tqdm(train_loader)
-    for i_iter, batch in enumerate(train_loader):
+    for i_iter, batch in enumerate(tbar):
         sys.stdout.flush()
         start_time = time.time()
         iter_num += 1
@@ -218,7 +218,7 @@ def validation(model, val_loader, epoch, writer):
     # bar.check_tty = False
     from tqdm import tqdm
     tbar = tqdm(val_loader)
-    for idx, batch in enumerate(val_loader):
+    for idx, batch in enumerate(tbar):
         image, target, hlabel, flabel, _ = batch
         image, target, hlabel, flabel = image.cuda(), target.cuda(), hlabel.cuda(), flabel.cuda()
         with torch.no_grad():
