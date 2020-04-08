@@ -276,9 +276,9 @@ def validation(model, val_loader, epoch, writer):
             # bar.next()
 
 
-    print('\n per class iou part: {:.4f}'.format(per_class_iu(hist)*100))
-    print('per class iou hb: {:.4f}'.format(per_class_iu(hist_hb)*100))
-    print('per class iou fb: {:.4f}'.format(per_class_iu(hist_fb)*100))
+    print('\n per class iou part: {}'.format(per_class_iu(hist)*100))
+    print('per class iou hb: {}'.format(per_class_iu(hist_hb)*100))
+    print('per class iou fb: {}'.format(per_class_iu(hist_fb)*100))
 
     mIoU = round(np.nanmean(per_class_iu(hist)) * 100, 2)
     mIoU_hb = round(np.nanmean(per_class_iu(hist_hb)) * 100, 2)
