@@ -1663,7 +1663,7 @@ class ABRLovaszLoss2(nn.Module):
         self.only_present = only_present
         self.weight = torch.FloatTensor([0.82877791, 0.95688253, 0.94921949, 1.00538108, 1.0201687,  1.01665831, 1.05470914])
 
-        self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=self.weight)
+        self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=None)
         self.criterion2 = torch.nn.CrossEntropyLoss(ignore_index=ignore_index)
 
     def forward(self, preds, targets):
