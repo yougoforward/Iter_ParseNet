@@ -156,9 +156,9 @@ def train(model, train_loader, epoch, criterion, optimizer, writer):
     kld_lambda_1 = 1.0
     kld_lambda_2 = 1.0
     # Iterate over data.
-    bar = Bar('Processing | {}'.format('train'), max=len(train_loader))
-    bar.check_tty = False
-    for i_iter, batch in enumerate(train_loader):
+    from tqdm import tqdm
+    tbar = tqdm(train_loader)
+    for i_iter, batch in enumerate(tbar):
         sys.stdout.flush()
         start_time = time.time()
         iter_num += 1
@@ -204,16 +204,19 @@ def train(model, train_loader, epoch, criterion, optimizer, writer):
             writer.add_scalar('learning_rate', lr, iter_num + epoch * len(train_loader))
             writer.add_scalar('train_loss', train_loss / iter_num, iter_num + epoch * len(train_loader))
 
-        batch_time = time.time() - start_time
         # plot progress
-        bar.suffix = '{} / {} | Time: {batch_time:.4f} | Loss: {loss:.4f}'.format(iter_num, len(train_loader),
+        tbar.set_description('{} / {} | Time: {batch_time:.4f} | Loss: {loss:.4f}'.format(iter_num, len(train_loader),
                                                                                   batch_time=batch_time,
-                                                                                  loss=train_loss / iter_num)
-        bar.next()
+                                                                                  loss=train_loss / iter_num))
+        # bar.suffix = '{} / {} | Time: {batch_time:.4f} | Loss: {loss:.4f}'.format(iter_num, len(train_loader),
+        #                                                                           batch_time=batch_time,
+        #                                                                           loss=train_loss / iter_num)
+        # bar.next()
 
     epoch_loss = train_loss / iter_num
     writer.add_scalar('train_epoch_loss', epoch_loss, epoch)
-    bar.finish()
+    tbar.close()
+    # bar.finish()
 
     return epoch_loss
 
