@@ -203,7 +203,7 @@ def train(model, train_loader, epoch, criterion, optimizer, writer):
         if i_iter % 10 == 0:
             writer.add_scalar('learning_rate', lr, iter_num + epoch * len(train_loader))
             writer.add_scalar('train_loss', train_loss / iter_num, iter_num + epoch * len(train_loader))
-
+        batch_time = time.time() - start_time
         # plot progress
         tbar.set_description('{} / {} | Time: {batch_time:.4f} | Loss: {loss:.4f}'.format(iter_num, len(train_loader),
                                                                                   batch_time=batch_time,

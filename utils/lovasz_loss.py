@@ -2216,21 +2216,21 @@ class AAF_Loss(nn.Module):
                                                          w_edge[..., 1],
                                                          w_not_edge[..., 1])
         # Apply AAF on 7x7 patch.
-        eloss_3, neloss_3 = lossx.adaptive_affinity_loss(labels,
-                                                         one_hot_lab,
-                                                         prob,
-                                                         3,
-                                                         self.num_classes,
-                                                         self.kld_margin,
-                                                         w_edge[..., 2],
-                                                         w_not_edge[..., 2])
+        # eloss_3, neloss_3 = lossx.adaptive_affinity_loss(labels,
+        #                                                  one_hot_lab,
+        #                                                  prob,
+        #                                                  3,
+        #                                                  self.num_classes,
+        #                                                  self.kld_margin,
+        #                                                  w_edge[..., 2],
+        #                                                  w_not_edge[..., 2])
         dec = self.dec
         aaf_loss = torch.mean(eloss_1) * self.kld_lambda_1 * dec
         aaf_loss += torch.mean(eloss_2) * self.kld_lambda_1 * dec
-        aaf_loss += torch.mean(eloss_3) * self.kld_lambda_1 * dec
+        # aaf_loss += torch.mean(eloss_3) * self.kld_lambda_1 * dec
         aaf_loss += torch.mean(neloss_1) * self.kld_lambda_2 * dec
         aaf_loss += torch.mean(neloss_2) * self.kld_lambda_2 * dec
-        aaf_loss += torch.mean(neloss_3) * self.kld_lambda_2 * dec
+        # aaf_loss += torch.mean(neloss_3) * self.kld_lambda_2 * dec
 
         # return torch.stack([loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn, aaf_loss], dim=0)
         return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + aaf_loss
