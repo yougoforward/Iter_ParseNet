@@ -230,9 +230,9 @@ def validation(model, val_loader, epoch, writer):
     hist_fb = np.zeros((args.fbody_cls, args.fbody_cls))
 
     # Iterate over data.
-    bar = Bar('Processing {}'.format('val'), max=len(val_loader))
-    bar.check_tty = False
-    for idx, batch in enumerate(val_loader):
+    from tqdm import tqdm
+    tbar = tqdm(val_loader)
+    for idx, batch in enumerate(tbar):
         image, target, hlabel, flabel, _ = batch
         image, target, hlabel, flabel = image.cuda(), target.cuda(), hlabel.cuda(), flabel.cuda()
         with torch.no_grad():
@@ -278,13 +278,12 @@ def validation(model, val_loader, epoch, writer):
             pixAcc_fb = 1.0 * total_correct_fb / (np.spacing(1) + total_label_fb)
             IoU_fb = round(np.nanmean(per_class_iu(hist_fb)) * 100, 2)
             # plot progress
-            bar.suffix = '{} / {} | pixAcc: {pixAcc:.4f}, mIoU: {IoU:.4f} |' \
-                         'pixAcc_hb: {pixAcc_hb:.4f}, mIoU_hb: {IoU_hb:.4f} |' \
-                         'pixAcc_fb: {pixAcc_fb:.4f}, mIoU_fb: {IoU_fb:.4f}'.format(idx + 1, len(val_loader),
-                                                                                    pixAcc=pixAcc, IoU=IoU,
-                                                                                    pixAcc_hb=pixAcc_hb, IoU_hb=IoU_hb,
-                                                                                    pixAcc_fb=pixAcc_fb, IoU_fb=IoU_fb)
-            bar.next()
+            tbar.set_description('{} / {} | {pixAcc:.4f}, {IoU:.4f} |' \
+                         '{pixAcc_hb:.4f}, {IoU_hb:.4f} |' \
+                         '{pixAcc_fb:.4f}, {IoU_fb:.4f}'.format(idx + 1, len(val_loader), pixAcc=pixAcc, IoU=IoU,pixAcc_hb=pixAcc_hb, IoU_hb=IoU_hb,pixAcc_fb=pixAcc_fb, IoU_fb=IoU_fb))
+
+    
+
 
 
     print('\n per class iou part: {}'.format(per_class_iu(hist)*100))
@@ -301,9 +300,9 @@ def validation(model, val_loader, epoch, writer):
     writer.add_scalar('val_mIoU_hb', mIoU_hb, epoch)
     writer.add_scalar('val_pixAcc_fb', pixAcc_fb, epoch)
     writer.add_scalar('val_mIoU_fb', mIoU_fb, epoch)
-    bar.finish()
-
-    return pixAcc, mIoU
+    S
+    tbar.close()
+    return pixAcc, IoU
 
 
 if __name__ == '__main__':
