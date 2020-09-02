@@ -303,7 +303,7 @@ def validation(model, val_loader, epoch, writer):
     writer.add_scalar('val_mIoU_hb', mIoU_hb, epoch)
     writer.add_scalar('val_pixAcc_fb', pixAcc_fb, epoch)
     writer.add_scalar('val_mIoU_fb', mIoU_fb, epoch)
-    S
+
     tbar.close()
     return pixAcc, IoU
 
