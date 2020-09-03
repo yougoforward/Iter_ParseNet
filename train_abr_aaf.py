@@ -113,7 +113,7 @@ def main(args):
                                  batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
     # define criterion & optimizer
-    criterion = ABRLovaszLoss(ignore_index=args.ignore_label, only_present=True，num_classes=args.num_classes)
+    criterion = ABRLovaszLoss(ignore_index=args.ignore_label, only_present=True,num_classes=args.num_classes)
     criterion = DataParallelCriterion(criterion).cuda()
 
     optimizer = optim.SGD(
