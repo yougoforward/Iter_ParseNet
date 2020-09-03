@@ -113,7 +113,7 @@ def main(args):
                                  batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
     # define criterion & optimizer
-    criterion = ABRLovaszLoss(ignore_index=args.ignore_label, only_present=True)
+    criterion = ABRLovaszLoss(ignore_index=args.ignore_label, only_present=True，num_classes=args.num_classes)
     criterion = DataParallelCriterion(criterion).cuda()
 
     optimizer = optim.SGD(
@@ -131,7 +131,7 @@ def main(args):
         _ = train(model, train_loader, epoch, criterion, optimizer, writer)
 
         # validation
-        if epoch %5== 0:
+        if epoch %5== 0 or epoch > args.epochs-10:
             val_pixacc, val_miou = validation(model, val_loader, epoch, writer)
             # save model
             if val_pixacc > best_val_pixAcc:
@@ -154,9 +154,9 @@ def train(model, train_loader, epoch, criterion, optimizer, writer):
     kld_lambda_1 = 1.0
     kld_lambda_2 = 1.0
     # Iterate over data.
-    bar = Bar('Processing | {}'.format('train'), max=len(train_loader))
-    bar.check_tty = False
-    for i_iter, batch in enumerate(train_loader):
+    from tqdm import tqdm
+    tbar = tqdm(train_loader)
+    for i_iter, batch in enumerate(tbar):
         sys.stdout.flush()
         start_time = time.time()
         iter_num += 1
@@ -205,14 +205,15 @@ def train(model, train_loader, epoch, criterion, optimizer, writer):
 
         batch_time = time.time() - start_time
         # plot progress
-        bar.suffix = '{} / {} | Time: {batch_time:.4f} | Loss: {loss:.4f}'.format(iter_num, len(train_loader),
+        tbar.set_description('{} / {} | Time: {batch_time:.4f} | Loss: {loss:.4f}'.format(iter_num, len(train_loader),
                                                                                   batch_time=batch_time,
                                                                                   loss=train_loss / iter_num)
-        bar.next()
+        # bar.next()
 
     epoch_loss = train_loss / iter_num
     writer.add_scalar('train_epoch_loss', epoch_loss, epoch)
-    bar.finish()
+    tbar.close()
+    # bar.finish()
 
     return epoch_loss
 
@@ -229,9 +230,9 @@ def validation(model, val_loader, epoch, writer):
     hist_fb = np.zeros((args.fbody_cls, args.fbody_cls))
 
     # Iterate over data.
-    bar = Bar('Processing {}'.format('val'), max=len(val_loader))
-    bar.check_tty = False
-    for idx, batch in enumerate(val_loader):
+    from tqdm import tqdm
+    tbar = tqdm(val_loader)
+    for idx, batch in enumerate(tbar):
         image, target, hlabel, flabel, _ = batch
         image, target, hlabel, flabel = image.cuda(), target.cuda(), hlabel.cuda(), flabel.cuda()
         with torch.no_grad():
@@ -276,14 +277,14 @@ def validation(model, val_loader, epoch, writer):
             IoU_hb = round(np.nanmean(per_class_iu(hist_hb)) * 100, 2)
             pixAcc_fb = 1.0 * total_correct_fb / (np.spacing(1) + total_label_fb)
             IoU_fb = round(np.nanmean(per_class_iu(hist_fb)) * 100, 2)
-            # plot progress
-            bar.suffix = '{} / {} | pixAcc: {pixAcc:.4f}, mIoU: {IoU:.4f} |' \
-                         'pixAcc_hb: {pixAcc_hb:.4f}, mIoU_hb: {IoU_hb:.4f} |' \
-                         'pixAcc_fb: {pixAcc_fb:.4f}, mIoU_fb: {IoU_fb:.4f}'.format(idx + 1, len(val_loader),
+           # plot progress
+            tbar.set_description('{} / {} | {pixAcc:.4f}, {IoU:.4f} |' \
+                         '{pixAcc_hb:.4f}, {IoU_hb:.4f} |' \
+                         '{pixAcc_fb:.4f}, {IoU_fb:.4f}'.format(idx + 1, len(val_loader), pixAcc=pixAcc, IoU=IoU,pixAcc_hb=pixAcc_hb, IoU_hb=IoU_hb,pixAcc_fb=pixAcc_fb, IoU_fb=IoU_fb))
                                                                                     pixAcc=pixAcc, IoU=IoU,
                                                                                     pixAcc_hb=pixAcc_hb, IoU_hb=IoU_hb,
                                                                                     pixAcc_fb=pixAcc_fb, IoU_fb=IoU_fb)
-            bar.next()
+            # bar.next()
 
 
     print('\n per class iou part: {}'.format(per_class_iu(hist)*100))
@@ -300,7 +301,8 @@ def validation(model, val_loader, epoch, writer):
     writer.add_scalar('val_mIoU_hb', mIoU_hb, epoch)
     writer.add_scalar('val_pixAcc_fb', pixAcc_fb, epoch)
     writer.add_scalar('val_mIoU_fb', mIoU_fb, epoch)
-    bar.finish()
+    # bar.finish()
+    tbar.close()
 
     return pixAcc, mIoU
 
