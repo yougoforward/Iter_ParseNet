@@ -285,8 +285,6 @@ def validation(model, val_loader, epoch, writer):
                          '{pixAcc_hb:.4f}, {IoU_hb:.4f} |' \
                          '{pixAcc_fb:.4f}, {IoU_fb:.4f}'.format(idx + 1, len(val_loader), pixAcc=pixAcc, IoU=IoU,pixAcc_hb=pixAcc_hb, IoU_hb=IoU_hb,pixAcc_fb=pixAcc_fb, IoU_fb=IoU_fb))
 
-    
-
 
 
     print('\n per class iou part: {}'.format(per_class_iu(hist)*100))
@@ -303,7 +301,6 @@ def validation(model, val_loader, epoch, writer):
     writer.add_scalar('val_mIoU_hb', mIoU_hb, epoch)
     writer.add_scalar('val_pixAcc_fb', pixAcc_fb, epoch)
     writer.add_scalar('val_mIoU_fb', mIoU_fb, epoch)
-
     tbar.close()
     return pixAcc, IoU
 
