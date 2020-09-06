@@ -38,9 +38,9 @@ def parse_args():
     parser.add_argument('--hbody-cls', type=int, default=3)
     parser.add_argument('--fbody-cls', type=int, default=2)
     # Optimization options
-    parser.add_argument('--epochs', default=151, type=int)
-    parser.add_argument('--batch-size', default=4, type=int)
-    parser.add_argument('--learning-rate', default=7e-3, type=float)
+    parser.add_argument('--epochs', default=150, type=int)
+    parser.add_argument('--batch-size', default=20, type=int)
+    parser.add_argument('--learning-rate', default=1e-2, type=float)
     parser.add_argument('--lr-mode', type=str, default='poly')
     parser.add_argument('--ignore-label', type=int, default=255)
     # Checkpoints
@@ -77,7 +77,7 @@ def main(args):
 
     if not os.path.exists(args.snapshot_dir):
         os.makedirs(args.snapshot_dir)
-    writer = SummaryWriter(logdir=os.path.join(args.log_dir, args.method))
+    writer = SummaryWriter(log_dir=os.path.join(args.log_dir, args.method))
 
     random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -108,10 +108,10 @@ def main(args):
     # define dataloader
     train_loader = data.DataLoader(DataGenerator(root=args.root, list_path=args.lst,
                                                     crop_size=args.crop_size, training=True),
-                                   batch_size=args.batch_size, shuffle=True, num_workers=4, pin_memory=False)
+                                   batch_size=args.batch_size, shuffle=True, num_workers=4, pin_memory=True)
     val_loader = data.DataLoader(DataGenerator(root=args.val_root, list_path=args.val_lst,
                                                   crop_size=args.crop_size, training=False),
-                                 batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=False)
+                                 batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
     # define criterion & optimizer
     criterion = ABRLovaszLoss(ignore_index=args.ignore_label, only_present=True)
@@ -132,7 +132,7 @@ def main(args):
         _ = train(model, train_loader, epoch, criterion, optimizer, writer)
 
         # validation
-        if epoch %10 ==0 or epoch > args.epochs*0.8:
+        if epoch %10 ==0 or epoch > args.epochs-10:
             val_pixacc, val_miou = validation(model, val_loader, epoch, writer)
             # save model
             if val_pixacc > best_val_pixAcc:
@@ -142,6 +142,7 @@ def main(args):
                 model_dir = os.path.join(args.snapshot_dir, args.method + '_miou.pth')
                 torch.save(seg_model.state_dict(), model_dir)
                 print('Model saved to %s' % model_dir)
+
     os.rename(model_dir, os.path.join(args.snapshot_dir, args.method + '_miou'+str(best_val_mIoU)+'.pth'))
     print('Complete using', time.time() - start, 'seconds')
     print('Best pixAcc: {} | Best mIoU: {}'.format(best_val_pixAcc, best_val_mIoU))
@@ -157,7 +158,7 @@ def train(model, train_loader, epoch, criterion, optimizer, writer):
     # bar = Bar('Processing | {}'.format('train'), max=len(train_loader))
     # bar.check_tty = False
     from tqdm import tqdm
-    tbar = tqdm(train_loader, ncols=80)
+    tbar = tqdm(train_loader)
     for i_iter, batch in enumerate(tbar):
         sys.stdout.flush()
         start_time = time.time()
@@ -165,7 +166,7 @@ def train(model, train_loader, epoch, criterion, optimizer, writer):
         # adjust learning rate
         iters_per_epoch = len(train_loader)
         lr = adjust_learning_rate(optimizer, epoch, i_iter, iters_per_epoch, method=args.lr_mode)
-
+        # print("\n=>epoch  %d, learning_rate = %f" % (epoch, lr))
         image, label, hlabel, flabel, _ = batch
         images, labels, hlabel, flabel = image.cuda(), label.long().cuda(), hlabel.cuda(), flabel.cuda()
         torch.set_grad_enabled(True)
@@ -188,10 +189,12 @@ def train(model, train_loader, epoch, criterion, optimizer, writer):
 
         batch_time = time.time() - start_time
         # plot progress
-        tbar.set_description('{} / {} | Time: {batch_time:.4f} | Loss: {loss:.4f}'.format(iter_num, len(train_loader), batch_time=batch_time, loss=train_loss / iter_num))
+        tbar.set_description('{} / {} | Time: {batch_time:.4f} | Loss: {loss:.4f}'.format(iter_num, len(train_loader),
+                                                                                  batch_time=batch_time,
+                                                                                  loss=train_loss / iter_num))
         # bar.suffix = '{} / {} | Time: {batch_time:.4f} | Loss: {loss:.4f}'.format(iter_num, len(train_loader),
-                                                                                #   batch_time=batch_time,
-                                                                                #   loss=train_loss / iter_num)
+        #                                                                           batch_time=batch_time,
+        #                                                                           loss=train_loss / iter_num)
         # bar.next()
 
     epoch_loss = train_loss / iter_num
@@ -214,10 +217,8 @@ def validation(model, val_loader, epoch, writer):
     hist_fb = np.zeros((args.fbody_cls, args.fbody_cls))
 
     # Iterate over data.
-    # bar = Bar('Processing {}'.format('val'), max=len(val_loader))
-    # bar.check_tty = False
     from tqdm import tqdm
-    tbar = tqdm(val_loader, ncols=80)
+    tbar = tqdm(val_loader)
     for idx, batch in enumerate(tbar):
         image, target, hlabel, flabel, _ = batch
         image, target, hlabel, flabel = image.cuda(), target.cuda(), hlabel.cuda(), flabel.cuda()
@@ -275,7 +276,6 @@ def validation(model, val_loader, epoch, writer):
             #                                                                         pixAcc_fb=pixAcc_fb, IoU_fb=IoU_fb)
             # bar.next()
 
-
     print('\n per class iou part: {}'.format(per_class_iu(hist)*100))
     print('per class iou hb: {}'.format(per_class_iu(hist_hb)*100))
     print('per class iou fb: {}'.format(per_class_iu(hist_fb)*100))
@@ -292,7 +292,6 @@ def validation(model, val_loader, epoch, writer):
     writer.add_scalar('val_mIoU_fb', mIoU_fb, epoch)
     # bar.finish()
     tbar.close()
-
     return pixAcc, mIoU
 
 
