@@ -1676,14 +1676,14 @@ class ABRLovaszLoss2(nn.Module):
         loss = lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present)
         # half body
         pred_hb = F.interpolate(input=preds[1], size=(h, w), mode='bilinear', align_corners=True)
-        loss_hb_ce = self.criterion2(pred_hb, targets[1].long())
+        # loss_hb_ce = self.criterion2(pred_hb, targets[1].long())
 
         pred_hb = F.softmax(input=pred_hb, dim=1)
         loss_hb = lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
                                       only_present=self.only_present)
         # full body
         pred_fb = F.interpolate(input=preds[2], size=(h, w), mode='bilinear', align_corners=True)
-        loss_fb_ce = self.criterion2(pred_fb, targets[2].long())
+        # loss_fb_ce = self.criterion2(pred_fb, targets[2].long())
 
         pred_fb = F.softmax(input=pred_fb, dim=1)
         loss_fb = lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
@@ -1691,7 +1691,7 @@ class ABRLovaszLoss2(nn.Module):
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
-        return  loss_ce+0.4*loss_hb_ce+0.4*loss_fb_ce+loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn
+        return  loss_ce+loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn
 
 class du_ABRLovaszLoss(nn.Module):
     """Lovasz loss for Alpha process"""
